@@ -1,0 +1,9 @@
+Package: buildmer
+Title: Backward Stepwise Elimination for Mixed-Effects Regression
+Version: 0.0.1
+Authors@R: person("Cesko", "Voeten", email = "c.c.voeten@hum.leidenuniv.nl", role = c("aut", "cre"))
+Description: The buildmer package attempts to build, from the user's specifications, the largest possible regression model that will still converge, and then eliminates all terms from it that do not significantly contribute to an improvement of model deviance.
+Depends: R (>= 3.0)
+License: GPLv3
+Encoding: UTF-8
+LazyData: true
