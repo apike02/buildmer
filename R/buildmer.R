@@ -46,7 +46,7 @@ fit = function (terms,data=data,family=family,REML=reml) {
 #' @param ddf The adjustment to use in calculating the summary if summary=T and if lmerTest is available. Defaults to 'Kenward-Roger'.
 #' @param quiet Whether to suppress progress messages.
 #' @param verbose The verbosity level passed to (g)lmer fits.
-#' @maxfun The maximum number of iterations to allow for (g)lmer fits.
+#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
 #' @keywords fit
 #' @export
 buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce.fixed=T,reduce.random=T,adjust.p.chisq=T,summary=F,ddf='Kenward-Roger',quiet=F,verbose=0,maxfun=2e7) {
