@@ -8,32 +8,43 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @export
 conv = function (model) class(model) != 'try-error' && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages)))
 
-#' Fit a model using either lme4 or (g)lm.
-#' @param terms A list consisting of two elements, named 'fixed' and 'random', which contain fixed and random factors (respectively) as character strings. If 'random' is an empty list, the model will be fit using (g)lm, otherwise (g)lmer from the lme4 package will be used (or, if it is available, from the lmerTest package instead).
+#' Fit a model using either lme4 or (g)lm, with formula terms passed individually through a named list as per buildmer internals.
+#' @param y The dependent variable.
+#' @param terms A list consisting of two elements named 'fixed' and 'random', which contain fixed and random factors (respectively) as character strings. If 'random' is an empty list, the model will be fit using (g)lm, otherwise (g)lmer from the lme4 package will be used (or, if it is available, from the lmerTest package instead).
 #' @param data The data to fit the model to.
+#' @param data.name Internal parameter used by buildmer to replace the name of your dataset by the argument passed to buildmer (as opposed to just 'data').
 #' @param family The error distribution to use. Only relevant for generalized models; ignored for linear models.
 #' @param REML Whether to fit the model using REML (default) or ML. Only relevant for linear mixed effects models; ignored for other models.
+#' @param diag Whether to assume a diagonal covariance structure.
+#' @param quiet Whether to suppress progress messages.
+#' @param verbose The verbosity level passed to (g)lmer fits.
+#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
 #' @keywords fit
 #' @export
-fit = function (terms,data=data,family=family,REML=reml) {
+fit = function (y,terms,data,data.name=NULL,family=gaussian,REML=TRUE,diag=FALSE,quiet=FALSE,verbose=0,maxfun=2e5) {
+	data #test if argument isn't missing
+	family.name = family
+	family = eval(family)
+
 	reformulate.terms = if (diag || !length(terms$random)) c(terms$fixed,terms$random) else {
 		tempterms = paste0(terms$random,collapse='+')
 		tempterms = gsub('++','+',tempterms,fixed=T)
 		tempterms = gsub('+|','|',tempterms,fixed=T)
 		c(terms$fixed,tempterms)
 	}
-	form = reformulate(reformulate.terms,dep,keep.intercept)
-	if (!quiet) message(paste0(ifelse(reml,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
+	intercept = !('0' %in% terms$fixed || '-1' %in% terms$fixed)
+	form = reformulate(reformulate.terms,y,intercept)
+	if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
 	if (length(terms$random)) {
 		m = if (family.name == 'gaussian') lmer(form,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(form,data,family,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
-		m@call$data = data.name
-		m@call$control = NULL
+		if (!is.null(data.name)) m@call$data = data.name
 	} else {
 		m = if (family.name == 'gaussian') lm(form,data) else glm(form,family,data)
 	}
-	models[[length(models)+1]] = m
+	m
 }
-#' Remove terms failing to significantly improve model deviance using backward stepwise elimination.
+
+#' Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance.
 #' @param fixed A formula specifying the dependent variable and fixed effects for your model.
 #' @param random A named list of one-sided formulas specifying random effects for your model. The names of the list elements specify the grouping factors, whereas the right-hand side of the one-sided formulas specify the factors for which random slopes (or a random intercept) should be estimated. Can be empty.
 #' @param data The data to fit the models to.
@@ -47,19 +58,30 @@ fit = function (terms,data=data,family=family,REML=reml) {
 #' @param quiet Whether to suppress progress messages.
 #' @param verbose The verbosity level passed to (g)lmer fits.
 #' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
+#' @return A list containing the following elements:
+#' \itemize{
+#' \item table: a dataframe containing the results of the elimination process
+#' \item model: the final model containing only the terms that survived elimination
+#' \item messages: any warning messages
+#' \item summary: the model's summary, if summary==TRUE
+#' }
 #' @keywords fit
+#' @examples
+#' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce.fixed=T,reduce.random=T,adjust.p.chisq=T,summary=F,ddf='Kenward-Roger',quiet=F,verbose=0,maxfun=2e7) {
+buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=FALSE,reduce.fixed=TRUE,reduce.random=TRUE,adjust.p.chisq=TRUE,summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (is.null(fixed)) stop('No fixed effects specified')
-	if (length(random) == 0) stop('Random effects (at least one) must be passed as a named list of one-sided formulas (e.g.: random=list(subjects = ~ factor1 + factor2, items = ~ factor1 * factor2))')
-	if (!all(sapply(random,function (x) inherits(x,'formula')))) stop('Not all of the random effects you specified are valid one-sided formulas (e.g.: random=list(subjects = ~ factor1 + factor2), items = ~ factor1 * factor2)')
-	if (any(names(random) == '')) stop('At least one of your one-sided random-effect formulas do not name a grouping factor (the formula was not given a name in the list). All formulas in your random-effects list should be named by their grouping factors (e.g.: random=list(subjects = ~ factor1 + factor2, items = ~ factor1 * factor2)).')
+	if (!all(sapply(random,function (x) inherits(x,'formula')))) stop('Not all of the random effects you specified are valid one-sided formulas.
+	Random effects (at least one) must be passed as a named list of one-sided formulas (e.g.: random=list(subjects = ~ factor1 + factor2, items = ~ factor1 * factor2))')
+	if (any(names(random) == '')) stop('At least one of your one-sided random-effect formulas does not name a grouping factor (the formula was not given a name in the list). All formulas in your random-effects list should be named by their grouping factors (e.g.: random=list(subjects = ~ factor1 + factor2, items = ~ factor1 * factor2))')
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger') stop('Invalid specification for ddf, possible options are (1) NULL or "lme4"; (2) "Satterthwaite"; (3) "Kenward-Roger" (default)')
 	data #test if argument isn't missing
+	if (length(random) == 0) reduce.random=F
 	data.name = as.name(deparse(substitute(data)))
 	family.name = substitute(family)
+	family = as.character(family.name)
 
 	record = function (messages,x) {
 		if (!quiet) message(x)
@@ -99,7 +121,6 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 
 	dep = as.character(fixed)[2]
 	fixed.terms = attr(terms(fixed),'term.labels')
-	keep.intercept = !('0' %in% fixed.terms || '-1' %in% fixed.terms)
 	random.terms = character()
 	names = names(random)
 	for (n in names) {
@@ -119,20 +140,17 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 	messages = list()
 	terms = list(fixed=fixed.terms,random=random.terms)
 	terms.saved = NA
-	models = list()
 
 	for (i in c(2,1)) {
 		if (i == 1) {
 			if (!quiet) message('Reducing fixed effects')
-			reml = F
 			terms.name = 'fixed'
 		} else {
 			if (!quiet) message('Reducing random effects')
-			reml = T
 			terms.name = 'random'
 		}
 
-		ma = fit(terms)
+		ma = fit(dep,terms,data=data,family=family,REML=T,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 		while (!conv(ma)) {
 			if (!quiet) message("base model didn't converge, reducing slope terms")
 			if (terms.name == 'fixed') {
@@ -147,7 +165,7 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 			term.name = tested$removed
 			results[counter,] = c(terms.name,term.name,NA)
 			counter = counter + 1
-			ma = fit(terms)
+			ma = fit(dep,terms,data=data,family=family,REML=T,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 		}
 		totest = length(terms[[i]])
 		while (totest > 0) {
@@ -159,7 +177,7 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 				next
 			}
 			if (length(terms.test$random)) {
-				mb = fit(terms.test)
+				mb = fit(dep,terms.test,data=data,family=family,REML=T,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 				if (conv(mb)) {
 					p = anova(ma,mb,refit=F)[[8]][2]/(2*as.numeric(adjust.p.chisq))
 					if (p >= .05) {
@@ -173,10 +191,10 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 					}
 				} else p = NA
 			} else {
-				ma.refit = if (family.name == 'gaussian') fit(terms,REML=F) else ma
+				ma.refit = if (family.name == 'gaussian') fit(dep,terms,data=data,family=family,REML=F,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 				if (conv(ma.refit)) {
 					ma.dev = ma.refit@devcomp$cmp[8]
-					mb.dev = deviance(fit(terms.test))
+					mb.dev = deviance(fit(dep,terms.test,data=data,family=family,data.name=data.name))
 					p = pchisq(abs(ma.dev-mb.dev),1,lower.tail=F)/(2*as.numeric(adjust.p.chisq))
 				} else p = NA
 			}
@@ -194,10 +212,9 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 
 	have.saved = !all(is.na(terms.saved))
 	if (have.saved | family.name == 'gaussian') {
-		reml = T
 		if (have.saved) terms$random = terms.saved
 		if (!quiet) message('Fitting the final model')
-		ma = fit(terms)
+		ma = fit(dep,terms,data=data,family=family,REML=T,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 	}
 	while (!conv(ma)) {
 		messages = record(messages,"The final model failed to converge. Proceeding with fewer random slopes than had been warranted by the maximal fixed-effect structure.")
@@ -205,9 +222,9 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=F,reduce
 		results[counter,] = c(terms.name,terms$random[cands[length(cands)]],NA)
 		terms$random = terms$random[-cands[length(cands)]]
 		counter = counter + 1
-		ma = fit(terms)
+		ma = fit(dep,terms,data=data,family=family,REML=F,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun,data.name=data.name)
 	}
-	ret = list(models=models,table=results,model=ma,messages=messages)
+	ret = list(model=ma,table=results,messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
 		ret$summary = summary(ma,ddf=ddf)
