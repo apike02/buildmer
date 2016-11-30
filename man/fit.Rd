@@ -2,21 +2,20 @@
 % Please edit documentation in R/buildmer.R
 \name{fit}
 \alias{fit}
-\title{Fit a model using either lme4 or (g)lm.}
+\title{Fit a model using either lme4 or (g)lm, with formula terms passed via a buildmer.terms object.}
 \usage{
-fit(terms, data = data, family = family, REML = reml)
+fit(bmt, REML = TRUE)
 }
 \arguments{
-\item{terms}{A list consisting of two elements, named 'fixed' and 'random', which contain fixed and random factors (respectively) as character strings. If 'random' is an empty list, the model will be fit using (g)lm, otherwise (g)lmer from the lme4 package will be used (or, if it is available, from the lmerTest package instead).}
-
-\item{data}{The data to fit the model to.}
-
-\item{family}{The error distribution to use. Only relevant for generalized models; ignored for linear models.}
+\item{bmt}{The buildmer.terms object containing the predictors, data, and fitting parameters. See buildmer.terms.}
 
 \item{REML}{Whether to fit the model using REML (default) or ML. Only relevant for linear mixed effects models; ignored for other models.}
 }
 \description{
-Fit a model using either lme4 or (g)lm.
+Fit a model using either lme4 or (g)lm, with formula terms passed via a buildmer.terms object.
+}
+\seealso{
+buildmer, mkBMTerms
 }
 \keyword{fit}
 

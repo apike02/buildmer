@@ -3,3 +3,6 @@
 export(buildmer)
 export(conv)
 export(fit)
+export(mer2tex)
+exportClasses(buildmer)
+exportClasses(buildmer.terms)

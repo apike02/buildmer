@@ -2,12 +2,12 @@
 % Please edit documentation in R/buildmer.R
 \name{buildmer}
 \alias{buildmer}
-\title{Remove terms failing to significantly improve model deviance using backward stepwise elimination.}
+\title{Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance.}
 \usage{
 buildmer(fixed = NULL, random = list(), data, family = gaussian,
-  diag = F, reduce.fixed = T, reduce.random = T, adjust.p.chisq = T,
-  summary = F, ddf = "Kenward-Roger", quiet = F, verbose = 0,
-  maxfun = 2e+07)
+  diag = FALSE, reduce.fixed = TRUE, reduce.random = TRUE,
+  adjust.p.chisq = TRUE, summary = FALSE, ddf = "Kenward-Roger",
+  quiet = FALSE, verbose = 0, maxfun = 2e+05)
 }
 \arguments{
 \item{fixed}{A formula specifying the dependent variable and fixed effects for your model.}
@@ -36,8 +36,20 @@ buildmer(fixed = NULL, random = list(), data, family = gaussian,
 
 \item{maxfun}{The maximum number of iterations to allow for (g)lmer fits.}
 }
+\value{
+A buildmer object containing the following slots:
+\itemize{
+\item table: a dataframe containing the results of the elimination process
+\item model: the final model containing only the terms that survived elimination
+\item messages: any warning messages
+\item summary: the model's summary, if summary==TRUE
+}
+}
 \description{
-Remove terms failing to significantly improve model deviance using backward stepwise elimination.
+Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance.
+}
+\examples{
+buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 }
 \keyword{fit}
 
