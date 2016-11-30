@@ -12,14 +12,17 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @param verbose The verbosity level passed to (g)lmer fits.
 #' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
 #' @keywords terms
-mkBMTerms = setClass('buildmer.terms',slots=list(dep='character',terms='list',data='data.frame',data.name='call',family='character',diag='logical',verbose='numeric',maxfun='numeric'))
+#' @export
+mkBMTerms = setClass('buildmer.terms',slots=list(dep='character',terms='list',data='data.frame',data.name='call',family='character',diag='logical',quiet='logical',verbose='numeric',maxfun='numeric'))
 
-#' Create a buildmer object
+#' Make a buildmer object.
 #' @param table A dataframe containing the results of the elimination process.
 #' @param model The final model containing only the terms that survived elimination.
 #' @param messages Any warning messages.
 #' @param summary: The model's summary, if summary==TRUE.
 #' @keywords buildmer
+#' @seealso buildmer
+#' @export
 mkBM = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
 
 #' Test an lme4 or equivalent object for convergence.
@@ -28,18 +31,11 @@ mkBM = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='c
 #' @export
 conv = function (model) any(class(model) == 'lm') || (any(class(model) == 'merModLmerTest') && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages))))
 
-#' Fit a model using either lme4 or (g)lm, with formula terms passed individually through a named list as per buildmer internals.
-#' @param y The dependent variable.
-#' @param terms A list consisting of two elements named 'fixed' and 'random', which contain fixed and random factors (respectively) as character strings. If 'random' is an empty list, the model will be fit using (g)lm, otherwise (g)lmer from the lme4 package will be used (or, if it is available, from the lmerTest package instead).
-#' @param data The data to fit the model to.
-#' @param data.name Internal parameter used by buildmer to replace the name of your dataset by the argument passed to buildmer (as opposed to just 'data').
-#' @param family The error distribution to use. Only relevant for generalized models; ignored for linear models.
+#' Fit a model using either lme4 or (g)lm, with formula terms passed via a buildmer.terms object.
+#' @param bmt The buildmer.terms object containing the predictors, data, and fitting parameters. See buildmer.terms.
 #' @param REML Whether to fit the model using REML (default) or ML. Only relevant for linear mixed effects models; ignored for other models.
-#' @param diag Whether to assume a diagonal covariance structure.
-#' @param quiet Whether to suppress progress messages.
-#' @param verbose The verbosity level passed to (g)lmer fits.
-#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
 #' @keywords fit
+#' @seealso buildmer, mkBMTerms
 #' @export
 fit = function (bmt,REML=TRUE) {
 	reformulate.terms = if (bmt@diag || !length(bmt@terms$random)) c(bmt@terms$fixed,bmt@terms$random) else {
@@ -50,8 +46,7 @@ fit = function (bmt,REML=TRUE) {
 	}
 	intercept = !('0' %in% bmt@terms$fixed || '-1' %in% bmt@terms$fixed)
 	form = reformulate(reformulate.terms,bmt@dep,intercept)
-	#if (!quiet)
-	message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
+	if (!bmt@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
 	if (length(bmt@terms$random)) {
 		m = if (bmt@family == 'gaussian') lmer(form,bmt@data,REML,control=lmerControl(optCtrl=list(maxfun=bmt@maxfun)),verbose=bmt@verbose) else glmer(form,bmt@data,bmt@family,glmerControl(optCtrl=list(maxfun=bmt@maxfun)),verbose=bmt@verbose)
 		if (!is.null(bmt@data.name)) m@call$data = bmt@data.name
