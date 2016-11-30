@@ -12,7 +12,7 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @param verbose The verbosity level passed to (g)lmer fits.
 #' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
 #' @keywords terms
-mkBMTerms = setClass('buildmer.terms',slots=list(dep='character',terms='list',data='data.frame',data.name='name',family='character',diag='logical',verbose='numeric',maxfun='numeric'))
+mkBMTerms = setClass('buildmer.terms',slots=list(dep='character',terms='list',data='data.frame',data.name='call',family='character',diag='logical',verbose='numeric',maxfun='numeric'))
 
 #' Create a buildmer object
 #' @param table A dataframe containing the results of the elimination process.
@@ -20,7 +20,7 @@ mkBMTerms = setClass('buildmer.terms',slots=list(dep='character',terms='list',da
 #' @param messages Any warning messages.
 #' @param summary: The model's summary, if summary==TRUE.
 #' @keywords buildmer
-mkBM = setClass('buildmers',slots=list(model='lmerMod',table='data.frame',terms='buildmer.terms',messages='character',summary='character'))
+mkBM = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
 
 #' Test an lme4 or equivalent object for convergence.
 #' @param model The model object to test.
@@ -95,7 +95,7 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=FALSE,re
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger') stop('Invalid specification for ddf, possible options are (1) NULL or "lme4"; (2) "Satterthwaite"; (3) "Kenward-Roger" (default)')
 	data #test if argument isn't missing
 	if (length(random) == 0) reduce.random=F
-	data.name = as.name(deparse(substitute(data)))
+	data.name = substitute(data)
 	family.name = substitute(family)
 	family = as.character(family.name)
 
@@ -250,7 +250,8 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 	ret = mkBM(model=ma,table=results,messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
-		ret@summary = summary(ma,ddf=ddf)
+		fun = if (have.lmerTest) lmerTest::summary else function (x,ddf) lme4::summary(x)
+		ret@summary = fun(ma,ddf=ddf)
 	}
 	ret
 }
