@@ -45,7 +45,7 @@ fit = function (bmt,REML=TRUE) {
 		c(bmt@terms$fixed,tempterms)
 	}
 	intercept = !('0' %in% bmt@terms$fixed || '-1' %in% bmt@terms$fixed)
-	form = reformulate(reformulate.terms,bmt@dep,intercept)
+	form = if (length(reformulate.terms)) reformulate(reformulate.terms,bmt@dep,intercept) else as.formula(paste0(bmt@dep,'~1'))
 	if (!bmt@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
 	if (length(bmt@terms$random)) {
 		m = if (bmt@family == 'gaussian') lmer(form,bmt@data,REML,control=lmerControl(optCtrl=list(maxfun=bmt@maxfun)),verbose=bmt@verbose) else glmer(form,bmt@data,bmt@family,glmerControl(optCtrl=list(maxfun=bmt@maxfun)),verbose=bmt@verbose)
@@ -107,13 +107,13 @@ buildmer = function (fixed=NULL,random=list(),data,family=gaussian,diag=FALSE,re
 		} else random.terms = c(random.terms,ifelse(intercept,'(1+','(0+'),terms,paste0('|',n,')'))
 	}
 
-	bmt = mkBMTerms(dep=dep,terms=list(fixed=fixed.terms,random=random.terms),data=data,data.name=data.name,family=family,diag=diag,verbose=verbose,maxfun=maxfun)
-	buildmer.build(terms=bmt,reduce.fixed=reduce.fixed,reduce.random=reduce.random,adjust.p.chisq=adjust.p.chisq,summary=summary,ddf=ddf,quiet=quiet)
+	bmt = mkBMTerms(dep=dep,terms=list(fixed=fixed.terms,random=random.terms),data=data,data.name=data.name,family=family,diag=diag,quiet=quiet,verbose=verbose,maxfun=maxfun)
+	buildmer.build(bmt=bmt,reduce.fixed=reduce.fixed,reduce.random=reduce.random,adjust.p.chisq=adjust.p.chisq,summary=summary,ddf=ddf)
 }
 
-buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summary,ddf,quiet) {
+buildmer.build = function (bmt,reduce.fixed,reduce.random,adjust.p.chisq,summary,ddf) {
 	record = function (messages,x) {
-		if (!quiet) message(x)
+		if (!bmt@quiet) message(x)
 		c(messages,x)
 	}
 	remove.term = function (terms.test,i,totest,diag) {
@@ -148,7 +148,6 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 		list(terms=terms.test,removed=term.name)
 	}
 
-	bmt = terms
 	prealloc = 0
 	if (reduce.fixed ) prealloc = prealloc + length(bmt@terms$fixed)
 	if (reduce.random) prealloc = prealloc + length(bmt@terms$random[bmt@terms$random != '(0+' & !grepl('^\\|',bmt@terms$random)])
@@ -159,16 +158,16 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 
 	for (i in c(2,1)) {
 		if (i == 1) {
-			if (!quiet) message('Reducing fixed effects')
+			if (!bmt@quiet) message('Reducing fixed effects')
 			terms.name = 'fixed'
 		} else {
-			if (!quiet) message('Reducing random effects')
+			if (!bmt@quiet) message('Reducing random effects')
 			terms.name = 'random'
 		}
 
 		ma = fit(bmt,REML=T)
 		while (!conv(ma)) {
-			if (!quiet) message("base model didn't converge, reducing slope terms")
+			if (!bmt@quiet) message("base model didn't converge, reducing slope terms")
 			if (terms.name == 'fixed') {
 				messages = record(messages,"The base model failed to converge during the fixed-effects elimination. Proceeding with fewer random slopes than will be present in the final model. You may want to try forward elimination using stats::step for the fixed effects.")
 				terms.saved = bmt@terms$random
@@ -216,7 +215,7 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 					p = pchisq(abs(ma.dev-mb.dev),1,lower.tail=F)/(2*as.numeric(adjust.p.chisq))
 				} else p = NA
 			}
-			if (!quiet) {
+			if (!bmt@quiet) {
 				if (is.na(p))
 					message(paste0('smaller model failed to converge for ',term.name))
 				else
@@ -231,7 +230,7 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 	have.saved = !all(is.na(terms.saved))
 	if (have.saved || bmt@family == 'gaussian') {
 		if (have.saved) bmt@terms$random = terms.saved
-		if (!quiet) message('Fitting the final model')
+		if (!bmt@quiet) message('Fitting the final model')
 		ma = fit(bmt,REML=T)
 	}
 	while (!conv(ma)) {
@@ -244,7 +243,7 @@ buildmer.build = function (terms,reduce.fixed,reduce.random,adjust.p.chisq,summa
 	}
 	ret = mkBM(model=ma,table=results,messages=messages)
 	if (summary) {
-		if (!quiet) message('Calculating summary statistics')
+		if (!bmt@quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest) lmerTest::summary else function (x,ddf) lme4::summary(x)
 		ret@summary = fun(ma,ddf=ddf)
 	}
