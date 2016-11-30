@@ -250,33 +250,28 @@ buildmer.build = function (bmt,reduce.fixed,reduce.random,adjust.p.chisq,summary
 	ret
 }
 
-mer2tex = function (summary,vowel='',formula=F,diag=F,label='') {
+#' Convert a summary to LaTeX code (biased towards vowel analysis).
+#' @param summary The summary to convert.
+#' @param vowel The vowel you're analyzing.
+#' @param formula The formula as used in your final lmer object.
+#' @param diag Whether to include a note about a diagonal covariance structure having been assumed.
+#' @param label The LaTeX label to put below your 'Results' caption.
+#' @aliases A list of aliases translating summary terms to LaTeX code.
+#' @keywords LaTeX
+#' @export
+mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
+'(Intercept)' = 'Intercept',
+'Df1' = '$\\Updelta$F1',
+'Df2' = '$\\Updelta$F2',
+'ppn' = 'participants',
+'word' = 'words',
+'2:' = '\\o:',
+'9y' = '\\oe y')) {
 	tblprintln = function (x) {
 		l = paste0(x,collapse=' & ')
 		cat(l,'\\\\\n',sep='')
 	}
-	paperify = function (x) {
-		switch = switch(x,
-		'(Intercept)' = 'Intercept',
-		'country1' = 'country = The Netherlands',
-		'region1' = 'region = NR',
-		'region2' = 'region = NM',
-		'region3' = 'region = NS',
-		'region4' = 'region = NN',
-		'region5' = 'region = EF',
-		'region6' = 'region = FL',
-		'region7' = 'region = WF',
-		'FS' = 'following segment',
-		'FS2' = 'following segment = obs',
-		'FS1' = 'following segment = /l/',
-		'Df1' = '$\\Updelta$F1',
-		'Df2' = '$\\Updelta$F2',
-		'ppn' = 'participants',
-		'word' = 'words',
-		'2:' = '\\o:',
-		'9y' = '\\oe y')
-		if (is.null(switch)) x else switch
-	}
+	paperify = function (x) if (x %in% aliases) aliases[[names(aliases) == x]] else x
 	custround = function (i,neg=T,trunc=F) {
 		prec = 3
 		ir = round(i,prec)
