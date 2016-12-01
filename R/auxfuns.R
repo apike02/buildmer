@@ -34,7 +34,7 @@ conv = function (model) any(class(model) == 'lm') || ((any(class(model)) == 'lme
 #' \item fixed: vector containing all the fixed-effect terms (including an explicit intercept)
 #' \item random: a list of named lists containing random-effect terms, where the names are the grouping factors and the elements are character vectors of predictors (with explicitly-named intercepts).
 #' }
-#' @seealso remove.terms
+#' @seealso remove.terms, pack2form
 #' @export
 pack.terms = function(formula) {
 	dep = as.character(formula)[2]
@@ -61,13 +61,13 @@ pack.terms = function(formula) {
 	list(dep=dep,fixed=fixed.terms,random=random.terms)
 }
 
-#' Remove terms from a formula
-#' @param formula The formula.
+#' Remove terms from a packed terms object.
+#' @param packed The packed terms object.
 #' @param remove The terms to remove. Random-effect terms can be specified in the standard '(effect|grouping)' way, one single effect at a time! Pass an empty vector (the default) to only expand the formula.
-#' @returns The altered formula.
-#' @seealso remove.terms, fit
+#' @returns The altered packed terms object.
+#' @seealso pack2form
 #' @export
-remove.terms = function(formula,remove=c()) {
+remove.terms = function(packed,remove=c()) {
 	checkmarginality = function(list,grouping=NULL) {
 		interaction.terms = list[grepl(':',list,fixed=T)]
 		interaction.terms = unique(unlist(strsplit(interaction.terms,':',fixed=T)))
@@ -75,10 +75,8 @@ remove.terms = function(formula,remove=c()) {
 		ok.to.remove = remove[!remove %in% interaction.terms]
 		if (is.null(grouping)) list[!list %in% ok.to.remove] else list[!paste0('(',list,'|',grouping,')') %in% ok.to.remove]
 	}
-	packed = pack.terms(formula)
 	dep = packed$dep
-	fixed.intercept = '1' %in% packed$fixed
-	fixed.terms = checkmarginality(list=packed$fixed[packed$fixed != '1'])
+	packed$fixed = checkmarginality(list=packed$fixed)
 	random = packed$random
 	random.terms = c()
 	for (i in 1:length(random)) {
@@ -91,18 +89,47 @@ remove.terms = function(formula,remove=c()) {
 		if (length(termlist) && !all(termlist == '0')) random.terms = c(random.terms,paste0('(',paste(termlist,collapse='+'),'|',grouping,')'))
 	}
 	random.terms = random.terms[!sapply(random.terms,is.null)]
-	joined = if (length(random.terms)) c(fixed.terms,random.terms) else fixed.terms
+	packed$random = random.terms
+	packed
+}
+
+#' Reduce the random-effect structure. First, slopes are eliminated; then, intercepts follow.
+#' @param packed The packed terms object.
+#' @returns The packed terms object minus the last random slope.
+#' @export
+reduce.random.effects = function (packed) {
+	for (keep.intercepts in c(T,F) {
+		for (i in length(packed$random):1) {
+			grouping = names(packed$random)[i]
+			for (j in length(packed$random[[i]]:1)) {
+				if (keep.intercepts && packed$random[[i]][j]) == '1') next
+				removed = remove(paste0('(',packed$random[[i]][j],'|',grouping,')')]))
+				if (!all.equal(packed,removed)) return(removed)
+			}
+		}
+	}
+}
+
+#' Coerce a packed terms object to a formula
+#' @param packed The packed terms object.
+#' @returns An equivalent formula.
+#' @export
+pack2form = function (packed) {
+	intercept = '1' %in% packed$fixed
+	packed$fixed = packed$fixed[packed$fixed != '1']
+	joined = if (length(packed$random)) c(packed$random,packed$fixed) else packed$fixed
 	reformulate(joined,dep,fixed.intercept)
 }
 
 #' Fit a model using either lme4 or (g)lm.
-#' @param formula The model formula.
+#' @param formula The model formula, or a packed terms list that can be coerced to one.
 #' @param buildmer.control Control options for buildmer, including things such as the data and the family to use for fitting. See buildmerControl().
 #' @param REML Whether to fit the model using REML (default) or ML. Only relevant for linear mixed effects models; ignored for other models.
 #' @keywords fit
 #' @seealso buildmerControl
 #' @export
 fit = function (formula,data,buildmer.control,REML=TRUE) {
+	if (class(formula) != 'formula') formula = pack2form(formula)
 	if (!buildmer.control@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
 	m = if (is.null(lme4:::findbars(formula))) {
 		if (buildmer.control@family == 'gaussian') lm(form,buildmer.control@data) else glm(form,buildmerm.control@family,buildmer.control@data)
