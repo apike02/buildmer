@@ -128,7 +128,7 @@ pack2form = function (packed) {
 #' @keywords fit
 #' @seealso buildmerControl
 #' @export
-fit = function (formula,data,buildmer.control,REML=TRUE) {
+fit = function (formula,buildmer.control,REML=TRUE) {
 	if (class(formula) != 'formula') formula = pack2form(formula)
 	if (!buildmer.control@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
 	m = if (is.null(lme4:::findbars(formula))) {
