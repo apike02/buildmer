@@ -2,7 +2,7 @@
 #' @param dep The dependent variable.
 #' @param fixed The fixed effects vector.
 #' @param random A named list of random-effect vectors.
-#' @returns A buildmer.packed.formula object
+#' @return A buildmer.packed.formula object
 #' @seealso buildmer
 #' @export
 mkBuildmerPackedFormula = setClass('buildmer.packed.formula',slots=list(dep='character',fixed='character',random='list'))
@@ -37,7 +37,7 @@ conv = function (model) any(class(model) == 'lm') || ((any(class(model) == 'lmer
 
 #' Pack formula terms into a list.
 #' @param formula The formula.
-#' @returns A list consisting of three items: \enumerate{
+#' @return A list consisting of three items: \enumerate{
 #' \item dep: the dependent variable
 #' \item fixed: vector containing all the fixed-effect terms (including an explicit intercept)
 #' \item random: a list of named lists containing random-effect terms, where the names are the grouping factors and the elements are character vectors of predictors (with explicitly-named intercepts).
@@ -72,7 +72,7 @@ pack.terms = function(formula) {
 #' Remove terms from a packed terms object.
 #' @param packed The packed terms object.
 #' @param remove The terms to remove. Random-effect terms can be specified in the standard '(effect|grouping)' way, one single effect at a time! Pass an empty vector (the default) to only expand the formula.
-#' @returns The altered packed terms object, or NA if the term could not be removed because of marginality.
+#' @return The altered packed terms object, or NA if the term could not be removed because of marginality.
 #' @seealso pack2form
 #' @export
 remove.terms = function(packed,remove=c()) {
@@ -86,7 +86,7 @@ remove.terms = function(packed,remove=c()) {
 	dep = packed@dep
 	changed = F
 	newfixed = checkmarginality(list=packed@fixed)
-	if (!all.equal(newfixed,packed@fixed)) {
+	if (!isTRUE(all.equal(newfixed,packed@fixed))) {
 		changed = T
 		packed@fixed = newfixed
 	}
@@ -106,7 +106,7 @@ remove.terms = function(packed,remove=c()) {
 
 #' Reduce the random-effect structure. First, slopes are eliminated; then, intercepts follow.
 #' @param packed The packed terms object.
-#' @returns The packed terms object minus the last random slope.
+#' @return The packed terms object minus the last random slope.
 #' @export
 reduce.random.effects = function (packed) {
 	for (keep.intercepts in c(T,F)) {
@@ -114,8 +114,12 @@ reduce.random.effects = function (packed) {
 			grouping = names(packed@random)[i]
 			for (j in length(packed@random[[i]]):1) {
 				if (keep.intercepts && packed@random[[i]][j] == '1') next
-				removed = remove.terms(packed,paste0('(',packed@random[[i]][j],'|',grouping,')'))
-				if (class(removed) != 'logical') return(removed) #class trick silences "is.na() applied to non-(list or vector) of type 'S4'" warning
+				termname = paste0('(',packed@random[[i]][j],'|',grouping,')')
+				removed = remove.terms(packed,termname)
+				if (class(removed) != 'logical') {
+					attr(removed,'removed') = termname
+					return(removed) #class trick silences "is.na() applied to non-(list or vector) of type 'S4'" warning
+				}
 			}
 		}
 	}
@@ -124,7 +128,7 @@ reduce.random.effects = function (packed) {
 
 #' Reduce the fixed-effect structure.
 #' @param packed The packed terms object.
-#' @returns The packed terms object minus the last fixed effect.
+#' @return The packed terms object minus the last fixed effect.
 #' @export
 reduce.fixed.effects = function (packed) {
 	term = packed@fixed[length(packed@fixed)]
@@ -134,7 +138,7 @@ reduce.fixed.effects = function (packed) {
 
 #' Coerce a packed terms object to a formula
 #' @param packed The packed terms object.
-#' @returns An equivalent formula.
+#' @return An equivalent formula.
 #' @export
 unpack.terms = function (packed) {
 	stringify.random.terms = function (packed) {
@@ -178,25 +182,32 @@ fit = function (formula,control,REML=TRUE) {
 #' @seealso mkBuildmerControl, buildmer
 #' @export
 modcomp = function (a,b,control) {
-	same.fixed.effects = as.character(lme4:::nobars(formula(a))) == as.character(lme4:::nobars(formula(b)))
-	one.has.only.fixed.effects = any(sapply(c(formula(a),formula(b)),function (x) is.null(lme4:::findbars(x))))
-	reml = same.fixed.effects && !one.has.only.fixed.effects
-	is.reml.ok = function (x) {
-		if (class(x) == 'formula') return(F) #model must be fitted anyway
-		devcomp = attr(x,'devcomp')
-		if (is.null(devcomp)) return(T) #not a mixed-effect model
-		has.reml = !is.null(devcomp$REML)
-		return(has.reml == reml)
-	}
+	only.fixed.a = is.null(lme4:::findbars(a))
+	only.fixed.b = is.null(lme4:::findbars(b))
+	same.fixed.effects = isTRUE(all.equal(lme4:::nobars(formula(a)),lme4:::nobars(formula(b))))
+	reml = if (only.fixed.a && only.fixed.b) NA
+	else if (only.fixed.a != only.fixed.b)   F
+	else if (!same.fixed.effects)            F
+	else T
 
-	models = sapply(c(a,b),function (x) {
+	refit.if.needed = function (x) {
+		is.reml.ok = function (x) {
+			if (all(class(x) == 'formula')) return(F) #model must be fitted anyway
+			if (is.na(reml)) return(T) #who cares
+			devcomp = attr(x,'devcomp')
+			has.reml = !is.null(devcomp$REML)
+			if (!has.reml) return(T) #not a mixed-effect model
+			return(has.reml == reml)
+		}
 		if (is.reml.ok(x)) x else fit(formula(x),control,reml)
-	})
-
-	if (!conv(models[[1]]) || !conv(models[[2]])) return(NA)
-	p = if (all(class(models[[1]]) == class(models[[2]]))) {
-		anovafun = if (any(class(models[[1]]) == 'lm')) anova else function (...) anova(...,refit=F)
-		res = do.call(anovafun,models)
+	}
+	a = refit.if.needed(a)
+	if (!conv(a)) return(NA)
+	b = refit.if.needed(b)
+	if (!conv(b)) return(NA)
+	p = if (all(class(a) == class(b))) {
+		anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
+		res = anova(a,b)
 		res[[length(res)]][[2]]
 	} else {
 		# Compare the models by hand
@@ -204,7 +215,7 @@ modcomp = function (a,b,control) {
 		devfun = function (m) {
 			if (any(class(m) == 'lm')) deviance(m) else m@devcomp$cmp[[8]]
 		}
-		diff = abs(devfun(models[[1]]) - devfun(models[[2]]))
+		diff = abs(devfun(a) - devfun(b))
 		pchisq(diff,1,lower.tail=F)
 	}
 	if (control@adjust.p.chisq) p = p / 2

@@ -74,7 +74,12 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	family = as.character(substitute(family))
 	control = mkBuildmerControl(data=data,data.name=data.name,family=family,nAGQ=nAGQ,adjust.p.chisq=adjust.p.chisq,quiet=quiet,verbose=verbose,maxfun=maxfun)
 
-	record = function (type,term,p) results[counter<-counter+1,] = c(type,ifelse(is.null(names(term)),term,paste0('(',term,'|',names(term),')')),p)
+	addgrouping = function (term) if (is.null(names(term))) term else paste0('(',term,'|',names(term),')')
+	record = function (type,term,p) {
+		counter <<- counter+1
+		results[counter,] <<- c(type,addgrouping(term),p)
+	}
+
 	formula = pack.terms(formula)
 	prealloc = 0
 	if (reduce.fixed ) prealloc = prealloc + length(formula@fixed )
@@ -87,24 +92,27 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 
 	if (direction == 'backward') {
 		fa = formula
-		ma = fit(fa,control,REML=T)
-		while (!conv(ma)) {
-			if (!quiet) message("base model didn't converge, reducing slope terms")
-			record('random',term,NA)
-			counter = counter + 1
-			fb = reduce.random.effects(fa)
-			if (is.na(fb)) next
-			fb = fa
-			ma = fit(fa,control,REML=T)
-			formula = fa
-		}	
 		if (reduce.random && length(fa@random)) {
-			for (term in rev(unlist(formula@random))) {
-				fb = remove.terms(fa,term)
-				if (is.na(fb)) next
+			ma = fit(fa,control,REML=T)
+			while (!conv(ma)) {
+				if (!quiet) message("base model didn't converge, reducing slope terms")
+				fb = reduce.random.effects(fa)
+				record('random',attr(fb,'removed'),NA)
+				if (class(fb) == 'logical') next #if not removed due to marginality, reduce.random.effects will return NA, which is a logical. (is.na will generate a warning if used on S4 classes)
+				fa = fb
+				ma = fit(fa,control,REML=T)
+				formula = fa
+			}
+			# for apparently eliminates names...
+			#for (term in rev(unlist(formula@random))) {
+			named.terms = rev(unlist(formula@random))
+			for (i in 1:length(named.terms)) {
+				term = named.terms[i]
+				fb = remove.terms(fa,addgrouping(term))
+				if (class(fb) == 'logical') next
 				mb = fit(fb,control,REML=T)
 				p = modcomp(ma,mb,control)
-				results[counter,] = record('random',term,p)
+				record('random',term,p)
 				if (!is.na(p) && p >= .05) {
 					fa = fb
 					ma = mb
@@ -117,13 +125,13 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 			while (!conv(ma)) {
 				if (!quiet) warning('The base model failed to converge during the fixed-effects elimination. Proceeding with fewer random slopes than will be present in the final model.')
 				fb = reduce.random.effects(fa)
-				if (is.na(fb)) next
-				fb = fa
+				if (class(fb) == 'logical') next
+				fa = fb
 				ma = fit(fa,control,REML=F)
 			}
-			for (term in rev(unlist(formula@fixed))) {
-				fb = remove.terms(fb,term)
-				if (is.na(fb)) next
+			for (term in rev(formula@fixed)) {
+				fb = remove.terms(fa,term)
+				if (class(fb) == 'logical') next
 				mb = fit(fb,control,REML=F)
 				p = modcomp(ma,mb,control)
 				record('fixed',term,p)
@@ -140,9 +148,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 				ma = fit(ma,control,REML=T)
 			}
 		}
-	}
+	} else stop('Other types of stepward elimination than backward are currently not implemented!')
 
-	counter = counter - 1
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
