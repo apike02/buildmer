@@ -1,15 +1,23 @@
-#' Make a buildmer terms object.
-#' @param y The dependent variable.
-#' @param terms A list consisting of two elements named 'fixed' and 'random', which contain fixed and random factors (respectively) as character strings. If 'random' is an empty list, the model will be fit using (g)lm, otherwise (g)lmer from the lme4 package will be used (or, if it is available, from the lmerTest package instead).
+#' Make a buildmer packed formula object.
+#' @param dep The dependent variable.
+#' @param fixed The fixed effects vector.
+#' @param random A named list of random-effect vectors.
+#' @returns A buildmer.packed.formula object
+#' @seealso buildmer
+#' @export
+mkBuildmerPackedFormula = setClass('buildmer.packed.formula',slots=list(dep='character',fixed='character',random='list'))
+
+#' Make a buildmer control object.
 #' @param data The data to fit the model to.
 #' @param data.name Internal parameter used by buildmer to replace the name of your dataset by the argument passed to buildmer (as opposed to just 'data').
 #' @param family The error distribution to use. Only relevant for generalized models; ignored for linear models.
-#' @param diag Whether to assume a diagonal covariance structure.
+#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
+#' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param verbose The verbosity level passed to (g)lmer fits.
 #' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
-#' @keywords terms
+#' @keywords buildmer
 #' @export
-mkBMTerms = setClass('buildmer.terms',slots=list(formula='formula',data='data.frame',data.name='call',family='character',diag='logical',quiet='logical',verbose='numeric',maxfun='numeric'))
+mkBuildmerControl = setClass('buildmer.control',slots=list(data='data.frame',data.name='name',family='character',nAGQ='numeric',adjust.p.chisq='logical',quiet='logical',verbose='numeric',maxfun='numeric'))
 
 #' Make a buildmer object.
 #' @param table A dataframe containing the results of the elimination process.
@@ -19,13 +27,13 @@ mkBMTerms = setClass('buildmer.terms',slots=list(formula='formula',data='data.fr
 #' @keywords buildmer
 #' @seealso buildmer
 #' @export
-mkBM = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
+mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
 
 #' Test an lme4 or equivalent object for convergence.
 #' @param model The model object to test.
 #' @keywords convergence
 #' @export
-conv = function (model) any(class(model) == 'lm') || ((any(class(model)) == 'lmerMod' || any(class(model) == 'merModLmerTest')) && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages))))
+conv = function (model) any(class(model) == 'lm') || ((any(class(model) == 'lmerMod') || any(class(model) == 'merModLmerTest')) && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages))))
 
 #' Pack formula terms into a list.
 #' @param formula The formula.
@@ -58,13 +66,13 @@ pack.terms = function(formula) {
 		}
 	})
 	random.terms = random.terms[!sapply(random.terms,is.null)]
-	list(dep=dep,fixed=fixed.terms,random=random.terms)
+	mkBuildmerPackedFormula(dep=dep,fixed=fixed.terms,random=random.terms)
 }
 
 #' Remove terms from a packed terms object.
 #' @param packed The packed terms object.
 #' @param remove The terms to remove. Random-effect terms can be specified in the standard '(effect|grouping)' way, one single effect at a time! Pass an empty vector (the default) to only expand the formula.
-#' @returns The altered packed terms object.
+#' @returns The altered packed terms object, or NA if the term could not be removed because of marginality.
 #' @seealso pack2form
 #' @export
 remove.terms = function(packed,remove=c()) {
@@ -75,22 +83,25 @@ remove.terms = function(packed,remove=c()) {
 		ok.to.remove = remove[!remove %in% interaction.terms]
 		if (is.null(grouping)) list[!list %in% ok.to.remove] else list[!paste0('(',list,'|',grouping,')') %in% ok.to.remove]
 	}
-	dep = packed$dep
-	packed$fixed = checkmarginality(list=packed$fixed)
-	random = packed$random
-	random.terms = c()
-	for (i in 1:length(random)) {
-		grouping = names(random)[i]
-		termlist = random[[i]]
-		print(termlist)
-		termlist = checkmarginality(list=termlist,grouping=grouping)
-		print(termlist)
-		termlist = termlist[!is.na(termlist)]
-		if (length(termlist) && !all(termlist == '0')) random.terms = c(random.terms,paste0('(',paste(termlist,collapse='+'),'|',grouping,')'))
+	dep = packed@dep
+	changed = F
+	newfixed = checkmarginality(list=packed@fixed)
+	if (!all.equal(newfixed,packed@fixed)) {
+		changed = T
+		packed@fixed = newfixed
 	}
-	random.terms = random.terms[!sapply(random.terms,is.null)]
-	packed$random = random.terms
-	packed
+	if (length(packed@random)) {
+		for (i in 1:length(packed@random)) {
+			grouping = names(packed@random)[i]
+			termlist = packed@random[[i]]
+			newlist = checkmarginality(list=termlist,grouping=grouping)
+			if (!isTRUE(all.equal(newlist,packed@random[[i]]))) {
+				changed = T
+				packed@random[[i]] = if (length(newlist)) newlist else NULL
+			}
+		}
+	}
+	if (changed) packed else NA
 }
 
 #' Reduce the random-effect structure. First, slopes are eliminated; then, intercepts follow.
@@ -98,84 +109,104 @@ remove.terms = function(packed,remove=c()) {
 #' @returns The packed terms object minus the last random slope.
 #' @export
 reduce.random.effects = function (packed) {
-	for (keep.intercepts in c(T,F) {
-		for (i in length(packed$random):1) {
-			grouping = names(packed$random)[i]
-			for (j in length(packed$random[[i]]:1)) {
-				if (keep.intercepts && packed$random[[i]][j]) == '1') next
-				removed = remove(paste0('(',packed$random[[i]][j],'|',grouping,')')]))
-				if (!all.equal(packed,removed)) return(removed)
+	for (keep.intercepts in c(T,F)) {
+		for (i in length(packed@random):1) {
+			grouping = names(packed@random)[i]
+			for (j in length(packed@random[[i]]):1) {
+				if (keep.intercepts && packed@random[[i]][j] == '1') next
+				removed = remove.terms(packed,paste0('(',packed@random[[i]][j],'|',grouping,')'))
+				if (class(removed) != 'logical') return(removed) #class trick silences "is.na() applied to non-(list or vector) of type 'S4'" warning
 			}
 		}
 	}
+	stop('Well, shit.')
+}
+
+#' Reduce the fixed-effect structure.
+#' @param packed The packed terms object.
+#' @returns The packed terms object minus the last fixed effect.
+#' @export
+reduce.fixed.effects = function (packed) {
+	term = packed@fixed[length(packed@fixed)]
+	if (term %in% unlist(packed@random)) return(packed) #marginality prohibits us from reducing a fixed effect that has a corresponding random slope
+	remove.terms(packed,term)
 }
 
 #' Coerce a packed terms object to a formula
 #' @param packed The packed terms object.
 #' @returns An equivalent formula.
 #' @export
-pack2form = function (packed) {
-	intercept = '1' %in% packed$fixed
-	packed$fixed = packed$fixed[packed$fixed != '1']
-	joined = if (length(packed$random)) c(packed$random,packed$fixed) else packed$fixed
-	reformulate(joined,dep,fixed.intercept)
+unpack.terms = function (packed) {
+	stringify.random.terms = function (packed) {
+		string = c()
+		for (i in length(packed@random)) {
+			grouping = names(packed@random)[i]
+			string = c(string,paste('(',packed@random[[i]],'|',grouping,')',collapse='+'))
+		}
+		string
+	}
+	intercept = '1' %in% packed@fixed
+	packed@fixed = packed@fixed[packed@fixed != '1']
+	joined = if (length(packed@random)) c(packed@fixed,stringify.random.terms(packed)) else packed@fixed
+	if (length(joined)) reformulate(joined,packed@dep,intercept) else if (intercept) as.formula(paste0(packed@dep,'~1')) else stop('No terms!')
 }
 
 #' Fit a model using either lme4 or (g)lm.
 #' @param formula The model formula, or a packed terms list that can be coerced to one.
-#' @param buildmer.control Control options for buildmer, including things such as the data and the family to use for fitting. See buildmerControl().
+#' @param control Control options for buildmer, including things such as the data and the family to use for fitting. See mkBuildmerControl().
 #' @param REML Whether to fit the model using REML (default) or ML. Only relevant for linear mixed effects models; ignored for other models.
 #' @keywords fit
-#' @seealso buildmerControl
+#' @seealso mkBuildmerControl
 #' @export
-fit = function (formula,buildmer.control,REML=TRUE) {
-	if (class(formula) != 'formula') formula = pack2form(formula)
-	if (!buildmer.control@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(form,width.cutoff=500)))
-	m = if (is.null(lme4:::findbars(formula))) {
-		if (buildmer.control@family == 'gaussian') lm(form,buildmer.control@data) else glm(form,buildmerm.control@family,buildmer.control@data)
+fit = function (formula,control,REML=TRUE) {
+	if (class(formula) != 'formula') formula = unpack.terms(formula)
+	if (!control@quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+	if (is.null(lme4:::findbars(formula))) {
+		m = if (control@family == 'gaussian') lm(formula,control@data) else glm(formula,control@family,control@data)
+		if (!is.null(control@data.name)) m$call$data = control@data.name
 	} else {
-		if (b@family == 'gaussian') lmer(form,buildmer.control@data,REML,control=lmerControl(optCtrl=list(maxfun=buildmer.control@maxfun)),verbose=buildmer.control@verbose) else glmer(form,buildmer.control@data,buildmer.control@family,glmerControl(optCtrl=list(maxfun=buildmer.control@maxfun)),verbose=buildmer.control@verbose)
+		m = if (control@family == 'gaussian') lmer(formula,control@data,REML,control=lmerControl(optCtrl=list(maxfun=control@maxfun)),verbose=control@verbose) else glmer(formula,control@data,control@family,glmerControl(optCtrl=list(maxfun=control@maxfun)),verbose=control@verbose)
+		if (!is.null(control@data.name)) m@call$data = control@data.name
 	}
-	if (!is.null(buildmer.control@data.name)) m@call$data = buildmer.control@data.name
 	m
 }
 
 #' Fit and compare two models on their deviances, report the chi-square p-value
 #' @param a The first model or model formula
 #' @param b The second model or model formula
-#' @param buildmer.control Control options for buildmer, including things such as the data and the family to use for fitting. See buildmerControl().
-#' @seealso buildmerControl, buildmer
+#' @param control Control options for buildmer, including things such as the data and the family to use for fitting. See mkBuildmerControl().
+#' @seealso mkBuildmerControl, buildmer
 #' @export
-modcomp = function (a,b,buildmer.control) {
-	args = list(a,b)
-	formulas = sapply(args,function (x) {
-		if (class(x) == 'formula') x else formula(x)
-	})
-
-	same.fixed.effects = as.character(lme4:::nobars(formulas[[1]])) == as.character(lme4:::nobars(formulas[[2]]))
-	one.has.only.fixed.effects = !(any(sapply(formulas,function (x) is.null(lme4:::findbars(x)))))
+modcomp = function (a,b,control) {
+	same.fixed.effects = as.character(lme4:::nobars(formula(a))) == as.character(lme4:::nobars(formula(b)))
+	one.has.only.fixed.effects = any(sapply(c(formula(a),formula(b)),function (x) is.null(lme4:::findbars(x))))
 	reml = same.fixed.effects && !one.has.only.fixed.effects
 	is.reml.ok = function (x) {
 		if (class(x) == 'formula') return(F) #model must be fitted anyway
-		attr = attr(x,'devcomp')
-		if (is.null(attr)) return(T) #not a mixed-effect model
-		has.reml = !is.null(attr$REML)
+		devcomp = attr(x,'devcomp')
+		if (is.null(devcomp)) return(T) #not a mixed-effect model
+		has.reml = !is.null(devcomp$REML)
 		return(has.reml == reml)
 	}
-	models = sapply(args,function (x) {
-		if (is.reml.ok(x)) x else fit(x,reml)
+
+	models = sapply(c(a,b),function (x) {
+		if (is.reml.ok(x)) x else fit(formula(x),control,reml)
 	})
 
 	if (!conv(models[[1]]) || !conv(models[[2]])) return(NA)
-	p = if (class(models[[1]]) == class(models[[2]])) anova(ma,mb,refit=F)[[8]][2] else {
+	p = if (all(class(models[[1]]) == class(models[[2]]))) {
+		anovafun = if (any(class(models[[1]]) == 'lm')) anova else function (...) anova(...,refit=F)
+		res = do.call(anovafun,models)
+		res[[length(res)]][[2]]
+	} else {
 		# Compare the models by hand
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 		devfun = function (m) {
 			if (any(class(m) == 'lm')) deviance(m) else m@devcomp$cmp[[8]]
 		}
 		diff = abs(devfun(models[[1]]) - devfun(models[[2]]))
-		p = pchisq(diff,1,lower.tail=F)
+		pchisq(diff,1,lower.tail=F)
 	}
-	if (buildmer.control@adjust.p.chisq) p = p / 2
+	if (control@adjust.p.chisq) p = p / 2
 	p
 }
