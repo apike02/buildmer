@@ -141,18 +141,26 @@ reduce.fixed.effects = function (packed) {
 #' @return An equivalent formula.
 #' @export
 unpack.terms = function (packed) {
-	stringify.random.terms = function (packed) {
-		string = c()
-		for (i in length(packed@random)) {
-			grouping = names(packed@random)[i]
-			string = c(string,paste('(',packed@random[[i]],'|',grouping,')',collapse='+'))
-		}
-		string
-	}
 	intercept = '1' %in% packed@fixed
 	packed@fixed = packed@fixed[packed@fixed != '1']
 	joined = if (length(packed@random)) c(packed@fixed,stringify.random.terms(packed)) else packed@fixed
 	if (length(joined)) reformulate(joined,packed@dep,intercept) else if (intercept) as.formula(paste0(packed@dep,'~1')) else stop('No terms!')
+}
+
+#' Collapse packed random-effect terms into a string of lme4 bar expressions
+#' @param packed The packed terms object.
+#' @return The collapsed string.
+#' @export
+stringify.random.terms = function (packed) {
+	string = c()
+	for (i in length(packed@random)) {
+		grouping = names(packed@random)[i]
+		terms = packed@random[[i]]
+		if (!'1' %in% terms) terms = c('0',terms)
+		terms = paste(terms,collapse='+')
+		string = c(string,paste('(',terms,'|',grouping,')',collapse='+'))
+	}
+	string
 }
 
 #' Fit a model using either lme4 or (g)lm.
@@ -207,7 +215,7 @@ modcomp = function (a,b,control) {
 	if (!conv(b)) return(NA)
 	p = if (all(class(a) == class(b))) {
 		anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
-		res = anova(a,b)
+		res = anovafun(a,b)
 		res[[length(res)]][[2]]
 	} else {
 		# Compare the models by hand

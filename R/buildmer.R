@@ -105,8 +105,15 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 			}
 			# for apparently eliminates names...
 			#for (term in rev(unlist(formula@random))) {
-			named.terms = rev(unlist(formula@random))
-			for (i in 1:length(named.terms)) {
+			# unlist adds integer suffixes to names...
+			#named.terms = rev(unlist(formula@random))
+			named.terms = c()
+			for (i in 1:length(formula@random)) {
+				terms = formula@random[[i]]
+				names(terms) = rep(names(formula@random)[i],length(terms))
+				named.terms = c(named.terms,terms)
+			}
+			for (i in length(named.terms):1) {
 				term = named.terms[i]
 				fb = remove.terms(fa,addgrouping(term))
 				if (class(fb) == 'logical') next
