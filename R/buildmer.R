@@ -2,6 +2,102 @@ require(lme4) || stop('Error loading lme4')
 have.lmerTest = require('lmerTest')
 have.kr = have.lmerTest && require('pbkrtest')
 
+#' Make a buildmer object.
+#' @param table A dataframe containing the results of the elimination process.
+#' @param model The final model containing only the terms that survived elimination.
+#' @param messages Any warning messages.
+#' @param summary: The model's summary, if summary==TRUE.
+#' @keywords buildmer
+#' @seealso buildmer
+#' @export
+mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
+
+#' Test an lme4 or equivalent object for convergence.
+#' @param model The model object to test.
+#' @keywords convergence
+#' @export
+conv = function (model) any(class(model) == 'lm') || ((any(class(model) == 'lmerMod') || any(class(model) == 'merModLmerTest')) && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages))))
+
+#' Test whether a formula term is an lme4 random term.
+#' @param term The term.
+#' @param return.logical Whether to return the (logical) answer, or to return the term vector as returned by lme4::findbars().
+is.random.term = function (term,return.logical=T) {
+	bars = lme4::findbars(as.formula(paste0('~',term)))
+	if (!length(bars)) return(F)
+	return(if (return.logical) T else bars)
+}
+
+#' Remove terms from a lme4 formula
+#' @param formula The lme4 formula.
+#' @param remove A vector of terms to remove. To remove terms nested in random-effect groups, use '(term|group)' syntax.
+#' @param formulize Whether to return a formula (default) or a simple list of terms.
+#' @seealso buildmer
+#' @export
+remove.terms = function (formula,remove=c(),formulize=T) {
+	remove.possible = function(terms,grouping=NULL) {
+		interaction.terms = terms[grepl(':',terms,fixed=T)]
+		interaction.terms = unique(unlist(strsplit(interaction.terms,':',fixed=T)))
+		if (!is.null(grouping)) interaction.terms = paste0(interaction.terms,'|',grouping)
+		interaction.terms = interaction.terms[!interaction.terms %in% remove]
+		ok.to.remove = remove[!remove %in% interaction.terms]
+		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,'|',grouping,')') %in% ok.to.remove]
+	}
+
+	dep = as.character(formula)[2]
+	terms = terms(formula)
+	intercept = if ('1' %in% remove) 0 else attr(terms,'intercept')
+	terms = attr(terms,'term.labels')
+	fixed.terms = Filter(Negate(is.random.term),terms)
+	fixed.terms = remove.possible(fixed.terms)
+	random.terms = Filter(is.random.term,terms)
+	random.terms = sapply(random.terms,function (term) {
+		bars = is.random.term(term,return.logical=F)
+		term = sapply(bars,function (term) {
+			grouping = term[[3]]
+			terms = as.character(term[2])
+			form = as.formula(paste0('~',terms))
+			terms = terms(form)
+			intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
+			terms = attr(terms,'term.labels')
+			terms = remove.possible(terms,grouping)
+			if (!intercept) {
+				if (!length(terms)) return(NULL)
+				terms[[1]] = paste0('0+',terms[[1]])
+			} else terms = c(intercept,terms)
+			if (formulize) terms = paste(terms,collapse='+')
+			terms = paste0('(',terms,'|',grouping,')')
+			return(terms)
+		})
+	})
+	random.terms = Filter(Negate(is.null),unlist(random.terms))
+	names(fixed.terms) = rep('fixed',length(fixed.terms))
+	names(random.terms) = rep('random',length(random.terms))
+	terms = c(fixed.terms,random.terms)
+	if (!intercept && !length(terms)) return(NULL)
+	if (formulize) return(reformulate(terms,dep,intercept))
+	if (intercept) {
+		names(intercept) = 'fixed'
+		return(c(intercept,terms))
+	} else return(terms)
+}
+
+diag = function(formula) {
+	#> source('buildmer.R');x=remove.terms(form,c(),formulize=F);x
+	#  fixed   fixed   fixed   fixed  random  random 
+	#    "1"     "a"     "b"   "a:b" "(1|d)" "(c|d)" 
+	# i.e., remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "(c|d)" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
+	terms = remove.terms(formula,c(),formulize=F)
+	fixed.terms  = terms[names(terms) == 'fixed' ]
+	random.terms = terms[names(terms) == 'random']
+	random.terms = unlist(sapply(random.terms,function (term) {
+		term = is.random.term(term,return.logical=F)
+		grouping = term[[3]]
+		term = as.character(term[2])
+		paste0('(0+',term,'|',grouping,')')
+	}))
+	c(fixed.terms,random.terms)
+}
+
 #' Reorder the terms in a buildmer.terms object by their contribution to the deviance.
 #' @param bmt The buildmer.terms object containing the predictors, data, and fitting parameters. See buildmer.terms.
 #' @param reorder.fixed Whether to reorder the fixed-effect coefficients.
@@ -47,8 +143,8 @@ reorder.terms = function (formula,data,reorder.fixed=TRUE,reorder.random=TRUE) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
-#' @param reduce.fixed Whether to reduce the fixed-effect structure.
-#' @param reduce.random Whether to reduce the random-effect structure.
+##' @param reduce.fixed Whether to reduce the fixed-effect structure.
+##' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either 'forward' or 'backward' (default).
 #' @param summary Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The adjustment to use in calculating the summary if summary=T and if lmerTest is available. Defaults to 'Kenward-Roger'.
@@ -66,32 +162,91 @@ reorder.terms = function (formula,data,reorder.fixed=TRUE,reorder.random=TRUE) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=T,reduce.random=T,direction='backward',summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,direction='backward',summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger') stop('Invalid specification for ddf, possible options are (1) NULL or "lme4"; (2) "Satterthwaite"; (3) "Kenward-Roger" (default)')
 	data.name = substitute(data)
 	family = as.character(substitute(family))
-	control = mkBuildmerControl(data=data,data.name=data.name,family=family,nAGQ=nAGQ,adjust.p.chisq=adjust.p.chisq,quiet=quiet,verbose=verbose,maxfun=maxfun)
 
-	addgrouping = function (term) if (is.null(names(term))) term else paste0('(',term,'|',names(term),')')
-	record = function (type,term,p) {
-		counter <<- counter+1
-		results[counter,] <<- c(type,addgrouping(term),p)
+	fit = function (formula,REML=TRUE) {
+		if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+		if (is.null(lme4::findbars(formula))) {
+			m = if (family == 'gaussian') lm(formula,data) else glm(formula,family,data)
+			if (!is.null(data.name)) m$call$data = data.name
+		} else {
+			m = if (family == 'gaussian') lmer(formula,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			if (!is.null(data.name)) m@call$data = data.name
+		}
+		return(m)
 	}
 
-	formula = pack.terms(formula)
-	prealloc = 0
-	if (reduce.fixed ) prealloc = prealloc + length(formula@fixed )
-	if (reduce.random) prealloc = prealloc + length(formula@random)
+	modcomp = function (a,b,control) {
+		only.fixed.a = is.null(lme4::findbars(a))
+		only.fixed.b = is.null(lme4::findbars(b))
+		same.fixed.effects = isTRUE(all.equal(lme4::nobars(formula(a)),lme4::nobars(formula(b))))
+		reml = if (only.fixed.a && only.fixed.b) NA
+		else if (only.fixed.a != only.fixed.b)   F
+		else if (!same.fixed.effects)            F
+		else T
+	
+		refit.if.needed = function (x) {
+			is.reml.ok = function (x) {
+				if (all(class(x) == 'formula')) return(F) #model must be fitted anyway
+				if (is.na(reml)) return(T) #who cares
+				devcomp = attr(x,'devcomp')
+				has.reml = !is.null(devcomp$REML)
+				if (!has.reml) return(T) #not a mixed-effect model
+				return(has.reml == reml)
+			}
+			if (is.reml.ok(x)) x else fit(formula(x),reml)
+		}
+		a = refit.if.needed(a)
+		if (!conv(a)) return(NA)
+		b = refit.if.needed(b)
+		if (!conv(b)) return(NA)
+		p = if (all(class(a) == class(b))) {
+			anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
+			res = anovafun(a,b)
+			res[[length(res)]][[2]]
+		} else {
+			# Compare the models by hand
+			# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
+			devfun = function (m) {
+				if (any(class(m) == 'lm')) deviance(m) else m@devcomp$cmp[[8]]
+			}
+			diff = abs(devfun(a) - devfun(b))
+			pchisq(diff,1,lower.tail=F)
+		}
+		if (adjust.p.chisq) p = p / 2
+		return(p)
+	}
 
-	results = data.frame(type=character(prealloc),formula=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
+	record = function (term,p) {
+		counter <<- counter+1
+		results[counter,] <<- c(term,p)
+	}
+
+	terms = remove.terms(formula,c(),formulize=F)
+	prealloc = length(formula@random)
+	results = data.frame(term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
 	counter = 0
 	messages = character()
 	terms.saved = NA
 
 	if (direction == 'backward') {
 		fa = formula
+		ma = fit(fa)
+		while (!conv(ma)) {
+
+		}
+
+		for (t in rev(terms)) {
+			fb = t
+		}
+
+
+
 		if (reduce.random && length(fa@random)) {
 			ma = fit(fa,control,REML=T)
 			while (!conv(ma)) {
