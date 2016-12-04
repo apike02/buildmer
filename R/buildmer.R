@@ -30,23 +30,37 @@ is.random.term = function (term) length(get.random.terms(term)) > 0
 
 #' Remove terms from an lme4 formula
 #' @param formula The lme4 formula.
-#' @param remove A vector of terms to remove. To remove terms nested in random-effect groups, use '(term|group)' syntax.
+#' @param remove A vector of terms to remove. To remove terms nested in random-effect groups, use '(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
 #' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
 #' @export
 remove.terms = function (formula,remove=c(),formulize=T) {
-	remove.possible = function(terms,grouping=NULL) {
-		interaction.terms = terms[grepl(':',terms,fixed=T)]
-		interaction.terms = unique(unlist(strsplit(interaction.terms,':',fixed=T)))
-		if (!is.null(grouping)) interaction.terms = paste0(interaction.terms,'|',grouping)
-		interaction.terms = interaction.terms[!interaction.terms %in% remove]
-		ok.to.remove = remove[!remove %in% interaction.terms]
+	remove.possible = function(terms,grouping=NULL,test=remove) {
+		forbidden = terms[grepl(':',terms,fixed=T)]
+		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
+		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
+		if (is.null(grouping)) {
+			# Do not remove fixed terms if they have corresponding random terms
+			bars = lme4::findbars(formula)
+			for (term in bars) {
+				terms. = as.character(term[2])
+				form = as.formula(paste0('~',terms.))
+				terms. = terms(form)
+				intercept = attr(terms.,'intercept')
+				terms. = attr(terms.,'term.labels')
+				if (intercept) terms. = c(terms.,'1')
+				forbidden = unique(c(forbidden,terms.))
+			}
+		}
+		forbidden = forbidden[!forbidden %in% test]
+		ok.to.remove = test[!test %in% forbidden]
 		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,'|',grouping,')') %in% ok.to.remove]
 	}
 
 	dep = as.character(formula)[2]
 	terms = terms(formula)
-	intercept = if ('1' %in% remove) 0 else attr(terms,'intercept')
+	intercept = attr(terms,'intercept')
+	if ('1' %in% remove && intercept && !length(remove.possible('1',test='1'))) intercept = 0
 	terms = attr(terms,'term.labels')
 	fixed.terms = Filter(Negate(is.random.term),terms)
 	fixed.terms = remove.possible(fixed.terms)
@@ -109,6 +123,7 @@ diag = function(formula) {
 #' Remove the last random slope (or, if not available, the last random intercept) from a model formula
 #' @param formula A model formula.
 #' @returns The last random slope (or, if not available, the last random intercept).
+#' @export
 get.last.random.slope = function (formula) {
 	terms = remove.terms(formula,c(),formulize=F)
 	random.terms = terms[names(terms) == 'random']
@@ -117,6 +132,15 @@ get.last.random.slope = function (formula) {
 	return(cands[length(cands)])
 }
 
+#' Test whether a model was fit with REML
+#' @param model A fitted model object.
+#' @returns TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
+getREML = function (model) {
+	if ('lm' %in% class(model)) return(NA)
+	if (!isLMM(model)) return(NA)
+	isREML(model)
+}
+	
 #' Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
 #' @param formula The model formula; if you include random effects, use lme4 syntax for them.
 #' @param data The data to fit the models to.
@@ -164,13 +188,14 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		}
 	}
 
-	fit = function (formula,REML=TRUE) {
-		if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+	fit = function (formula) {
 		if (is.null(lme4::findbars(formula))) {
+			if (!quiet) message(paste0('Fitting  as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') lm(formula,data) else glm(formula,family,data)
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
-			m = if (family == 'gaussian') lmer(formula,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			if (!quiet) message(paste0(ifelse(reml,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+			m = if (family == 'gaussian') lmer(formula,data,reml,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,nAGQ=nAGQ,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
 			if (!is.null(data.name)) m@call$data = data.name
 		}
 		return(m)
@@ -187,22 +212,17 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		}
 	}
 
-	refit.if.needed = function (x) {
-		is.reml.ok = function (x) {
-			if (all(class(x) == 'formula')) return(F) #model must be fitted anyway
-			if (is.na(reml)) return(T) #who cares
-			devcomp = attr(x,'devcomp')
-			has.reml = !is.null(devcomp$REML)
-			if (!has.reml) return(T) #not a mixed-effect model
-			return(has.reml == reml)
-		}
-		if (is.reml.ok(x)) x else fit(formula(x),reml)
+	refit.if.needed = function (m) {
+		if (is.na(reml)) return(m)
+		if (getREML(m) == reml) m else fit(formula(m))
 	}
 
-	modcomp = function (a,b,control) {
-		only.fixed.a = is.null(lme4::findbars(a))
-		only.fixed.b = is.null(lme4::findbars(b))
-		same.fixed.effects = isTRUE(all.equal(lme4::nobars(formula(a)),lme4::nobars(formula(b))))
+	modcomp = function (a,b) {
+		fa = formula(a)
+		fb = formula(b)
+		only.fixed.a = is.null(lme4::findbars(fa))
+		only.fixed.b = is.null(lme4::findbars(fb))
+		same.fixed.effects = isTRUE(all.equal(lme4::nobars(fa),lme4::nobars(fb)))
 		reml = if (only.fixed.a && only.fixed.b) NA
 		else if (only.fixed.a != only.fixed.b)   F
 		else if (!same.fixed.effects)            F
@@ -244,9 +264,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 
 	if (direction == 'backward') {
 		fa = formula
+		reml = reduce.random || !reduce.fixed
 		fit.until.conv(fa)
 		if (reduce.random) {
-			reml = T
 			for (t in Filter(is.random.term,rev(terms))) elim('random')
 		}
 		if (reduce.fixed) {
