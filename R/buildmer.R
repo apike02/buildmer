@@ -53,7 +53,7 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 				forbidden = unique(c(forbidden,terms.))
 			}
 		}
-		forbidden = forbidden[!forbidden %in% test]
+		forbidden = forbidden[!forbidden %in% test[test!='1']]
 		ok.to.remove = test[!test %in% forbidden]
 		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,'|',grouping,')') %in% ok.to.remove]
 	}
@@ -176,7 +176,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	family = as.character(substitute(family))
 
 	elim = function (type) {
+		print(paste('a = ',deparse(fa)))
 		fb <<- remove.terms(fa,t,formulize=T)
+		print(paste('b = ',deparse(fb)))
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,-Inf))
 		mb <<- fit(fb)
 		if (!conv(mb)) return(record(type,t,NA))
