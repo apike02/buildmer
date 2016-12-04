@@ -36,6 +36,7 @@ is.random.term = function (term) length(get.random.terms(term)) > 0
 #' @export
 remove.terms = function (formula,remove=c(),formulize=T) {
 	remove.possible = function(terms,grouping=NULL,test=remove) {
+		stopifnot(length(terms) > 0)
 		forbidden = terms[grepl(':',terms,fixed=T)]
 		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
 		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
@@ -74,11 +75,12 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 			terms = terms(form)
 			intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
 			terms = attr(terms,'term.labels')
-			terms = remove.possible(terms,grouping)
-			if (!intercept) {
-				if (!length(terms)) return(NULL)
-				terms[[1]] = paste0('0+',terms[[1]])
-			} else terms = c(intercept,terms)
+			if (length(terms)) terms = remove.possible(terms,grouping)
+			if (!length(terms)) {
+				if (!intercept) return(NULL)
+				terms = '1'
+			}
+			if (!intercept) terms[[1]] = paste0('0+',terms[[1]])
 			if (formulize) terms = paste(terms,collapse='+')
 			terms = paste0('(',terms,'|',grouping,')')
 			return(terms)
@@ -175,11 +177,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 
 	elim = function (type) {
 		fb <<- remove.terms(fa,t,formulize=T)
+		if (isTRUE(all.equal(fa,fb))) return(record(type,t,-Inf))
 		mb <<- fit(fb)
-		if (!conv(mb)) {
-			record(type,t,NA)
-			return()
-		}
+		if (!conv(mb)) return(record(type,t,NA))
 		p = modcomp(ma,mb)
 		record(type,t,p)
 		if (!p < .05) {
@@ -214,7 +214,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 
 	refit.if.needed = function (m) {
 		if (is.na(reml)) return(m)
-		if (getREML(m) == reml) m else fit(formula(m))
+		status = getREML(m)
+		if (is.na(status)) return(m)
+		if (status == reml) return(m) else fit(formula(m))
 	}
 
 	modcomp = function (a,b) {
@@ -240,7 +242,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 			# Compare the models by hand
 			# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 			devfun = function (m) {
-				if (any(class(m) == 'lm')) deviance(m) else m@devcomp$cmp[[8]]
+				if (any(class(m) == 'lm')) deviance(m) else getME(m,'REML')
 			}
 			diff = abs(devfun(a) - devfun(b))
 			pchisq(diff,1,lower.tail=F)
@@ -255,7 +257,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		if (!quiet) message(paste('p value for',term,'is',p))
 	}
 
-	terms = remove.terms(formula,c(),formulize=F)
+	formula = remove.terms(formula,c(),formulize=T) #sanitize formula: expand interactions etc
+	terms   = remove.terms(formula,c(),formulize=F)
 	prealloc = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
 	counter = 0
