@@ -2,29 +2,29 @@
 % Please edit documentation in R/buildmer.R
 \name{buildmer}
 \alias{buildmer}
-\title{Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance.}
+\title{Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance}
 \usage{
-buildmer(fixed = NULL, random = list(), data, family = gaussian,
-  diag = FALSE, reduce.fixed = TRUE, reduce.random = TRUE,
-  adjust.p.chisq = TRUE, summary = FALSE, ddf = "Kenward-Roger",
-  quiet = FALSE, verbose = 0, maxfun = 2e+05)
+buildmer(formula, data, family = gaussian, nAGQ = 1,
+  adjust.p.chisq = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
+  direction = c("backward", "forward", "null"), summary = FALSE,
+  ddf = "Kenward-Roger", quiet = FALSE, verbose = 0, maxfun = 2e+05)
 }
 \arguments{
-\item{fixed}{A formula specifying the dependent variable and fixed effects for your model.}
-
-\item{random}{A named list of one-sided formulas specifying random effects for your model. The names of the list elements specify the grouping factors, whereas the right-hand side of the one-sided formulas specify the factors for which random slopes (or a random intercept) should be estimated. Can be empty.}
+\item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}
 
 \item{data}{The data to fit the models to.}
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
-\item{diag}{Whether to assume a strictly diagonal covariance structure for the random effects, or a fullly-blocked covariance structure (default). The former forces all correlations between random effects to zero, potentially improving convergence speed at the tradeoff of possible model accuracy.}
+\item{nAGQ}{The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)}
 
-\item{reduce.fixed}{Whether to test and eliminate the fixed effects (default TRUE).}
+\item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
-\item{reduce.random}{Whether to test and eliminate the random effects (default TRUE).}
+\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 
-\item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000). Defaults to TRUE; implemented by dividing the p value by '2*as.numeric(adjust.p.chisq)'.}
+\item{reduce.random}{Whether to reduce the random-effect structure.}
+
+\item{direction}{The direction for stepwise elimination; either 'forward' or 'backward' (default).}
 
 \item{summary}{Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
 
@@ -46,7 +46,7 @@ A buildmer object containing the following slots:
 }
 }
 \description{
-Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance.
+Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
 }
 \examples{
 buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)

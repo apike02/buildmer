@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{conv}
 \alias{conv}
-\title{Test an lme4 or equivalent object for convergence.}
+\title{Test an lme4 or equivalent object for convergence}
 \usage{
 conv(model)
 }
@@ -10,7 +10,7 @@ conv(model)
 \item{model}{The model object to test.}
 }
 \description{
-Test an lme4 or equivalent object for convergence.
+Test an lme4 or equivalent object for convergence
 }
 \keyword{convergence}
 

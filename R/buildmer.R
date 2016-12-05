@@ -11,6 +11,25 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @seealso buildmer
 #' @export
 mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
+setMethod('print','buildmer',function (x) {
+	print(model@model)
+	if (length(model@messages)) warn(messages)
+})
+setMethod('anova','buildmer',function (object) {
+	print(model@table)
+	if (length(model@messages)) warn(messages)
+})
+setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
+	smy = if (!is.null(model@summary)) model@summary else {
+		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		if (have.lmerTest) summary(model@model,ddf=ddf) else summary(model@model)
+	}
+	print(smy)
+	if (length(model@messages)) warn(messages)
+	smy
+})
 
 #' Test an lme4 or equivalent object for convergence
 #' @param model The model object to test.
@@ -74,12 +93,12 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 			terms = terms(form)
 			intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
 			terms = attr(terms,'term.labels')
-			if (length(terms)) terms = remove.possible(terms,grouping)
-			if (!length(terms)) {
+			if (length(terms)) terms = remove.possible(terms,grouping) else {
 				if (!intercept) return(NULL)
 				terms = '1'
 			}
-			if (!intercept) terms[[1]] = paste0('0+',terms[[1]])
+			if (intercept) terms = c('1',terms)
+			else terms[[1]] = paste0('0+',terms[[1]])
 			if (formulize) terms = paste(terms,collapse='+')
 			terms = paste0('(',terms,'|',grouping,')')
 			return(terms)
@@ -100,9 +119,19 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	} else return(terms)
 }
 
+#' Extract a model's deviance
+#' @param model The fitted model object.
+#' @return The deviance or REML criterion.
+devfun = function (model) {
+	if (any(class(model) == 'lm')) deviance(model) else {
+		if (hasREML(model)) getME(model,'devcomp')$REML else getME(model,'devcomp')$dev
+	}
+}
+	
+
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
-#' @parma formula A model formula.
-#' @returns The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
+#' @param formula A model formula.
+#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
 #' @export
 diag = function(formula) {
 	#> source('buildmer.R');x=remove.terms(form,c(),formulize=F);x
@@ -123,7 +152,7 @@ diag = function(formula) {
 
 #' Remove the last random slope (or, if not available, the last random intercept) from a model formula
 #' @param formula A model formula.
-#' @returns The last random slope (or, if not available, the last random intercept).
+#' @return The last random slope (or, if not available, the last random intercept).
 #' @export
 get.last.random.slope = function (formula) {
 	terms = remove.terms(formula,c(),formulize=F)
@@ -135,7 +164,7 @@ get.last.random.slope = function (formula) {
 
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
-#' @returns TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
+#' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
 getREML = function (model) {
 	if ('lm' %in% class(model)) return(NA)
 	if (!isLMM(model)) return(NA)
@@ -167,7 +196,8 @@ getREML = function (model) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
+	if (deparse(direction) == deparse(c('backward','forward'))) direction = 'backward'
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger') stop('Invalid specification for ddf, possible options are (1) NULL or "lme4"; (2) "Satterthwaite"; (3) "Kenward-Roger" (default)')
@@ -175,9 +205,6 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	family = as.character(substitute(family))
 
 	elim = function (type) {
-		print(paste('a = ',deparse(fa)))
-		fb <<- remove.terms(fa,t,formulize=T)
-		print(paste('b = ',deparse(fb)))
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
 		mb <<- fit(fb)
 		if (!conv(mb)) return(record(type,t,NA))
@@ -242,14 +269,10 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		} else {
 			# Compare the models by hand
 			# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
-			devfun = function (m) {
-				if (any(class(m) == 'lm')) deviance(m) else getME(m,'REML')
-			}
 			diff = abs(devfun(a) - devfun(b))
 			pchisq(diff,1,lower.tail=F)
 		}
-		if (adjust.p.chisq) p = p / 2
-		return(p)
+		return(p/2**as.numeric(adjust.p.chisq))
 	}
 
 	record = function (type,term,p) {
@@ -258,9 +281,10 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		if (!quiet) message(paste('p value for',term,'is',p))
 	}
 
-	formula = remove.terms(formula,c(),formulize=T) #sanitize formula: expand interactions etc
-	terms   = remove.terms(formula,c(),formulize=F)
-	prealloc = length(terms)
+	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: expand interactions etc
+	intercept = attr(terms(formula),'intercept')
+	terms     = remove.terms(formula,c(),formulize=F)
+	prealloc  = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
 	counter = 0
 	messages = character()
@@ -271,15 +295,42 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		reml = reduce.random || !reduce.fixed
 		fit.until.conv(fa)
 		if (reduce.random) {
-			for (t in Filter(is.random.term,rev(terms))) elim('random')
+			for (t in Filter(is.random.term,rev(terms))) {
+				fb = remove.terms(fa,t,formulize=T)
+				elim('random')
+			}
 		}
 		if (reduce.fixed) {
 			reml = F
 			#random.saved = fa #but how to reintegrate them?
-			for (t in Filter(Negate(is.random.term),rev(terms))) elim('fixed')
+			for (t in Filter(Negate(is.random.term),rev(terms))) {
+				fb = remove.terms(fa,t,formulize=T)
+				elim('fixed')
+			}
 		}
-	} else stop('Other types of stepward elimination than backward are currently not implemented!')
-
+	} else if (direction == 'forward') {
+		reml = F
+		base = paste0(as.character(formula[[2]]),'~',intercept)
+		if (intercept) ma = fit(as.formula(base)) else {
+			base = paste0(base,'+',terms[[1]])
+			terms = terms[2:length(terms)]
+		}
+		fa = as.formula(base)
+		if (reduce.fixed) {
+			for (t in Filter(Negate(is.random.term),terms)) {
+				fb = as.formula(paste0(as.character(fb),'+',t))
+				elim('fixed')
+			}
+		}
+		if (reduce.random) {
+			reml = T
+			for (t in Filter(is.random.term,terms)) {
+				fb = as.formula(paste0(as.character(fb),'+',t))
+				elim('random')
+			}
+		}
+	} else stop("Unknown 'direction' argument")
+	
 	reml = T
 	ma = refit.if.needed(ma)
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
@@ -290,6 +341,35 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	}
 	ret
 }
+
+"
+reorder.terms = function() {
+	stop('not implemented yet')
+	reml = F
+	intercept = attr(terms(formula),'intercept')
+	base = paste0(as.character(formula[[2]]),'~',intercept)
+	ma = if (intercept) fit(as.formula(base)) else NULL
+	passes = c()
+	if (reduce.fixed ) passes = c(passes,'fixed')
+	if (reduce.random) passes = c(passes,'random')
+	## maar hier tussendoor moeten we ook nog reml flippen!
+	for (n in passes) {
+		currterms = terms[names(terms) == n]
+		while (length(currterms)) {
+			options = sapply(currterms,function (term) fit(as.formula(paste0(base,'+',term),fixed=T)))
+			best = order(devfun(options))[1]
+			mb = options[best]
+			p = if (is.null(ma)) -Inf else modcomp(ma,mb)
+			record(n,currterms[best],p)
+			if (p < .05) {
+				ma = mb
+				base = paste0(base,'+',term)
+			}
+			currterms = currterms[-best]
+		}
+	}
+}
+"
 
 #' Convert a summary to LaTeX code (biased towards vowel analysis)
 #' @param summary The summary to convert.

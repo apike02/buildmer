@@ -12,7 +12,7 @@
 \alias{terms}
 \alias{to}
 \alias{translating}
-\title{Convert a summary to LaTeX code (biased towards vowel analysis).}
+\title{Convert a summary to LaTeX code (biased towards vowel analysis)}
 \usage{
 mer2tex(summary, vowel = "", formula = F, diag = F, label = "",
   aliases = list(`(Intercept)` = "Intercept", Df1 = "$\\\\Updelta$F1", Df2 =
@@ -31,7 +31,7 @@ mer2tex(summary, vowel = "", formula = F, diag = F, label = "",
 \item{label}{The LaTeX label to put below your 'Results' caption.}
 }
 \description{
-Convert a summary to LaTeX code (biased towards vowel analysis).
+Convert a summary to LaTeX code (biased towards vowel analysis)
 }
 \keyword{LaTeX}
 

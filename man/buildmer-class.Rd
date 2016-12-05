@@ -3,8 +3,8 @@
 \docType{class}
 \name{buildmer-class}
 \alias{buildmer-class}
-\alias{mkBM}
-\title{Make a buildmer object.}
+\alias{mkBuildmer}
+\title{Make a buildmer object}
 \arguments{
 \item{table}{A dataframe containing the results of the elimination process.}
 
@@ -15,7 +15,7 @@
 \item{summary:}{The model's summary, if summary==TRUE.}
 }
 \description{
-Make a buildmer object.
+Make a buildmer object
 }
 \seealso{
 buildmer

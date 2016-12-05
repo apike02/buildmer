@@ -2,7 +2,8 @@
 
 export(buildmer)
 export(conv)
-export(fit)
+export(diag)
+export(get.last.random.slope)
 export(mer2tex)
+export(remove.terms)
 exportClasses(buildmer)
-exportClasses(buildmer.terms)
