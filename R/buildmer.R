@@ -124,7 +124,8 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 #' @return The deviance or REML criterion.
 devfun = function (model) {
 	if (any(class(model) == 'lm')) deviance(model) else {
-		if (hasREML(model)) getME(model,'devcomp')$REML else getME(model,'devcomp')$dev
+		comp = getME(model,'devcomp')$cmp
+		if (hasREML(model)) comp['REML'] else comp['dev']
 	}
 }
 	
@@ -165,7 +166,7 @@ get.last.random.slope = function (formula) {
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
-getREML = function (model) {
+hasREML = function (model) {
 	if ('lm' %in% class(model)) return(NA)
 	if (!isLMM(model)) return(NA)
 	isREML(model)
@@ -210,20 +211,20 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		if (!conv(mb)) return(record(type,t,NA))
 		p = modcomp(ma,mb)
 		record(type,t,p)
-		if (!p < .05) {
+		if ((direction == 'backward' && p >= .05) || (direction == 'forward' && p < .05)) {
 			fa <<- fb
 			ma <<- mb
 		}
 	}
 
-	fit = function (formula) {
+	fit = function (formula,REML=reml) {
 		if (is.null(lme4::findbars(formula))) {
 			if (!quiet) message(paste0('Fitting  as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') lm(formula,data) else glm(formula,family,data)
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
-			if (!quiet) message(paste0(ifelse(reml,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') lmer(formula,data,reml,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,nAGQ=nAGQ,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+			m = if (family == 'gaussian') lmer(formula,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,nAGQ=nAGQ,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
 			if (!is.null(data.name)) m@call$data = data.name
 		}
 		return(m)
@@ -240,11 +241,11 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		}
 	}
 
-	refit.if.needed = function (m) {
+	refit.if.needed = function (m,reml) {
 		if (is.na(reml)) return(m)
-		status = getREML(m)
+		status = hasREML(m)
 		if (is.na(status)) return(m)
-		if (status == reml) return(m) else fit(formula(m))
+		if (status == reml) return(m) else fit(formula(m),REML=reml)
 	}
 
 	modcomp = function (a,b) {
@@ -258,9 +259,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		else if (!same.fixed.effects)            F
 		else T
 	
-		a = refit.if.needed(a)
+		a = refit.if.needed(a,reml)
 		if (!conv(a)) return(NA)
-		b = refit.if.needed(b)
+		b = refit.if.needed(b,reml)
 		if (!conv(b)) return(NA)
 		p = if (all(class(a) == class(b))) {
 			anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
@@ -272,17 +273,16 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 			diff = abs(devfun(a) - devfun(b))
 			pchisq(diff,1,lower.tail=F)
 		}
-		return(p/2**as.numeric(adjust.p.chisq))
+		if (adjust.p.chisq) p/2 else p
 	}
 
 	record = function (type,term,p) {
+		if (!quiet) message(paste('p value for',term,'is',p))
 		counter <<- counter+1
 		results[counter,] <<- c(type,term,p)
-		if (!quiet) message(paste('p value for',term,'is',p))
 	}
 
 	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: expand interactions etc
-	intercept = attr(terms(formula),'intercept')
 	terms     = remove.terms(formula,c(),formulize=F)
 	prealloc  = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
@@ -309,30 +309,38 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 			}
 		}
 	} else if (direction == 'forward') {
-		reml = F
-		base = paste0(as.character(formula[[2]]),'~',intercept)
-		if (intercept) ma = fit(as.formula(base)) else {
-			base = paste0(base,'+',terms[[1]])
-			terms = terms[2:length(terms)]
-		}
+		fixed.terms = Filter(Negate(is.random.term),terms)
+		terms = terms[!terms %in% fixed.terms]
+		if (!reduce.fixed) fixed.terms = paste(fixed.terms,collapse='+')
+		random.terms = Filter(is.random.term,terms)
+		if (!reduce.random) random.terms = paste(random.terms.collapse='+')
+
+		base = paste0(as.character(formula[[2]]),'~',fixed.terms[[1]])
+		reml = !reduce.fixed
 		fa = as.formula(base)
-		if (reduce.fixed) {
-			for (t in Filter(Negate(is.random.term),terms)) {
-				fb = as.formula(paste0(as.character(fb),'+',t))
+		ma = fit(fa)
+		record('fixed',fixed.terms[[1]],NA) #can't remove the first term
+		if (length(fixed.terms) > 1) {
+			for (t in fixed.terms[2:length(fixed.terms)]) {
+				fb = update.formula(fa,paste0('.~.+',t))
 				elim('fixed')
 			}
 		}
-		if (reduce.random) {
-			reml = T
-			for (t in Filter(is.random.term,terms)) {
-				fb = as.formula(paste0(as.character(fb),'+',t))
+		if (length(random.terms)) {
+			fb = update.formula(fa,paste0('.~.+',random.terms[[1]]))
+			elim('random')
+		}
+		reml = T
+		if (length(random.terms) > 1) {
+			for (t in random.terms[2:length(random.terms)]) {
+				fb = update.formula(fa,paste0('.~.+',t))
 				elim('random')
 			}
 		}
 	} else stop("Unknown 'direction' argument")
 	
 	reml = T
-	ma = refit.if.needed(ma)
+	ma = refit.if.needed(ma,reml)
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
