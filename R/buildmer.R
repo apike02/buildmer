@@ -95,7 +95,6 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 			terms = attr(terms,'term.labels')
 			if (length(terms)) terms = remove.possible(terms,grouping) else {
 				if (!intercept) return(NULL)
-				terms = '1'
 			}
 			if (intercept) terms = c('1',terms)
 			else terms[[1]] = paste0('0+',terms[[1]])
@@ -134,7 +133,7 @@ devfun = function (model) {
 #' @param formula A model formula.
 #' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
 #' @export
-diag = function(formula) {
+diagonalize = function(formula) {
 	#> source('buildmer.R');x=remove.terms(form,c(),formulize=F);x
 	#  fixed   fixed   fixed   fixed  random  random 
 	#    "1"     "a"     "b"   "a:b" "(1|d)" "(c|d)" 
@@ -143,10 +142,12 @@ diag = function(formula) {
 	fixed.terms  = terms[names(terms) == 'fixed' ]
 	random.terms = terms[names(terms) == 'random']
 	random.terms = unlist(sapply(random.terms,function (term) {
-		term = get.random.terms(term)
-		grouping = term[[3]]
-		term = as.character(term[2])
-		paste0('(0+',term,'|',grouping,')')
+		# lme4::findbars returns a list of terms
+		sapply(get.random.terms(term),function (t) {
+			grouping = t[[3]]
+			t = as.character(t[2])
+			if (t == '1') paste0('(1|',grouping,')') else paste0('(0+',t,'|',grouping,')')
+		})
 	}))
 	c(fixed.terms,random.terms)
 }
@@ -160,7 +161,7 @@ get.last.random.slope = function (formula) {
 	random.terms = terms[names(terms) == 'random']
 	cands = Filter(function (x) substr(x,1,3) != '(1|',random.terms)
 	if (!length(cands)) cands = random.terms
-	return(cands[length(cands)])
+	cands[[length(cands)]]
 }
 
 #' Test whether a model was fit with REML
@@ -180,6 +181,7 @@ hasREML = function (model) {
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
+#' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
 #' @param direction The direction for stepwise elimination; either 'forward' or 'backward' (default).
 #' @param summary Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The adjustment to use in calculating the summary if summary=T and if lmerTest is available. Defaults to 'Kenward-Roger'.
@@ -197,7 +199,7 @@ hasREML = function (model) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (deparse(direction) == deparse(c('backward','forward'))) direction = 'backward'
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -232,13 +234,16 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 
 	fit.until.conv = function(stage) {
 		ma <<- fit(fa)
+		no.failures = T
 		while (!conv(ma)) {
-			message(if (stage == 'fixed') 'The base model failed to converge during the fixed-effects elimination. Proceeding with fewer random slopes than had been warranted by the maximal fixed-effect structure.' else "Base model didn't converge, reducing slope terms.")
-			cand = get.last.random.term(fa)
+			no.failures = F
+			message(if (stage == 'fixed') 'The base model failed to converge during the fixed-effects elimination. Proceeding with fewer random slopes than had been warranted by the maximal fixed-effect structure. (They will be reintegrated into the model for the final fit.)' else "Base model didn't converge, reducing slope terms.")
+			cand = get.last.random.slope(fa)
 			record(stage,cand,NA)
 			fa <<- remove.terms(fa,cand,formulize=T)
 			ma <<- fit(fa)
 		}
+		no.failures
 	}
 
 	refit.if.needed = function (m,reml) {
@@ -288,12 +293,12 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
 	counter = 0
 	messages = character()
-	terms.saved = NA
+	random.saved = c()
 
 	if (direction == 'backward') {
 		fa = formula
 		reml = reduce.random || !reduce.fixed
-		fit.until.conv(fa)
+		fit.until.conv('random')
 		if (reduce.random) {
 			for (t in Filter(is.random.term,rev(terms))) {
 				fb = remove.terms(fa,t,formulize=T)
@@ -302,8 +307,13 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		}
 		if (reduce.fixed) {
 			reml = F
-			#random.saved = fa #but how to reintegrate them?
+			random.saved = lme4::findbars(fa)
+			if (fit.until.conv('fixed')) random.saved = c()
 			for (t in Filter(Negate(is.random.term),rev(terms))) {
+				if (t == '1' && protect.intercept) {
+					record('fixed',t,NA)
+					next
+				}
 				fb = remove.terms(fa,t,formulize=T)
 				elim('fixed')
 			}
@@ -340,7 +350,13 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	} else stop("Unknown 'direction' argument")
 	
 	reml = T
+	if (length(random.saved)) {
+		fa = lme4::nobars(fa)
+		for (term in random.saved)fa = update.formula(fa,paste0('.~.+(',deparse(term),')'))
+		fit.until.conv('random')
+	}
 	ma = refit.if.needed(ma,reml)
+	if (!conv(ma)) ma = fit.until.conv(ma)
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')

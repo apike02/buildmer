@@ -6,8 +6,9 @@
 \usage{
 buildmer(formula, data, family = gaussian, nAGQ = 1,
   adjust.p.chisq = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = c("backward", "forward", "null"), summary = FALSE,
-  ddf = "Kenward-Roger", quiet = FALSE, verbose = 0, maxfun = 2e+05)
+  protect.intercept = TRUE, direction = c("backward", "forward"),
+  summary = FALSE, ddf = "Kenward-Roger", quiet = FALSE, verbose = 0,
+  maxfun = 2e+05)
 }
 \arguments{
 \item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}
@@ -23,6 +24,8 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 
 \item{reduce.random}{Whether to reduce the random-effect structure.}
+
+\item{protect.intercept}{If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.}
 
 \item{direction}{The direction for stepwise elimination; either 'forward' or 'backward' (default).}
 

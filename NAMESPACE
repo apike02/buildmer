@@ -2,7 +2,7 @@
 
 export(buildmer)
 export(conv)
-export(diag)
+export(diagonalize)
 export(get.last.random.slope)
 export(mer2tex)
 export(remove.terms)
