@@ -21,7 +21,7 @@ setMethod('anova','buildmer',function (object) {
 })
 setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 	smy = if (!is.null(model@summary)) model@summary else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 		if (have.lmerTest) summary(model@model,ddf=ddf) else summary(model@model)
@@ -55,7 +55,7 @@ is.random.term = function (term) length(get.random.terms(term)) > 0
 #' @export
 remove.terms = function (formula,remove=c(),formulize=T) {
 	remove.possible = function(terms,grouping=NULL,test=remove) {
-		stopifnot(length(terms) > 0)
+		if (!length(terms)) return(terms)
 		forbidden = terms[grepl(':',terms,fixed=T)]
 		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
 		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
@@ -93,9 +93,8 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 			terms = terms(form)
 			intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
 			terms = attr(terms,'term.labels')
-			if (length(terms)) terms = remove.possible(terms,grouping) else {
-				if (!intercept) return(NULL)
-			}
+			terms = remove.possible(terms,grouping)
+			if (!length(terms) && !intercept) return(NULL)
 			if (intercept) terms = c('1',terms)
 			else terms[[1]] = paste0('0+',terms[[1]])
 			if (formulize) terms = paste(terms,collapse='+')
@@ -184,7 +183,7 @@ hasREML = function (model) {
 #' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
 #' @param direction The direction for stepwise elimination; either 'forward' or 'backward' (default).
 #' @param summary Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
-#' @param ddf The adjustment to use in calculating the summary if summary=T and if lmerTest is available. Defaults to 'Kenward-Roger'.
+#' @param ddf The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
 #' @param verbose The verbosity level passed to (g)lmer fits.
 #' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
@@ -199,11 +198,11 @@ hasREML = function (model) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Kenward-Roger',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (deparse(direction) == deparse(c('backward','forward'))) direction = 'backward'
-	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
+	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
-	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger') stop('Invalid specification for ddf, possible options are (1) NULL or "lme4"; (2) "Satterthwaite"; (3) "Kenward-Roger" (default)')
+	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
 	data.name = substitute(data)
 	family = as.character(substitute(family))
 
@@ -216,7 +215,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		if ((direction == 'backward' && p >= .05) || (direction == 'forward' && p < .05)) {
 			fa <<- fb
 			ma <<- mb
+			return(T)
 		}
+		F
 	}
 
 	fit = function (formula,REML=reml) {
@@ -352,7 +353,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	reml = T
 	if (length(random.saved)) {
 		fa = lme4::nobars(fa)
-		for (term in random.saved)fa = update.formula(fa,paste0('.~.+(',deparse(term),')'))
+		for (term in random.saved) fa = update.formula(fa,paste0('.~.+(',deparse(term),')'))
 		fit.until.conv('random')
 	}
 	ma = refit.if.needed(ma,reml)
@@ -360,16 +361,29 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
-		fun = if (have.lmerTest) lmerTest::summary else function (x,ddf) lme4::summary(x)
+		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) lme4::summary(x)
 		ret@summary = fun(ma,ddf=ddf)
+		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=pnorm(ret@summary$coefficients[,3],lower.tail=F))
 	}
 	ret
 }
 
-"
-reorder.terms = function() {
-	stop('not implemented yet')
+#' Reorder the terms in a regression model by their contribution to the deviance (i.e. sort the terms by their significances)
+#' @param formula The model formula; if you include random effects, use lme4 syntax for them.
+#' @param data The data to fit the models to.
+#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
+#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
+#' @param quiet Whether to suppress progress messages.
+#' @param verbose The verbosity level passed to (g)lmer fits.
+#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
+#' @return The formula, with the terms reordered.
+#' @keywords order
+#' @examples
+#' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
+#' @export
+reorder.terms = function(formula,data,family=gaussian,nAGQ=1,quiet=FALSE,verbose=0,maxfun=2e5) {
 	reml = F
+	#formulize-probleem
 	intercept = attr(terms(formula),'intercept')
 	base = paste0(as.character(formula[[2]]),'~',intercept)
 	ma = if (intercept) fit(as.formula(base)) else NULL
@@ -393,7 +407,6 @@ reorder.terms = function() {
 		}
 	}
 }
-"
 
 #' Convert a summary to LaTeX code (biased towards vowel analysis)
 #' @param summary The summary to convert.
@@ -455,6 +468,7 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 	}
 	cat(paste0(sapply(c('Factor','Estimate (SE)','df','$t$','$p$','Sig.'),function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
 	d = summary$coefficients
+	if (ncol(d) < 5) d = cbind(d[,1:2],'',d[,3:4]) #add empty df
 	names = sapply(rownames(d),function (x) {
 		x = unlist(strsplit(x,':',T))
 		x = sapply(x,paperify)
@@ -468,11 +482,11 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 		data[i,4] = custround(d[i,3],neg=F)			# df
 		data[i,5] = custround(d[i,4])				# t
 		data[i,6] = ifelse(d[i,5] < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
-		data[i,7] =  if (d[i,5] < .001) '$**$$*$'	# stars
+		data[i,7] =  if (d[i,5] < .001) '$**$$*$'		# stars
 				else if (d[i,5] <  .01) '$**$'
 				else if (d[i,5] <  .05) '$*$'
 				else ''
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:7])) # print for table
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:7])) #print for table
 	}
 	#if (formula) cat('\\hline')
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')

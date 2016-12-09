@@ -7,7 +7,7 @@
 buildmer(formula, data, family = gaussian, nAGQ = 1,
   adjust.p.chisq = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
   protect.intercept = TRUE, direction = c("backward", "forward"),
-  summary = FALSE, ddf = "Kenward-Roger", quiet = FALSE, verbose = 0,
+  summary = FALSE, ddf = "Wald", quiet = FALSE, verbose = 0,
   maxfun = 2e+05)
 }
 \arguments{
@@ -31,7 +31,7 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 
 \item{summary}{Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
 
-\item{ddf}{The adjustment to use in calculating the summary if summary=T and if lmerTest is available. Defaults to 'Kenward-Roger'.}
+\item{ddf}{The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).}
 
 \item{quiet}{Whether to suppress progress messages.}
 
