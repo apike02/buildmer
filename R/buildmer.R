@@ -361,9 +361,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
-		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) lme4::summary(x)
+		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=pnorm(ret@summary$coefficients[,3],lower.tail=F))
+		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=pnorm(2*abs(ret@summary$coefficients[,3]),lower.tail=F))
 	}
 	ret
 }
@@ -433,7 +433,7 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 	custround = function (i,neg=T,trunc=F) {
 		prec = 3
 		ir = round(i,prec)
-		while (ir == 0) {
+		while (i > 0 && ir == 0) {
 			prec = prec + 1
 			ir = round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
 		}
@@ -466,9 +466,10 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 		}
 		cat('\\hline\n')
 	}
-	cat(paste0(sapply(c('Factor','Estimate (SE)','df','$t$','$p$','Sig.'),function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
 	d = summary$coefficients
-	if (ncol(d) < 5) d = cbind(d[,1:2],'',d[,3:4]) #add empty df
+	df = ncol(d) > 4
+	cat(paste0(sapply(ifelse(df,c('Factor','Estimate (SE)','df','$t$','$p$','Sig.'),c('Factor','Estimate (SE)','$t$','$p$','Sig.')),function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
+	if (!df) d = cbind(d[,1:2],0,d[,3:4]) #add empty df
 	names = sapply(rownames(d),function (x) {
 		x = unlist(strsplit(x,':',T))
 		x = sapply(x,paperify)
@@ -486,7 +487,7 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 				else if (d[i,5] <  .01) '$**$'
 				else if (d[i,5] <  .05) '$*$'
 				else ''
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:7])) #print for table
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df,4:7,5:7)])) #print for table
 	}
 	#if (formula) cat('\\hline')
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
