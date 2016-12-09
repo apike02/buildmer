@@ -424,12 +424,29 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 'ppn' = 'participants',
 'word' = 'words',
 '2:' = '\\o:',
-'9y' = '\\oe y')) {
+'9y' = '\\oe y',
+'country1' = 'country = The Netherlands',
+'region1' = 'region = NR',
+'region2' = 'region = NM',
+'region3' = 'region = NS',
+'region4' = 'region = NN',
+'region5' = 'region = FE',
+'region6' = 'region = FL',
+'region7' = 'region = FW',
+'FS' = 'following segment',
+'FS2' = 'following segment = obs',
+'FS1' = 'following segment = /l/',
+'ppn' = 'participants',
+'word' = 'words')) {
 	tblprintln = function (x) {
 		l = paste0(x,collapse=' & ')
 		cat(l,'\\\\\n',sep='')
 	}
-	paperify = function (x) if (x %in% aliases) aliases[[names(aliases) == x]] else x
+	paperify = function (x) {
+		if (!x %in% names(aliases)) return(x)
+		x = names(aliases) == x
+		x = unlist(aliases[x]) #x = aliases[[x]] gives 'attempt to select less than one element' error??
+	}
 	custround = function (i,neg=T,trunc=F) {
 		prec = 3
 		ir = round(i,prec)
@@ -445,9 +462,11 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 	}
 	nohp = function (x) sub('\\hphantom{-}','',x,fixed=T)
 
+	d = summary$coefficients
+	df = ncol(d) > 4
 	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
 	if (formula) {
-		mcprintln = function (x) cat('\\multicolumn{6}{l}{',x,'}\\\\\n',sep='')
+		mcprintln = function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
 		#cat('\\hline\n')
 		form = summary$call[[2]]
 		mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
@@ -466,9 +485,9 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 		}
 		cat('\\hline\n')
 	}
-	d = summary$coefficients
-	df = ncol(d) > 4
-	cat(paste0(sapply(ifelse(df,c('Factor','Estimate (SE)','df','$t$','$p$','Sig.'),c('Factor','Estimate (SE)','$t$','$p$','Sig.')),function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
+	cat(paste0(sapply(if (df) c('Factor','Estimate (SE)','df','$t$','$p$','Sig.')
+	                     else c('Factor','Estimate (SE)','$t$','$p$','Sig.')
+		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
 	if (!df) d = cbind(d[,1:2],0,d[,3:4]) #add empty df
 	names = sapply(rownames(d),function (x) {
 		x = unlist(strsplit(x,':',T))
@@ -487,14 +506,14 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 				else if (d[i,5] <  .01) '$**$'
 				else if (d[i,5] <  .05) '$*$'
 				else ''
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df,4:7,5:7)])) #print for table
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df,4,5):7])) #print for table
 	}
 	#if (formula) cat('\\hline')
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
 
 	cat('\n\n\n')
 	for (i in 1:length(names)) cat(
-		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $t_{',data[i,4],'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
+		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $t_{',ifelse(d[i,3]>0,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
 				d[i,5] < .001,
 				'$<$ .001',
 				paste0('= ',data[i,6])
