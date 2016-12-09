@@ -363,7 +363,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 		if (!quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=pnorm(2*abs(ret@summary$coefficients[,3]),lower.tail=F))
+		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=2*pnorm(abs(ret@summary$coefficients[,3]),lower.tail=F))
 	}
 	ret
 }
@@ -421,8 +421,6 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 '(Intercept)' = 'Intercept',
 'Df1' = '$\\Updelta$F1',
 'Df2' = '$\\Updelta$F2',
-'ppn' = 'participants',
-'word' = 'words',
 '2:' = '\\o:',
 '9y' = '\\oe y',
 'country1' = 'country = The Netherlands',
