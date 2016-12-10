@@ -5,10 +5,10 @@
 \title{Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance}
 \usage{
 buildmer(formula, data, family = gaussian, nAGQ = 1,
-  adjust.p.chisq = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
-  protect.intercept = TRUE, direction = c("backward", "forward"),
-  summary = FALSE, ddf = "Wald", quiet = FALSE, verbose = 0,
-  maxfun = 2e+05)
+  adjust.p.chisq = TRUE, reorder.terms = TRUE, reduce.fixed = TRUE,
+  reduce.random = TRUE, protect.intercept = TRUE,
+  direction = c("backward", "forward"), summary = FALSE, ddf = "Wald",
+  quiet = FALSE, verbose = 0, maxfun = 2e+05)
 }
 \arguments{
 \item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}
@@ -20,6 +20,8 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 \item{nAGQ}{The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)}
 
 \item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
+
+\item{reorder.terms}{Whether to reorder the terms by their contribution to the deviance before testing them.}
 
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 

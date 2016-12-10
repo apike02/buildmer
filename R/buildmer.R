@@ -12,22 +12,22 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @export
 mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
 setMethod('print','buildmer',function (x) {
-	print(model@model)
-	if (length(model@messages)) warn(messages)
+	print(object@mode)
+	if (length(object@messages)) warn(messages)
 })
 setMethod('anova','buildmer',function (object) {
-	print(model@table)
-	if (length(model@messages)) warn(messages)
+	print(object@table)
+	if (length(object@messages)) warn(messages)
 })
 setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
-	smy = if (!is.null(model@summary)) model@summary else {
+	smy = if (!is.null(object@summary)) object@summary else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		if (have.lmerTest) summary(model@model,ddf=ddf) else summary(model@model)
+		if (have.lmerTest) summary(object@object,ddf=ddf) else summary(object@object)
 	}
 	print(smy)
-	if (length(model@messages)) warn(messages)
+	if (length(object@messages)) warn(messages)
 	smy
 })
 
@@ -178,6 +178,7 @@ hasREML = function (model) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
+#' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
@@ -198,8 +199,8 @@ hasREML = function (model) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
-	if (deparse(direction) == deparse(c('backward','forward'))) direction = 'backward'
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
+	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
@@ -296,30 +297,34 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	messages = character()
 	random.saved = c()
 
-	if (direction == 'backward') {
-		fa = formula
-		reml = reduce.random || !reduce.fixed
-		fit.until.conv('random')
-		if (reduce.random) {
-			for (t in Filter(is.random.term,rev(terms))) {
-				fb = remove.terms(fa,t,formulize=T)
-				elim('random')
+	if (reorder.terms) {
+		fixed = Filter(Negate(is.random.term,terms))
+		random = Filter(is.random.term,terms)
+		reml = T
+		tested = c()
+		elim.null = function (term) {
+			if (grepl(':',term,fixed=T)) {
+				# We do not want to test interactions if we still have to test the corresponding main effects
+				forbidden = unique(unlist(strsplit(term,':',fixed=T)))
+				if (any(!forbidden %in% tested)) return(Inf)
 			}
-		}
-		if (reduce.fixed) {
-			reml = F
-			random.saved = lme4::findbars(fa)
-			if (fit.until.conv('fixed')) random.saved = c()
-			for (t in Filter(Negate(is.random.term),rev(terms))) {
-				if (t == '1' && protect.intercept) {
-					record('fixed',t,NA)
-					next
-				}
-				fb = remove.terms(fa,t,formulize=T)
-				elim('fixed')
+			for (t in lme4::findbars(as.formula(paste0('~',term)))) {
+			# We do not want to test this term if its corresponding fixed effect has not been tested yet
+				if (!t[[2]] %in% tested) return(Inf)
 			}
+			f = remove.terms(formula,terms[terms != term])
+			m = fit(f)
+			if (conv(m)) devfun(m) else Inf
 		}
-	} else if (direction == 'forward') {
+		while (length(tested) < length(terms)) {
+			comps = sapply(terms,elim.null)
+			sorted = terms[order(comps)]
+			tested = c(tested,sorted[[1]])
+		}
+		terms = tested
+	}
+
+	if (any(direction == 'forward')) {
 		fixed.terms = Filter(Negate(is.random.term),terms)
 		terms = terms[!terms %in% fixed.terms]
 		if (!reduce.fixed) fixed.terms = paste(fixed.terms,collapse='+')
@@ -348,7 +353,31 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 				elim('random')
 			}
 		}
-	} else stop("Unknown 'direction' argument")
+	}
+	if (any(direction == 'backward')) {
+		fa = formula
+		reml = reduce.random || !reduce.fixed
+		fit.until.conv('random')
+		if (reduce.random) {
+			for (t in Filter(is.random.term,rev(terms))) {
+				fb = remove.terms(fa,t,formulize=T)
+				elim('random')
+			}
+		}
+		if (reduce.fixed) {
+			reml = F
+			random.saved = lme4::findbars(fa)
+			if (fit.until.conv('fixed')) random.saved = c()
+			for (t in Filter(Negate(is.random.term),rev(terms))) {
+				if (t == '1' && protect.intercept) {
+					record('fixed',t,NA)
+					next
+				}
+				fb = remove.terms(fa,t,formulize=T)
+				elim('fixed')
+			}
+		}
+	}
 	
 	reml = T
 	if (length(random.saved)) {
@@ -368,44 +397,22 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,red
 	ret
 }
 
-#' Reorder the terms in a regression model by their contribution to the deviance (i.e. sort the terms by their significances)
-#' @param formula The model formula; if you include random effects, use lme4 syntax for them.
-#' @param data The data to fit the models to.
-#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
-#' @param quiet Whether to suppress progress messages.
-#' @param verbose The verbosity level passed to (g)lmer fits.
-#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
-#' @return The formula, with the terms reordered.
-#' @keywords order
-#' @examples
-#' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
+#' Perform stepwise elimination like SPSS, without you having to make complex decisions.
+#' @param formula The model you would ideally like to fit (don't worry about convergence problems).
+#' @param data The data you want to fit the model to.
+#' @param family An optional argument denoting the type of error distribution to use. If you're doing logistic regression, specify 'family=binomial'. If you're doing Poisson regression, specify 'family=poisson'. If you just want a regular, linear regression, don't specify this argument at all.
+#' @param direction If you want to use forward rather than backward elimination, specify 'direction=forward'. If you want both (forward followed by backward), specify 'direction=c("forward","backward")' (or, equivalently, 'direction=c("backward","forward")'). If you want backward elimination (the default), specify 'direction=backward', or don't specify this argument at all.
+#' @keywords stepwise, SPSS
 #' @export
-reorder.terms = function(formula,data,family=gaussian,nAGQ=1,quiet=FALSE,verbose=0,maxfun=2e5) {
-	reml = F
-	#formulize-probleem
-	intercept = attr(terms(formula),'intercept')
-	base = paste0(as.character(formula[[2]]),'~',intercept)
-	ma = if (intercept) fit(as.formula(base)) else NULL
-	passes = c()
-	if (reduce.fixed ) passes = c(passes,'fixed')
-	if (reduce.random) passes = c(passes,'random')
-	## maar hier tussendoor moeten we ook nog reml flippen!
-	for (n in passes) {
-		currterms = terms[names(terms) == n]
-		while (length(currterms)) {
-			options = sapply(currterms,function (term) fit(as.formula(paste0(base,'+',term),fixed=T)))
-			best = order(devfun(options))[1]
-			mb = options[best]
-			p = if (is.null(ma)) -Inf else modcomp(ma,mb)
-			record(n,currterms[best],p)
-			if (p < .05) {
-				ma = mb
-				base = paste0(base,'+',term)
-			}
-			currterms = currterms[-best]
-		}
-	}
+stepwise = function (formula,data,family=gaussian,reorder.terms=T,direction='backward') {
+	if (!have.kr) stop("This function requires two additional packages: lmerTest & pbkrtest. Install both packages (say 'install.packages(c(\"lmerTest\",\"pbkrtest\"))' and then close and re-start R.")
+	data.name = substitute(data)
+	family = as.character(substitute(family))
+	message('stepwise() will now begin to fit your model. This happens in three steps: first, the optimal order for the terms in your model formula will be determined. Second, each of these terms will be tested for elimination on the basis of their improvement to the model fit (tested via the likelihood ratio test). Thirdly, the summary will be calculated (using Kenward-Roger approximation for denominator degrees of freedom).')
+	ret = buildmer(formula,data,family=family,direction=direction,summary=T,ddf='Kenward-Roger')
+	if (any(class(ret@model)) == 'lm') ret@model$call$data = data.name else ret@model@call$data = data.name
+	message('Finished!')
+	ret
 }
 
 #' Convert a summary to LaTeX code (biased towards vowel analysis)
