@@ -274,9 +274,6 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		p = if (all(class(a) == class(b))) {
 			anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
 			res = anovafun(a,b)
-			print(devfun(a))
-			print(devfun(b))
-			print(res)
 			res[[length(res)]][[2]]
 		} else {
 			# Compare the models by hand
@@ -302,6 +299,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	random.saved = c()
 
 	if (reorder.terms) {
+		if (!quiet) message('Determining predictor order')
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
 		reml = F
@@ -337,6 +335,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	}
 
 	if (any(direction == 'forward')) {
+		if (!quiet) message('Beginning forward elimination')
 		fixed.terms = Filter(Negate(is.random.term),terms)
 		terms = terms[!terms %in% fixed.terms]
 		if (!reduce.fixed) fixed.terms = paste(fixed.terms,collapse='+')
@@ -366,7 +365,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 			}
 		}
 	}
+
 	if (any(direction == 'backward')) {
+		if (!quiet) message('Beginning backward elimination')
 		fa = formula
 		reml = reduce.random || !reduce.fixed
 		fit.until.conv('random')
@@ -390,7 +391,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 			}
 		}
 	}
-	
+
+	if (!quiet) message('Calculating final model')
 	reml = T
 	if (length(random.saved)) {
 		fa = lme4::nobars(fa)
