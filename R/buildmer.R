@@ -137,6 +137,7 @@ diagonalize = function(formula) {
 	#  fixed   fixed   fixed   fixed  random  random 
 	#    "1"     "a"     "b"   "a:b" "(1|d)" "(c|d)" 
 	# i.e., remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "(c|d)" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
+	dep = as.character(formula[[2]])
 	terms = remove.terms(formula,c(),formulize=F)
 	fixed.terms  = terms[names(terms) == 'fixed' ]
 	random.terms = terms[names(terms) == 'random']
@@ -148,7 +149,7 @@ diagonalize = function(formula) {
 			if (t == '1') paste0('(1|',grouping,')') else paste0('(0+',t,'|',grouping,')')
 		})
 	}))
-	c(fixed.terms,random.terms)
+	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse='+')))
 }
 
 #' Remove the last random slope (or, if not available, the last random intercept) from a model formula
