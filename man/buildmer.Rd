@@ -6,9 +6,9 @@
 \usage{
 buildmer(formula, data, family = gaussian, nAGQ = 1,
   adjust.p.chisq = TRUE, reorder.terms = TRUE, reduce.fixed = TRUE,
-  reduce.random = TRUE, protect.intercept = TRUE,
-  direction = c("backward", "forward"), summary = FALSE, ddf = "Wald",
-  quiet = FALSE, verbose = 0, maxfun = 2e+05)
+  reduce.random = TRUE, protect.intercept = TRUE, direction = "backward",
+  summary = FALSE, ddf = "Wald", quiet = FALSE, verbose = 0,
+  maxfun = 2e+05)
 }
 \arguments{
 \item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}

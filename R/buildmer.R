@@ -35,7 +35,7 @@ setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 #' @param model The model object to test.
 #' @keywords convergence
 #' @export
-conv = function (model) any(class(model) == 'lm') || ((any(class(model) == 'lmerMod') || any(class(model) == 'merModLmerTest')) && (!length(model@optinfo$conv$lme4) || !any(grepl('(failed to converge)|(unable to evaluate scaled gradient)|(Hessian is numerically singular)',model@optinfo$conv$lme4$messages))))
+conv = function (model) any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0
 
 #' Get the level-2 terms contained within a level-1 lme4 random term
 #' @param term The term.
@@ -199,7 +199,7 @@ hasREML = function (model) {
 #' @examples
 #' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction=c('backward','forward'),summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -273,6 +273,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		p = if (all(class(a) == class(b))) {
 			anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
 			res = anovafun(a,b)
+			print(devfun(a))
+			print(devfun(b))
+			print(res)
 			res[[length(res)]][[2]]
 		} else {
 			# Compare the models by hand
@@ -298,10 +301,15 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	random.saved = c()
 
 	if (reorder.terms) {
-		fixed = Filter(Negate(is.random.term,terms))
+		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
-		reml = T
+		reml = F
 		tested = c()
+		finished = length(terms)
+		if ('1' %in% terms) {
+			terms = terms[terms != '1']
+			tested = '1'
+		}
 		elim.null = function (term) {
 			if (grepl(':',term,fixed=T)) {
 				# We do not want to test interactions if we still have to test the corresponding main effects
@@ -312,14 +320,17 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 			# We do not want to test this term if its corresponding fixed effect has not been tested yet
 				if (!t[[2]] %in% tested) return(Inf)
 			}
+
 			f = remove.terms(formula,terms[terms != term])
 			m = fit(f)
 			if (conv(m)) devfun(m) else Inf
 		}
-		while (length(tested) < length(terms)) {
+		while (length(tested) < finished) {
 			comps = sapply(terms,elim.null)
-			sorted = terms[order(comps)]
-			tested = c(tested,sorted[[1]])
+			winner = rev(order(comps))[[1]]
+			if (!quiet) message(paste('Keeping',terms[[winner]]))
+			tested = c(tested,terms[[winner]])
+			terms = terms[-winner]
 		}
 		terms = tested
 	}
@@ -408,7 +419,7 @@ stepwise = function (formula,data,family=gaussian,reorder.terms=T,direction='bac
 	if (!have.kr) stop("This function requires two additional packages: lmerTest & pbkrtest. Install both packages (say 'install.packages(c(\"lmerTest\",\"pbkrtest\"))' and then close and re-start R.")
 	data.name = substitute(data)
 	family = as.character(substitute(family))
-	message('stepwise() will now begin to fit your model. This happens in three steps: first, the optimal order for the terms in your model formula will be determined. Second, each of these terms will be tested for elimination on the basis of their improvement to the model fit (tested via the likelihood ratio test). Thirdly, the summary will be calculated (using Kenward-Roger approximation for denominator degrees of freedom).')
+	message('stepwise() will now begin to fit your model. This happens in three steps: first, the optimal order for the terms in your model formula will be determined. Second, each of these terms will be tested for elimination on the basis of their improvement to the model fit (tested via the likelihood ratio test). Thirdly, the summary will be calculated.')
 	ret = buildmer(formula,data,family=family,direction=direction,summary=T,ddf='Kenward-Roger')
 	if (any(class(ret@model)) == 'lm') ret@model$call$data = data.name else ret@model@call$data = data.name
 	message('Finished!')
