@@ -47,15 +47,22 @@ get.random.terms = function (term) bars = lme4::findbars(as.formula(paste0('~',t
 #' @return A logical indicating whether the term was a random-effects term.
 is.random.term = function (term) length(get.random.terms(term)) > 0
 
+#' Convenience function to immediately descend into a level-2 term
+#' @param random.terms Vector of level-1 terms to descend into.
+#' @param FUN The function to apply to the level-2 terms.
+#' @returns The modified random.terms
+innerapply = function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
+
 #' Remove terms from an lme4 formula
 #' @param formula The lme4 formula.
-#' @param remove A vector of terms to remove. To remove terms nested in random-effect groups, use '(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
+#' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use 'term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
 #' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
 #' @export
 remove.terms = function (formula,remove=c(),formulize=T) {
 	remove.possible = function(terms,grouping=NULL,test=remove) {
 		if (!length(terms)) return(terms)
+		# Do not remove main effects if they have corresponding interaction terms
 		forbidden = terms[grepl(':',terms,fixed=T)]
 		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
 		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
@@ -84,23 +91,21 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	fixed.terms = Filter(Negate(is.random.term),terms)
 	fixed.terms = remove.possible(fixed.terms)
 	random.terms = Filter(is.random.term,terms)
-	random.terms = sapply(random.terms,function (term) {
-		bars = get.random.terms(term)
-		term = sapply(bars,function (term) {
-			grouping = term[[3]]
-			terms = as.character(term[2])
-			form = as.formula(paste0('~',terms))
-			terms = terms(form)
-			intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
-			terms = attr(terms,'term.labels')
-			terms = remove.possible(terms,grouping)
-			if (!length(terms) && !intercept) return(NULL)
-			if (intercept) terms = c('1',terms)
-			else terms[[1]] = paste0('0+',terms[[1]])
-			if (formulize) terms = paste(terms,collapse='+')
-			terms = paste0('(',terms,'|',grouping,')')
-			return(terms)
-		})
+	random.terms = innerapply(random.terms,function (term) {
+		grouping = term[[3]]
+		terms = as.character(term[2])
+		form = as.formula(paste0('~',terms))
+		terms = terms(form)
+		intercept = if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
+		terms = attr(terms,'term.labels')
+		terms = remove.possible(terms,grouping)
+		if (!length(terms) && !intercept) return(NULL)
+		if (intercept) terms = c('1',terms)
+		else terms[[1]] = paste0('0+',terms[[1]])
+		if (formulize) terms = paste(terms,collapse='+')
+		terms = paste0(terms,'|',grouping)
+		if (formulize) terms = paste0('(',terms,')')
+		terms
 	})
 	random.terms = Filter(Negate(is.null),unlist(random.terms))
 	if (length(fixed.terms))  names(fixed.terms ) = rep('fixed' ,length(fixed.terms ))
@@ -117,26 +122,64 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	} else return(terms)
 }
 
+#' Add terms to an lme4 formula based on an example from another lme4 formula
+#' @param formula The lme4 formula to add terms to.
+#' @param add A vector of terms to add. To add terms nested in random-effect groups, use '(term|group)' syntax if you want to add an independent random effect (e.g. '(olderterm|group) + (term|group)'), or use 'term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
+#' @seealso buildmer
+#' @export
+add.terms = function (formula,terms) {
+	dep = as.character(formula)[2]
+	orig.terms = terms(formula)
+	intercept = attr(terms,'intercept')
+	fixed.terms = Filter(Negate(is.random.term),orig.terms)
+	random.terms = Filter(is.random.term,orig.terms)
+	for (term in terms) {
+		if (is.random.term(term)) {
+			if (substr(term,nchar(term),nchar(term)) == ')') {
+				# independent term: tack it on at the end
+				random.terms = c(random.terms,term)
+			}
+			bars = get.random.terms(term)
+			bar.grouping = bars[[3]]
+			bar.terms = bars[[1]]
+			# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
+			suitable = innerapply(random.terms,function (term) term[[3]] == bar.grouping)
+			if (any(suitable)) {
+				suitable = suitable[suitable]
+				random.terms[[suitable[1]]] = sapply(random.terms[[suitable[1]]],function (term) {
+					terms = as.character(term[2])
+					form = as.formula(paste0('~',terms))
+					terms = terms(form)
+					intercept = attr(terms,'intercept')
+					terms = attr(terms,'term.labels')
+					terms = c(terms,bar.terms)
+					if (intercept) terms = c('1',terms)
+					else terms[[1]] = paste0('0+',terms[[1]])
+					terms = paste(terms,collapse='+')
+					paste0('(',terms,'|',grouping,')')
+				})
+			} else random.terms = c(random.terms,paste0('(',term,')')) #still have to tack it on at the end in the end...
+		} else fixed.terms = c(fixed.terms,term)
+	}
+	reformulate(c(fixed.terms,random.terms),dep,intercept)
+}
+
 #' Extract a model's deviance
 #' @param model The fitted model object.
 #' @return The deviance or REML criterion.
 devfun = function (model) {
 	if (any(class(model) == 'lm')) deviance(model) else {
-		comp = getME(model,'devcomp')$cmp
+		comp = devcomp(model)$cmp
 		if (hasREML(model)) comp['REML'] else comp['dev']
 	}
 }
-	
 
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
 #' @param formula A model formula.
 #' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
 #' @export
 diagonalize = function(formula) {
-	#> source('buildmer.R');x=remove.terms(form,c(),formulize=F);x
-	#  fixed   fixed   fixed   fixed  random  random 
-	#    "1"     "a"     "b"   "a:b" "(1|d)" "(c|d)" 
-	# i.e., remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "(c|d)" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
+	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
 	dep = as.character(formula[[2]])
 	terms = remove.terms(formula,c(),formulize=F)
 	fixed.terms  = terms[names(terms) == 'fixed' ]
@@ -290,7 +333,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		results[counter,] <<- c(type,term,p)
 	}
 
-	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: expand interactions etc
+	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: sanitize order, expand interactions etc
 	terms     = remove.terms(formula,c(),formulize=F)
 	prealloc  = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
@@ -303,35 +346,26 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
 		reml = F
-		tested = c()
-		finished = length(terms)
 		if ('1' %in% terms) {
 			terms = terms[terms != '1']
 			tested = '1'
-		}
-		elim.null = function (term) {
-			if (grepl(':',term,fixed=T)) {
-				# We do not want to test interactions if we still have to test the corresponding main effects
-				forbidden = unique(unlist(strsplit(term,':',fixed=T)))
-				if (any(!forbidden %in% tested)) return(Inf)
-			}
-			for (t in lme4::findbars(as.formula(paste0('~',term)))) {
-			# We do not want to test this term if its corresponding fixed effect has not been tested yet
-				if (!t[[2]] %in% tested) return(Inf)
-			}
-
-			f = remove.terms(formula,terms[terms != term])
-			m = fit(f)
-			if (conv(m)) devfun(m) else Inf
-		}
-		while (length(tested) < finished) {
-			comps = sapply(terms,elim.null)
+			formula = as.formula(paste0(dep,'~1'))
+		} else  formula = as.formula(paste0(dep,'~0'))
+		totest = terms
+		terms = c()
+		while (length(totest) > 1) {
+			comps = sapply(totest,function (x) {
+				f = add.terms(formula,totest[totest != x])
+				m = fit(f)
+				if (conv(m)) devfun(m) else Inf
+			})
 			winner = rev(order(comps))[[1]]
-			if (!quiet) message(paste('Keeping',terms[[winner]]))
-			tested = c(tested,terms[[winner]])
-			terms = terms[-winner]
+			terms = c(terms,totest[winner])
+			formula = add.terms(formula,totest[winner])
+			totest = totest[-winner]
 		}
-		terms = tested
+		terms = c(terms,totest)
+		formula = add.terms(formula,totest)
 	}
 
 	if (any(direction == 'forward')) {
