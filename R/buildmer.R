@@ -641,5 +641,5 @@ mer2tex = function (summary,vowel='',formula=F,label='',aliases=list(
 #' @docType data
 #' @usage data(vowels)
 #' @format A standard data frame.
-#' @examples buildmer(f1 ~ vowel*timepoint*following + stress + information,data=vowels)
+#' @examples buildmer(f1 ~ vowel*timepoint*following + stress + information + (vowel*timepoint*following|participant),data=vowels)
 "vowels"
