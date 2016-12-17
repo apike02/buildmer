@@ -21,7 +21,7 @@ setMethod('anova','buildmer',function (object,ddf='Kenward-Roger') {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		anv = if (have.lmerTest && ddf != 'Wald') anova(anova@model,ddf=ddf) else anova(object@model)
+		anv = if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
 		if (ddf == 'Wald' && !'lm' %in% class(object@model)) anv = calcWald(anv,4)
 	}
 	if (length(object@messages)) warn(messages)
@@ -82,18 +82,17 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
 		forbidden = terms[grepl(':',terms,fixed=T)]
 		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
-		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
-		if (is.null(grouping)) {
+		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping) else {
 			# Do not remove fixed terms if they have corresponding random terms
 			bars = lme4::findbars(formula)
 			for (term in bars) {
-				terms = as.character(term[2])
-				form = as.formula(paste0('~',terms))
-				terms = terms(form)
-				intercept = attr(terms,'intercept')
-				terms = attr(terms,'term.labels')
-				if (intercept) terms = c(terms,'1')
-				forbidden = unique(c(forbidden,terms))
+				terms. = as.character(term[2])
+				form = as.formula(paste0('~',terms.))
+				terms. = terms(form)
+				intercept = attr(terms.,'intercept')
+				terms. = attr(terms.,'term.labels')
+				if (intercept) terms. = c('1',terms.)
+				forbidden = unique(c(forbidden,terms.))
 			}
 		}
 		ok.to.remove = test[!test %in% forbidden]
@@ -140,6 +139,7 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 		if (length(terms)) return(reformulate(terms,dep,intercept))
 		return(as.formula(paste0(dep,'~1')))
 	}
+	print(terms)
 	if (intercept) {
 		names(intercept) = 'fixed'
 		return(c(intercept,terms))
@@ -312,7 +312,7 @@ calcWald = function (table,i,sqrt=F) {
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=FALSE,summary=TRUE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -401,7 +401,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		results[counter,] <<- c(type,term,p)
 	}
 
+print("Hello1")
 	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: sanitize order, expand interactions etc
+print(formula)
 	terms     = remove.terms(formula,c(),formulize=F)
 	prealloc  = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
@@ -423,7 +425,10 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		}
 		terms = if (intercept) '1' else c()
 		reml = F
-		for (totest in list(fixed[fixed != '1'],random)) { #FIXME: random[2:end] should be fit using REML...
+		testlist = list()
+		if (reduce.fixed) testlist$fixed = fixed[fixed != '1'] else terms = fixed
+		if (reduce.random) testlist$random = random else terms = c(terms,random)
+		for (totest in testlist) { #FIXME: random[2:end] should be fit using REML...
 			totest = totest[order(lengths(strsplit(totest,':')))]
 			while (length(totest) > 1) {
 				if (!quiet) message(paste('Candidates:',paste0(totest,collapse=', ')))
@@ -512,7 +517,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (!quiet) message('Calculating ANOVA statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
 		ret@anova = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@anova = calcWald(ret@anova$coefficients,4)
+		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@anova = calcWald(ret@anova,4)
 	}
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
