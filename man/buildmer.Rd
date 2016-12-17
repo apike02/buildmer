@@ -7,7 +7,7 @@
 buildmer(formula, data, family = gaussian, nAGQ = 1,
   adjust.p.chisq = TRUE, reorder.terms = TRUE, reduce.fixed = TRUE,
   reduce.random = TRUE, protect.intercept = TRUE, direction = "backward",
-  anova = FALSE, summary = TRUE, ddf = "Wald", quiet = FALSE,
+  anova = TRUE, summary = TRUE, ddf = "Wald", quiet = FALSE,
   verbose = 0, maxfun = 2e+05)
 }
 \arguments{

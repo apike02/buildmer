@@ -1,6 +1,7 @@
 require(lme4) || stop('Error loading lme4')
 have.lmerTest = require('lmerTest')
 have.kr = have.lmerTest && require('pbkrtest')
+have.gamm4 = require('gamm4')
 
 #' Make a buildmer object
 #' @param table A dataframe containing the results of the elimination process.
@@ -61,7 +62,14 @@ get.random.terms = function (term) lme4::findbars(as.formula(paste0('~',term)))
 #' Test whether a formula term contains lme4 random terms
 #' @param term The term.
 #' @return A logical indicating whether the term was a random-effects term.
+#' @export
 is.random.term = function (term) length(get.random.terms(term)) > 0
+
+#' Test whether a formula contains gamm4 smooth terms
+#' @param formula The formula.
+#' @return A logical indicating whether the formula has any gamm4 terms.
+#' @export
+has.smooth.terms = function (formula) length(mgcv:::interpret.gam(formula)$smooth.spec) > 0
 
 #' Convenience function to immediately descend into a level-2 term
 #' @param random.terms Vector of level-1 terms to descend into.
@@ -139,7 +147,6 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 		if (length(terms)) return(reformulate(terms,dep,intercept))
 		return(as.formula(paste0(dep,'~1')))
 	}
-	print(terms)
 	if (intercept) {
 		names(intercept) = 'fixed'
 		return(c(intercept,terms))
@@ -324,7 +331,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
 		mb <<- fit(fb)
 		if (!conv(mb)) return(record(type,t,NA))
-		p = modcomp(ma,mb)
+		p = modcomp(ma,fa,mb,fb)
 		record(type,t,p)
 		if ((direction == 'backward' && p >= .05) || (direction == 'forward' && p < .05)) {
 			fa <<- fb
@@ -334,13 +341,23 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		F
 	}
 
-	fit = function (formula,REML=reml) {
-		if (is.null(lme4::findbars(formula))) {
-			if (!quiet) message(paste0('Fitting  as (g)lm: ',deparse(formula,width.cutoff=500)))
+	fit = function (formula,REML=reml,want.gamm.obj=F) {
+		if (have.gamm4 && has.smooth.terms(formula)) {
+			# fix up model formula
+			fixed = lme4::nobars(formula)
+			bars = lme4::findbars(formula)
+			random = if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
+			if (!quiet) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
+			m = if (family == 'gaussian') gamm4(fixed,random,data=data,REML=REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else gamm4(fixed,random,family,data,nAGQ=nAGQ,control=glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			if (!is.null(data.name)) m$mer@call$data = data.name
+			m = if (want.gamm.obj) m else m$mer
+		}
+		else if (is.null(lme4::findbars(formula))) {
+			if (!quiet) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') lm(formula,data) else glm(formula,family,data)
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
-			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting  with  ML: '),deparse(formula,width.cutoff=500)))
+			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') lmer(formula,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,nAGQ=nAGQ,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
 			if (!is.null(data.name)) m@call$data = data.name
 		}
@@ -361,16 +378,14 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		no.failures
 	}
 
-	refit.if.needed = function (m,reml) {
+	refit.if.needed = function (m,f,reml) {
 		if (is.na(reml)) return(m)
 		status = hasREML(m)
 		if (is.na(status)) return(m)
-		if (status == reml) return(m) else fit(formula(m),REML=reml)
+		if (status == reml) return(m) else fit(f,REML=reml)
 	}
 
-	modcomp = function (a,b) {
-		fa = formula(a)
-		fb = formula(b)
+	modcomp = function (a,fa,b,fb) {
 		only.fixed.a = is.null(lme4::findbars(fa))
 		only.fixed.b = is.null(lme4::findbars(fb))
 		same.fixed.effects = isTRUE(all.equal(lme4::nobars(fa),lme4::nobars(fb)))
@@ -379,9 +394,9 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		else if (!same.fixed.effects)            F
 		else T
 	
-		a = refit.if.needed(a,reml)
+		a = refit.if.needed(a,fa,reml)
 		if (!conv(a)) return(NA)
-		b = refit.if.needed(b,reml)
+		b = refit.if.needed(b,fb,reml)
 		if (!conv(b)) return(NA)
 		p = if (all(class(a) == class(b))) {
 			res = if (any(class(a) == 'lm')) anova(a,b) else anova(a,b,refit=F)
@@ -401,9 +416,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		results[counter,] <<- c(type,term,p)
 	}
 
-print("Hello1")
 	formula   = remove.terms(formula,c(),formulize=T) #sanitize formula: sanitize order, expand interactions etc
-print(formula)
 	terms     = remove.terms(formula,c(),formulize=F)
 	prealloc  = length(terms)
 	results = data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
@@ -510,9 +523,17 @@ print(formula)
 		for (term in random.saved) fa = update.formula(fa,paste0('.~.+(',deparse(term),')'))
 		fit.until.conv('random')
 	}
-	ma = refit.if.needed(ma,reml)
-	if (!conv(ma)) ma = fit.until.conv(ma)
+	if (has.smooth.terms(fa)) ma = fit(fa,want.gamm.obj=T) else {
+		ma = refit.if.needed(ma,fa,reml)
+		if (!conv(ma)) ma = fit.until.conv(ma)
+	}
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
+	if (any(names(ma) == 'gam')) {
+		if (anova) ret@anova = anova(ma)
+		if (summary) ret@summary = summary(ma)
+		anova = F
+		summary = F
+	}
 	if (anova) {
 		if (!quiet) message('Calculating ANOVA statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)

@@ -12,7 +12,7 @@ data(vowels)
 Vowel data from a pilot study.
 }
 \examples{
-buildmer(f1 ~ vowel*timepoint*following + stress + information,data=vowels)
+buildmer(f1 ~ vowel*timepoint*following + stress + information + (vowel*timepoint*following|participant),data=vowels)
 }
 \keyword{datasets}
 
