@@ -33,7 +33,7 @@ setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 		if (have.lmerTest && !'lm' %in% class(object@model)) summary(object@model,ddf=ddf) else summary(object@model)
-		if (ddf == 'Wald' && !'lm' %in% class(ma)) smy$coefficients = calcWald(smy$coefficients,3)
+		if (ddf == 'Wald' && isLMM(ma)) smy$coefficients = calcWald(smy$coefficients,3)
 	}
 	if (length(object@messages)) warn(messages)
 	smy
@@ -517,13 +517,13 @@ print(formula)
 		if (!quiet) message('Calculating ANOVA statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
 		ret@anova = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@anova = calcWald(ret@anova,4)
+		if (ddf == 'Wald' && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
 	}
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
+		if (ddf == 'Wald' && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
 	ret
 }
