@@ -33,7 +33,7 @@ setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 		if (have.lmerTest && !'lm' %in% class(object@model)) summary(object@model,ddf=ddf) else summary(object@model)
-		if (ddf == 'Wald' && !lm %in% class(ma)) smy$coefficients = calcWald(smy$coefficients,3)
+		if (ddf == 'Wald' && !'lm' %in% class(ma)) smy$coefficients = calcWald(smy$coefficients,3)
 	}
 	if (length(object@messages)) warn(messages)
 	smy
@@ -92,13 +92,20 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 				terms = terms(form)
 				intercept = attr(terms,'intercept')
 				terms = attr(terms,'term.labels')
-				if (intercept) terms = c(terms.,'1')
+				if (intercept) terms = c(terms,'1')
 				forbidden = unique(c(forbidden,terms))
 			}
 		}
 		ok.to.remove = test[!test %in% forbidden]
 		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,'|',grouping,')') %in% ok.to.remove]
 	}
+
+	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
+	remove = sapply(remove,function (x) {
+		if (!is.random.term(x)) return(x)
+		if (substr(x,nchar(x),nchar(x)) == ')') return(x)
+		paste0('(',x,')')
+	})
 
 	dep = as.character(formula)[2]
 	terms = terms(formula)
@@ -191,10 +198,10 @@ add.terms = function (formula,add) {
 				bar.grouping = bar[[3]]
 				bar.terms = bar[[2]]
 				# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
-				suitable = innerapply(random.terms,function (term) term[[3]] == bar.grouping)
-				if (any(suitable)) {
-					suitable = suitable[suitable]
-					random.terms[[suitable[1]]] = sapply(random.terms[[suitable[1]]],function (term) {
+				suitable = if (length(random.terms)) which(innerapply(random.terms,function (term) term[[3]] == bar.grouping)) else NULL
+				if (length(suitable)) {
+					random.terms[[suitable[1]]] = innerapply(random.terms[[suitable[1]]],function (term) {
+						grouping = term[[3]]
 						terms = as.character(term[2])
 						form = as.formula(paste0('~',terms))
 						terms = terms(form)
@@ -217,10 +224,9 @@ add.terms = function (formula,add) {
 #' @param model The fitted model object.
 #' @return The deviance or REML criterion.
 devfun = function (model) {
-	if (any(class(model) == 'lm')) deviance(model) else {
-		comp = getME(model,'devcomp')$cmp
-		if (hasREML(model)) comp['REML'] else comp['dev']
-	}
+	if (any(class(model) == 'lm')) return(deviance(model))
+	comp = getME(model,'devcomp')$cmp
+	if (isLMM(model) && hasREML(model)) comp['REML'] else comp['dev']
 }
 
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
@@ -274,7 +280,7 @@ hasREML = function (model) {
 calcWald = function (table,i,sqrt=F) {
 	data = table[,i]
 	if (sqrt) data = sqrt(data)
-	cbind(table,'p (Wald)'=2*pnorm(abs(data),lower.tail=f))
+	cbind(table,'p (Wald)'=2*pnorm(abs(data),lower.tail=F))
 }
 	
 #' Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
@@ -316,8 +322,6 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 
 	elim = function (type) {
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
-		print(fa)
-		print(fb)
 		mb <<- fit(fb)
 		if (!conv(mb)) return(record(type,t,NA))
 		p = modcomp(ma,mb)
@@ -409,33 +413,35 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (!quiet) message('Determining predictor order')
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
-		reml = F
 		dep = as.character(formula[2])
 		if ('1' %in% terms) {
-			terms = terms[terms != '1']
 			intercept = T
 			formula = as.formula(paste0(dep,'~1'))
 		} else {
 			intercept = F
 			formula = as.formula(paste0(dep,'~0'))
 		}
-		totest = terms
-		terms = c()
-		while (length(totest) > 1) {
-			comps = sapply(totest,function (x) {
-				f = add.terms(formula,totest[totest != x])
-				m = fit(f)
-				if (conv(m)) devfun(m) else Inf
-			})
-			winner = rev(order(comps))[[1]]
-			if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winner],'-> keeping'))
-			terms = c(terms,totest[winner])
-			formula = add.terms(formula,totest[winner])
-			totest = totest[-winner]
+		terms = if (intercept) '1' else c()
+		reml = F
+		for (totest in list(fixed[fixed != '1'],random)) { #FIXME: random[2:end] should be fit using REML...
+			totest = totest[order(lengths(strsplit(totest,':')))]
+			while (length(totest) > 1) {
+				if (!quiet) message(paste('Candidates:',paste0(totest,collapse=', ')))
+				comps = sapply(totest,function (x) {
+					f = add.terms(formula,totest[totest != x])
+					if (isTRUE(all.equal(f,formula))) return(Inf) #failed marginality tests
+					m = fit(f)
+					if (conv(m)) devfun(m) else Inf
+				})
+				winner = rev(order(comps))[[1]]
+				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winner],'-> keeping'))
+				terms = c(terms,totest[winner])
+				formula = add.terms(formula,totest[winner])
+				totest = totest[-winner]
+			}
+			if (!quiet) message(paste('Adding the final remaining term:',totest))
+			terms = c(terms,totest)
 		}
-		if (!quiet) message(paste('Adding the final remaining term:',totest))
-		terms = c(terms,totest)
-		if (intercept) terms = c('1',terms)
 		formula = add.terms(formula,totest)
 	}
 
@@ -512,7 +518,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (!quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !lm %in% class(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
+		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
 	ret
 }
