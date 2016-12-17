@@ -9,6 +9,9 @@ conv(model)
 \arguments{
 \item{model}{The model object to test.}
 }
+\value{
+Whether the model converged or not.
+}
 \description{
 Test an lme4 or equivalent object for convergence
 }

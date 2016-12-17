@@ -15,4 +15,7 @@ The formula with all random-effect correlations forced to zero, per Pinheiro & B
 \description{
 Diagonalize the random-effect covariance structure, possibly assisting convergence
 }
+\keyword{covariance}
+\keyword{diagonal}
+\keyword{structure}
 

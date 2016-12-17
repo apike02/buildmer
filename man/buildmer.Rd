@@ -7,8 +7,8 @@
 buildmer(formula, data, family = gaussian, nAGQ = 1,
   adjust.p.chisq = TRUE, reorder.terms = TRUE, reduce.fixed = TRUE,
   reduce.random = TRUE, protect.intercept = TRUE, direction = "backward",
-  summary = FALSE, ddf = "Wald", quiet = FALSE, verbose = 0,
-  maxfun = 2e+05)
+  anova = FALSE, summary = TRUE, ddf = "Wald", quiet = FALSE,
+  verbose = 0, maxfun = 2e+05)
 }
 \arguments{
 \item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}
@@ -17,7 +17,7 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
-\item{nAGQ}{The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)}
+\item{nAGQ}{The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation).}
 
 \item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
@@ -29,9 +29,11 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 
 \item{protect.intercept}{If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.}
 
-\item{direction}{The direction for stepwise elimination; either 'forward' or 'backward' (default).}
+\item{direction}{The direction for stepwise elimination; either 'forward' or 'backward' (default). Both or neither are also understood.}
 
-\item{summary}{Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
+\item{anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
+
+\item{summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
 
 \item{ddf}{The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).}
 
@@ -47,14 +49,16 @@ A buildmer object containing the following slots:
 \item table: a dataframe containing the results of the elimination process
 \item model: the final model containing only the terms that survived elimination
 \item messages: any warning messages
-\item summary: the model's summary, if summary==TRUE
+\item summary: the model's summary, if 'summary=TRUE' was passed
+\item anova: the model's anova, if 'anova=TRUE' was passed
 }
 }
 \description{
 Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
 }
 \examples{
-buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
+buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 }
+\keyword{buildmer,}
 \keyword{fit}
 

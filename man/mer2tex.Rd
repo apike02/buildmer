@@ -14,7 +14,7 @@
 \alias{translating}
 \title{Convert a summary to LaTeX code (biased towards vowel analysis)}
 \usage{
-mer2tex(summary, vowel = "", formula = F, diag = F, label = "",
+mer2tex(summary, vowel = "", formula = F, label = "",
   aliases = list(`(Intercept)` = "Intercept", Df1 = "$\\\\Updelta$F1", Df2 =
   "$\\\\Updelta$F2", `2:` = "\\\\o:", `9y` = "\\\\oe y", country1 =
   "country = The Netherlands", region1 = "region = NR", region2 = "region = NM",
@@ -29,8 +29,6 @@ mer2tex(summary, vowel = "", formula = F, diag = F, label = "",
 \item{vowel}{The vowel you're analyzing.}
 
 \item{formula}{The formula as used in your final lmer object.}
-
-\item{diag}{Whether to include a note about a diagonal covariance structure having been assumed.}
 
 \item{label}{The LaTeX label to put below your 'Results' caption.}
 }

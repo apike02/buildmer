@@ -6,33 +6,49 @@ have.kr = have.lmerTest && require('pbkrtest')
 #' @param table A dataframe containing the results of the elimination process.
 #' @param model The final model containing only the terms that survived elimination.
 #' @param messages Any warning messages.
-#' @param summary: The model's summary, if summary==TRUE.
+#' @param summary: The model's summary, if the model was built with 'summary=TRUE'.
+#' @param anova: The model's ANOVA, if the model was built with 'anova=TRUE'.
 #' @keywords buildmer
 #' @seealso buildmer
 #' @export
-mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY'))
+mkBuildmer = setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY',anova='ANY'))
 setMethod('print','buildmer',function (x) {
-	print(object@mode)
-	if (length(object@messages)) warn(messages)
+	print(x@model)
+	if (length(x@messages)) warn(messages)
 })
-setMethod('anova','buildmer',function (object) {
-	print(object@table)
+setMethod('anova','buildmer',function (object,ddf='Kenward-Roger') {
+	anv = if (!is.null(object@anova)) object@anova else {
+		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		anv = if (have.lmerTest && ddf != 'Wald') anova(anova@model,ddf=ddf) else anova(object@model)
+		if (ddf == 'Wald' && !'lm' %in% class(object@model)) anv = calcWald(anv,4)
+	}
 	if (length(object@messages)) warn(messages)
+	anv
 })
 setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 	smy = if (!is.null(object@summary)) object@summary else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		if (have.lmerTest) summary(object@object,ddf=ddf) else summary(object@object)
+		if (have.lmerTest && !'lm' %in% class(object@model)) summary(object@model,ddf=ddf) else summary(object@model)
+		if (ddf == 'Wald' && !lm %in% class(ma)) smy$coefficients = calcWald(smy$coefficients,3)
 	}
-	print(smy)
 	if (length(object@messages)) warn(messages)
 	smy
 })
 
+#' Get the elimination table from a buildmer object
+#' @param object The buildmer object.
+#' @keywords elimination
+#' @seealso buildmer
+#' @export
+elim = function (object) object@table
+
 #' Test an lme4 or equivalent object for convergence
 #' @param model The model object to test.
+#' @return Whether the model converged or not.
 #' @keywords convergence
 #' @export
 conv = function (model) any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0
@@ -40,7 +56,7 @@ conv = function (model) any(class(model) == 'lm') || !length(model@optinfo$conv$
 #' Get the level-2 terms contained within a level-1 lme4 random term
 #' @param term The term.
 #' @return A list of random terms.
-get.random.terms = function (term) bars = lme4::findbars(as.formula(paste0('~',term)))
+get.random.terms = function (term) lme4::findbars(as.formula(paste0('~',term)))
 
 #' Test whether a formula term contains lme4 random terms
 #' @param term The term.
@@ -50,7 +66,7 @@ is.random.term = function (term) length(get.random.terms(term)) > 0
 #' Convenience function to immediately descend into a level-2 term
 #' @param random.terms Vector of level-1 terms to descend into.
 #' @param FUN The function to apply to the level-2 terms.
-#' @returns The modified random.terms
+#' @return The modified random.terms
 innerapply = function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
 #' Remove terms from an lme4 formula
@@ -58,11 +74,12 @@ innerapply = function (random.terms,FUN) sapply(random.terms,function (term) sap
 #' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use 'term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
 #' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
+#' @keywords remove terms
 #' @export
 remove.terms = function (formula,remove=c(),formulize=T) {
 	remove.possible = function(terms,grouping=NULL,test=remove) {
 		if (!length(terms)) return(terms)
-		# Do not remove main effects if they have corresponding interaction terms
+		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
 		forbidden = terms[grepl(':',terms,fixed=T)]
 		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
 		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping)
@@ -70,13 +87,13 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 			# Do not remove fixed terms if they have corresponding random terms
 			bars = lme4::findbars(formula)
 			for (term in bars) {
-				terms. = as.character(term[2])
-				form = as.formula(paste0('~',terms.))
-				terms. = terms(form)
-				intercept = attr(terms.,'intercept')
-				terms. = attr(terms.,'term.labels')
-				if (intercept) terms. = c(terms.,'1')
-				forbidden = unique(c(forbidden,terms.))
+				terms = as.character(term[2])
+				form = as.formula(paste0('~',terms))
+				terms = terms(form)
+				intercept = attr(terms,'intercept')
+				terms = attr(terms,'term.labels')
+				if (intercept) terms = c(terms.,'1')
+				forbidden = unique(c(forbidden,terms))
 			}
 		}
 		ok.to.remove = test[!test %in% forbidden]
@@ -86,7 +103,7 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	dep = as.character(formula)[2]
 	terms = terms(formula)
 	intercept = attr(terms,'intercept')
-	if ('1' %in% remove && intercept && !length(remove.possible('1',test='1'))) intercept = 0
+	if ('1' %in% remove && intercept && !'1' %in% remove.possible('1',test='1')) intercept = 0
 	terms = attr(terms,'term.labels')
 	fixed.terms = Filter(Negate(is.random.term),terms)
 	fixed.terms = remove.possible(fixed.terms)
@@ -119,46 +136,78 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	if (intercept) {
 		names(intercept) = 'fixed'
 		return(c(intercept,terms))
-	} else return(terms)
+	}
+	terms
 }
 
-#' Add terms to an lme4 formula based on an example from another lme4 formula
+#' Add terms to an lme4 formula.
 #' @param formula The lme4 formula to add terms to.
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use '(term|group)' syntax if you want to add an independent random effect (e.g. '(olderterm|group) + (term|group)'), or use 'term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
+#' @return The updated formula.
 #' @seealso buildmer
+#' @keywords add terms
 #' @export
-add.terms = function (formula,terms) {
-	dep = as.character(formula)[2]
-	orig.terms = terms(formula)
+add.terms = function (formula,add) {
+	interactions.ok = function (x,grouping=NULL) {
+		test = unlist(strsplit(x,':',fixed=T))
+		test = test[test != x]
+		if (!length(test)) return(T)
+		if (!is.null(grouping)) test = paste(test,'|','c',sep='')
+		all(test %in% terms)
+	}
+
+	dep = as.character(formula[2])
+	terms = terms(formula)
 	intercept = attr(terms,'intercept')
-	fixed.terms = Filter(Negate(is.random.term),orig.terms)
-	random.terms = Filter(is.random.term,orig.terms)
-	for (term in terms) {
+	terms = attr(terms,'term.labels')
+	fixed.terms = Filter(Negate(is.random.term),terms)
+	random.terms = Filter(is.random.term,terms)
+	# Apparently, terms() removes parentheses around random terms. We need to restore those...
+	if (length(random.terms)) random.terms = sapply(random.terms,function (x) paste0('(',x,')'))
+
+	# Check marginality restrictions
+	add = add[sapply(add,function (x) {
+		if (!is.random.term(x)) return(interactions.ok(x))
+		all(sapply(get.random.terms(x),function (term) {
+			grouping = term[[3]]
+			terms = as.character(term[2])
+			if (all(terms == '1')) return(intercept) #this is a boolean referring to the intercept dredged out from the already-present fixed terms!
+			form = as.formula(paste0('~',terms))
+			terms = terms(form)
+			terms = attr(terms,'term.labels')
+			if (!all(sapply(terms,function (x) interactions.ok(x,grouping=grouping)))) return(F)
+			# Do not add a random term if it doesn't have a corresponding fixed term present
+			all(terms %in% fixed.terms)
+		}))
+	})]
+
+	for (term in add) {
 		if (is.random.term(term)) {
 			if (substr(term,nchar(term),nchar(term)) == ')') {
 				# independent term: tack it on at the end
 				random.terms = c(random.terms,term)
 			}
-			bars = get.random.terms(term)
-			bar.grouping = bars[[3]]
-			bar.terms = bars[[1]]
-			# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
-			suitable = innerapply(random.terms,function (term) term[[3]] == bar.grouping)
-			if (any(suitable)) {
-				suitable = suitable[suitable]
-				random.terms[[suitable[1]]] = sapply(random.terms[[suitable[1]]],function (term) {
-					terms = as.character(term[2])
-					form = as.formula(paste0('~',terms))
-					terms = terms(form)
-					intercept = attr(terms,'intercept')
-					terms = attr(terms,'term.labels')
-					terms = c(terms,bar.terms)
-					if (intercept) terms = c('1',terms)
-					else terms[[1]] = paste0('0+',terms[[1]])
-					terms = paste(terms,collapse='+')
-					paste0('(',terms,'|',grouping,')')
-				})
-			} else random.terms = c(random.terms,paste0('(',term,')')) #still have to tack it on at the end in the end...
+			for (bar in get.random.terms(term)) {
+				bar.grouping = bar[[3]]
+				bar.terms = bar[[2]]
+				# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
+				suitable = innerapply(random.terms,function (term) term[[3]] == bar.grouping)
+				if (any(suitable)) {
+					suitable = suitable[suitable]
+					random.terms[[suitable[1]]] = sapply(random.terms[[suitable[1]]],function (term) {
+						terms = as.character(term[2])
+						form = as.formula(paste0('~',terms))
+						terms = terms(form)
+						intercept = attr(terms,'intercept')
+						terms = attr(terms,'term.labels')
+						terms = c(terms,bar.terms)
+						if (intercept) terms = c('1',terms)
+						else terms[[1]] = paste0('0+',terms[[1]])
+						terms = paste(terms,collapse='+')
+						paste0('(',terms,'|',grouping,')')
+					})
+				} else random.terms = c(random.terms,paste0('(',paste(bar.terms,collapse='+'),'|',bar.grouping,')')) #still have to tack it on at the end in the end...
+			}
 		} else fixed.terms = c(fixed.terms,term)
 	}
 	reformulate(c(fixed.terms,random.terms),dep,intercept)
@@ -169,7 +218,7 @@ add.terms = function (formula,terms) {
 #' @return The deviance or REML criterion.
 devfun = function (model) {
 	if (any(class(model) == 'lm')) deviance(model) else {
-		comp = devcomp(model)$cmp
+		comp = getME(model,'devcomp')$cmp
 		if (hasREML(model)) comp['REML'] else comp['dev']
 	}
 }
@@ -177,6 +226,7 @@ devfun = function (model) {
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
 #' @param formula A model formula.
 #' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
+#' @keywords diagonal covariance structure
 #' @export
 diagonalize = function(formula) {
 	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
@@ -195,10 +245,9 @@ diagonalize = function(formula) {
 	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse='+')))
 }
 
-#' Remove the last random slope (or, if not available, the last random intercept) from a model formula
+#' Get the last random slope (or, if not available, the last random intercept) from a model formula
 #' @param formula A model formula.
 #' @return The last random slope (or, if not available, the last random intercept).
-#' @export
 get.last.random.slope = function (formula) {
 	terms = remove.terms(formula,c(),formulize=F)
 	random.terms = terms[names(terms) == 'random']
@@ -210,24 +259,37 @@ get.last.random.slope = function (formula) {
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
+#' @export
 hasREML = function (model) {
 	if ('lm' %in% class(model)) return(NA)
 	if (!isLMM(model)) return(NA)
 	isREML(model)
+}
+
+#' Calculate p-values based on Wald z-scores
+#' @param table A table from a summary or anova output.
+#' @param i The number of the column in that table containing the t-values
+#' @param sqrt Whether we're testing F values or t values (default)
+#' @return The table augmented with a column 'p (Wald)' containing Wald p values
+calcWald = function (table,i,sqrt=F) {
+	data = table[,i]
+	if (sqrt) data = sqrt(data)
+	cbind(table,'p (Wald)'=2*pnorm(abs(data),lower.tail=f))
 }
 	
 #' Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
 #' @param formula The model formula; if you include random effects, use lme4 syntax for them.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation)
+#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation).
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
-#' @param direction The direction for stepwise elimination; either 'forward' or 'backward' (default).
-#' @param summary Whether to also calculate summaries for the final model after term elimination. This is rather pointless, except if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
+#' @param direction The direction for stepwise elimination; either 'forward' or 'backward' (default). Both or neither are also understood.
+#' @param anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
+#' @param summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
 #' @param verbose The verbosity level passed to (g)lmer fits.
@@ -237,13 +299,14 @@ hasREML = function (model) {
 #' \item table: a dataframe containing the results of the elimination process
 #' \item model: the final model containing only the terms that survived elimination
 #' \item messages: any warning messages
-#' \item summary: the model's summary, if summary==TRUE
+#' \item summary: the model's summary, if 'summary=TRUE' was passed
+#' \item anova: the model's anova, if 'anova=TRUE' was passed
 #' }
-#' @keywords fit
+#' @keywords buildmer, fit
 #' @examples
-#' buildmer(Reaction~Days,list(Subject=~Days),lme4::sleepstudy)
+#' buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',summary=FALSE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=FALSE,summary=TRUE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -253,6 +316,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 
 	elim = function (type) {
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
+		print(fa)
+		print(fb)
 		mb <<- fit(fb)
 		if (!conv(mb)) return(record(type,t,NA))
 		p = modcomp(ma,mb)
@@ -315,8 +380,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		b = refit.if.needed(b,reml)
 		if (!conv(b)) return(NA)
 		p = if (all(class(a) == class(b))) {
-			anovafun = if (any(class(a) == 'lm')) anova else function (...) anova(...,refit=F)
-			res = anovafun(a,b)
+			res = if (any(class(a) == 'lm')) anova(a,b) else anova(a,b,refit=F)
 			res[[length(res)]][[2]]
 		} else {
 			# Compare the models by hand
@@ -346,11 +410,15 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
 		reml = F
+		dep = as.character(formula[2])
 		if ('1' %in% terms) {
 			terms = terms[terms != '1']
-			tested = '1'
+			intercept = T
 			formula = as.formula(paste0(dep,'~1'))
-		} else  formula = as.formula(paste0(dep,'~0'))
+		} else {
+			intercept = F
+			formula = as.formula(paste0(dep,'~0'))
+		}
 		totest = terms
 		terms = c()
 		while (length(totest) > 1) {
@@ -360,46 +428,44 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 				if (conv(m)) devfun(m) else Inf
 			})
 			winner = rev(order(comps))[[1]]
+			if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winner],'-> keeping'))
 			terms = c(terms,totest[winner])
 			formula = add.terms(formula,totest[winner])
 			totest = totest[-winner]
 		}
+		if (!quiet) message(paste('Adding the final remaining term:',totest))
 		terms = c(terms,totest)
+		if (intercept) terms = c('1',terms)
 		formula = add.terms(formula,totest)
 	}
 
+	fixed.terms = Filter(Negate(is.random.term),terms)
+	if (!reduce.fixed) fixed.terms = paste(fixed.terms,collapse='+')
+	random.terms = Filter(is.random.term,terms)
+	if (!reduce.random) random.terms = paste(random.terms.collapse='+')
+
+	if (!any(direction %in% c('forward','backward'))) ma = fit(formula,T)
 	if (any(direction == 'forward')) {
 		if (!quiet) message('Beginning forward elimination')
-		fixed.terms = Filter(Negate(is.random.term),terms)
-		terms = terms[!terms %in% fixed.terms]
-		if (!reduce.fixed) fixed.terms = paste(fixed.terms,collapse='+')
-		random.terms = Filter(is.random.term,terms)
-		if (!reduce.random) random.terms = paste(random.terms.collapse='+')
-
-		base = paste0(as.character(formula[[2]]),'~',fixed.terms[[1]])
+		base = paste0(dep,'~',fixed.terms[[1]])
 		reml = !reduce.fixed
 		fa = as.formula(base)
 		ma = fit(fa)
 		record('fixed',fixed.terms[[1]],NA) #can't remove the first term
 		if (length(fixed.terms) > 1) {
 			for (t in fixed.terms[2:length(fixed.terms)]) {
-				fb = update.formula(fa,paste0('.~.+',t))
+				fb = add.terms(fa,t)
 				elim('fixed')
 			}
 		}
-		if (length(random.terms)) {
-			fb = update.formula(fa,paste0('.~.+',random.terms[[1]]))
-			elim('random')
-		}
 		reml = T
-		if (length(random.terms) > 1) {
-			for (t in random.terms[2:length(random.terms)]) {
-				fb = update.formula(fa,paste0('.~.+',t))
+		if (length(random.terms)) {
+			for (t in random.terms) { #We will do a pointless REML fit for the first random effect (or later ones if the first one(s) is/are not included). I don't know how to avoid this...
+				fb = add.terms(fa,t)
 				elim('random')
 			}
 		}
 	}
-
 	if (any(direction == 'backward')) {
 		if (!quiet) message('Beginning backward elimination')
 		fa = formula
@@ -436,30 +502,18 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	ma = refit.if.needed(ma,reml)
 	if (!conv(ma)) ma = fit.until.conv(ma)
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
+	if (anova) {
+		if (!quiet) message('Calculating ANOVA statistics')
+		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
+		ret@anova = fun(ma,ddf=ddf)
+		if (ddf == 'Wald' && !'lm' %in% class(ma)) ret@anova = calcWald(ret@anova$coefficients,4)
+	}
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald') ret@summary$coefficients = cbind(ret@summary$coefficients,'p (Wald)'=2*pnorm(abs(ret@summary$coefficients[,3]),lower.tail=F))
+		if (ddf == 'Wald' && !lm %in% class(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
-	ret
-}
-
-#' Perform stepwise elimination like SPSS, without you having to make complex decisions.
-#' @param formula The model you would ideally like to fit (don't worry about convergence problems).
-#' @param data The data you want to fit the model to.
-#' @param family An optional argument denoting the type of error distribution to use. If you're doing logistic regression, specify 'family=binomial'. If you're doing Poisson regression, specify 'family=poisson'. If you just want a regular, linear regression, don't specify this argument at all.
-#' @param direction If you want to use forward rather than backward elimination, specify 'direction=forward'. If you want both (forward followed by backward), specify 'direction=c("forward","backward")' (or, equivalently, 'direction=c("backward","forward")'). If you want backward elimination (the default), specify 'direction=backward', or don't specify this argument at all.
-#' @keywords stepwise, SPSS
-#' @export
-stepwise = function (formula,data,family=gaussian,reorder.terms=T,direction='backward') {
-	if (!have.kr) stop("This function requires two additional packages: lmerTest & pbkrtest. Install both packages (say 'install.packages(c(\"lmerTest\",\"pbkrtest\"))' and then close and re-start R.")
-	data.name = substitute(data)
-	family = as.character(substitute(family))
-	message('stepwise() will now begin to fit your model. This happens in three steps: first, the optimal order for the terms in your model formula will be determined. Second, each of these terms will be tested for elimination on the basis of their improvement to the model fit (tested via the likelihood ratio test). Thirdly, the summary will be calculated.')
-	ret = buildmer(formula,data,family=family,direction=direction,summary=T,ddf='Kenward-Roger')
-	if (any(class(ret@model)) == 'lm') ret@model$call$data = data.name else ret@model@call$data = data.name
-	message('Finished!')
 	ret
 }
 
@@ -467,12 +521,11 @@ stepwise = function (formula,data,family=gaussian,reorder.terms=T,direction='bac
 #' @param summary The summary to convert.
 #' @param vowel The vowel you're analyzing.
 #' @param formula The formula as used in your final lmer object.
-#' @param diag Whether to include a note about a diagonal covariance structure having been assumed.
 #' @param label The LaTeX label to put below your 'Results' caption.
 #' @aliases A list of aliases translating summary terms to LaTeX code.
 #' @keywords LaTeX
 #' @export
-mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
+mer2tex = function (summary,vowel='',formula=F,label='',aliases=list(
 '(Intercept)' = 'Intercept',
 'Df1' = '$\\Updelta$F1',
 'Df2' = '$\\Updelta$F2',
@@ -533,7 +586,6 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 			factors = Filter(function (x) x != '0' & x != '- 1',factors)
 			factors = sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x))
 			slopesmsg = c('Random slopes for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
-			if (diag) slopesmsg = c(slopesmsg,' (diagonal covariance structure)')
 			mcprintln(slopesmsg)
 		}
 		cat('\\hline\n')
@@ -573,3 +625,10 @@ mer2tex = function (summary,vowel='',formula=F,diag=F,label='',aliases=list(
 			),'),\n'
 	,sep='')
 }
+
+#' Vowel data from a pilot study.
+#' @docType data
+#' @usage data(vowels)
+#' @format A standard data frame.
+#' @examples buildmer(f1 ~ vowel*timepoint*following + stress + information,data=vowels)
+"vowels"

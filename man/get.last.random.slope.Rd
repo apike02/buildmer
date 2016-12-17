@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{get.last.random.slope}
 \alias{get.last.random.slope}
-\title{Remove the last random slope (or, if not available, the last random intercept) from a model formula}
+\title{Get the last random slope (or, if not available, the last random intercept) from a model formula}
 \usage{
 get.last.random.slope(formula)
 }
@@ -13,6 +13,6 @@ get.last.random.slope(formula)
 The last random slope (or, if not available, the last random intercept).
 }
 \description{
-Remove the last random slope (or, if not available, the last random intercept) from a model formula
+Get the last random slope (or, if not available, the last random intercept) from a model formula
 }
 
