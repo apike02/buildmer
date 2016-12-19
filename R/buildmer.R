@@ -181,7 +181,7 @@ add.terms = function (formula,add) {
 	fixed.terms = Filter(Negate(is.random.term),terms)
 	random.terms = Filter(is.random.term,terms)
 	# Apparently, terms() removes parentheses around random terms. We need to restore those...
-	if (length(random.terms)) random.terms = sapply(random.terms,function (x) paste0('(',x,')'))
+	if (length(random.terms)) random.terms = paste('(',random.terms,')')
 
 	# Check marginality restrictions
 	add = add[sapply(add,function (x) {
