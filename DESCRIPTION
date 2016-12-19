@@ -8,7 +8,9 @@ Description: The buildmer package attempts to build, from the user's
     improvement of model deviance. Optional reordering of the terms by their
     contribution to the deviance (like SPSS) is also supported.
 Depends:
-    R (>= 3.2)
+    R (>= 3.2), lme4
+Suggests:
+    lmerTest, pbkrtest, gamm4
 License: GPLv3
 Encoding: UTF-8
 LazyData: true
