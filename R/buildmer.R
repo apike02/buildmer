@@ -1,7 +1,7 @@
-require(lme4) || stop('Error loading lme4')
-have.lmerTest = require('lmerTest')
-have.kr = have.lmerTest && require('pbkrtest')
-have.gamm4 = require('gamm4')
+library(lme4)
+have.gamm4 = function () require('gamm4')
+have.kr = function () have.lmerTest() && require('pbkrtest')
+have.lmerTest = function () require('lmerTest')
 
 #' Make a buildmer object
 #' @param table A dataframe containing the results of the elimination process.
@@ -20,9 +20,9 @@ setMethod('print','buildmer',function (x) {
 setMethod('anova','buildmer',function (object,ddf='Kenward-Roger') {
 	anv = if (!is.null(object@anova)) object@anova else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		anv = if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest()) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr()) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		anv = if (have.lmerTest() && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
 		if (ddf == 'Wald' && !'lm' %in% class(object@model)) anv = calcWald(anv,4)
 	}
 	if (length(object@messages)) warn(messages)
@@ -31,9 +31,9 @@ setMethod('anova','buildmer',function (object,ddf='Kenward-Roger') {
 setMethod('summary','buildmer',function (object,ddf='Kenward-Roger') {
 	smy = if (!is.null(object@summary)) object@summary else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		if (have.lmerTest && !'lm' %in% class(object@model)) summary(object@model,ddf=ddf) else summary(object@model)
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest()) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr()) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		if (have.lmerTest() && !'lm' %in% class(object@model)) summary(object@model,ddf=ddf) else summary(object@model)
 		if (ddf == 'Wald' && isLMM(ma)) smy$coefficients = calcWald(smy$coefficients,3)
 	}
 	if (length(object@messages)) warn(messages)
@@ -327,8 +327,8 @@ calcWald = function (table,i,sqrt=F) {
 #' @export
 buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
-	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
-	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
+	if (summary && !have.lmerTest() && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
+	if (summary && ddf == 'Kenward-Roger' && !have.kr()) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
 	data.name = substitute(data)
 	family = as.character(substitute(family))
@@ -348,7 +348,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	}
 
 	fit = function (formula,REML=reml,want.gamm.obj=F) {
-		if (have.gamm4 && has.smooth.terms(formula)) {
+		if (have.gamm4() && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed = lme4::nobars(formula)
 			bars = lme4::findbars(formula)
@@ -545,13 +545,13 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	}
 	if (anova) {
 		if (!quiet) message('Calculating ANOVA statistics')
-		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
+		fun = if (have.lmerTest() && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
 		ret@anova = fun(ma,ddf=ddf)
 		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
 	}
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
-		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
+		fun = if (have.lmerTest() && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
 		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
