@@ -449,7 +449,6 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (reduce.random) testlist$random = random else terms = c(terms,random)
 		for (totest in testlist) { #FIXME: random[2:end] should be fit using REML...
 			while (length(totest)) {
-				if (!quiet) message(paste('Candidates:',paste0(totest,collapse=', ')))
 				tested.formulas = list(formula)
 				comps = c()
 				if (length(totest) > 1) {
@@ -466,7 +465,7 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 				} else 	i = 1
 				formula = add.terms(formula,totest[[i]])
 				terms = c(terms,totest[i])
-				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:',deparse(formula),'\n'))
+				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:',deparse(formula)))
 				totest = totest[-i]
 			}
 		}
