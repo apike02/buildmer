@@ -88,10 +88,13 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 	remove.possible = function(terms,grouping=NULL,test=remove) {
 		if (!length(terms)) return(terms)
 		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
-		forbidden = terms[grepl(':',terms,fixed=T)]
-		forbidden = unique(unlist(strsplit(forbidden,':',fixed=T)))
+		for (x in terms) {
+			x.star = gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+			forbidden = attr(terms(as.formula(paste0('~',x.star))),'term.labels')
+			forbidden = forbidden[forbidden != x]
+		}
+		# Do not remove fixed terms if they have corresponding random terms
 		if (!is.null(grouping)) forbidden = paste0(forbidden,'|',grouping) else {
-			# Do not remove fixed terms if they have corresponding random terms
 			bars = lme4::findbars(formula)
 			for (term in bars) {
 				terms. = as.character(term[2])
@@ -167,7 +170,7 @@ add.terms = function (formula,add) {
 		test = attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 		test = test[test != x]
 		if (!length(test)) return(T)
-		if (!is.null(grouping)) test = paste(test,'|','c',sep='')
+		if (!is.null(grouping)) test = paste0(test,'|',grouping)
 		all(test %in% terms)
 	}
 
@@ -445,32 +448,28 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (reduce.fixed) testlist$fixed = fixed[fixed != '1'] else terms = fixed
 		if (reduce.random) testlist$random = random else terms = c(terms,random)
 		for (totest in testlist) { #FIXME: random[2:end] should be fit using REML...
-			totest = totest[order(lengths(strsplit(totest,':')))]
-			while (length(totest) > 1) {
+			while (length(totest)) {
 				if (!quiet) message(paste('Candidates:',paste0(totest,collapse=', ')))
-				comps = sapply(totest,function (x) {
-					f = add.terms(formula,totest[totest != x])
-					if (isTRUE(all.equal(f,formula))) return(Inf) #failed marginality tests
-					m = fit(f)
-					if (conv(m)) devfun(m) else Inf
-				})
-				winners = rev(order(comps))
-				new.formula = formula
-				i = 0
-				while (isTRUE(all.equal(new.formula,formula))) {
-					i = i + 1
-					if (i > length(winners)) stop('Encountered an ordering paradox - none of the requested terms could be added to the model formula without violating marginality restrictions. Please file a bug report against the buildmer package, and include your data and model specification!')
-					new.formula = add.terms(formula,totest[winners[i]])
-				}
-				formula = new.formula
-				terms = c(terms,totest[winners[i]])
-				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winners[i]],'-> keeping. Formula is now:',deparse(formula)))
-				totest = totest[-winners[i]]
+				tested.formulas = list(formula)
+				comps = c()
+				if (length(totest) > 1) {
+					for (x in totest) {
+						f = add.terms(formula,totest[totest != x])
+						#if (!f %in% tested.formulas) {
+						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
+							tested.formulas = c(tested.formulas,f)
+							m = fit(f)
+							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
+						}
+					}
+					i = rev(order(comps))[1]
+				} else 	i = 1
+				formula = add.terms(formula,totest[[i]])
+				terms = c(terms,totest[i])
+				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:',deparse(formula),'\n'))
+				totest = totest[-i]
 			}
-			if (!quiet) message(paste('Adding the final remaining term:',totest))
-			terms = c(terms,totest)
 		}
-		formula = add.terms(formula,totest)
 	}
 
 	fixed.terms = Filter(Negate(is.random.term),terms)
@@ -504,8 +503,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (!quiet) message('Beginning backward elimination')
 		fa = formula
 		reml = reduce.random || !reduce.fixed
-		fit.until.conv('random')
 		if (reduce.random) {
+			fit.until.conv('random')
 			for (t in Filter(is.random.term,rev(terms))) {
 				fb = remove.terms(fa,t,formulize=T)
 				elim('random')
@@ -548,13 +547,13 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (!quiet) message('Calculating ANOVA statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
 		ret@anova = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
+		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
 	}
 	if (summary) {
 		if (!quiet) message('Calculating summary statistics')
 		fun = if (have.lmerTest && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
 		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
+		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
 	ret
 }
