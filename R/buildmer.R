@@ -224,7 +224,9 @@ add.terms = function (formula,add) {
 			}
 		} else fixed.terms = c(fixed.terms,term)
 	}
-	reformulate(c(fixed.terms,random.terms),dep,intercept)
+	terms = c(fixed.terms,random.terms)
+	if (length(terms)) return(reformulate(terms,dep,intercept))
+	as.formula(paste0(dep,'~',as.numeric(intercept)))
 }
 
 #' Extract a model's deviance
