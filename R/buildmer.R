@@ -163,7 +163,8 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 #' @export
 add.terms = function (formula,add) {
 	interactions.ok = function (x,grouping=NULL) {
-		test = unlist(strsplit(x,':',fixed=T))
+		x.star = gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+		test = attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 		test = test[test != x]
 		if (!length(test)) return(T)
 		if (!is.null(grouping)) test = paste(test,'|','c',sep='')
@@ -453,11 +454,18 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 					m = fit(f)
 					if (conv(m)) devfun(m) else Inf
 				})
-				winner = rev(order(comps))[[1]]
-				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winner],'-> keeping'))
-				terms = c(terms,totest[winner])
-				formula = add.terms(formula,totest[winner])
-				totest = totest[-winner]
+				winners = rev(order(comps))
+				new.formula = formula
+				i = 0
+				while (isTRUE(all.equal(new.formula,formula))) {
+					i = i + 1
+					if (i > length(winners)) stop('Encountered an ordering paradox - none of the requested terms could be added to the model formula without violating marginality restrictions. Please file a bug report against the buildmer package, and include your data and model specification!')
+					new.formula = add.terms(formula,totest[winners[i]])
+				}
+				formula = new.formula
+				terms = c(terms,totest[winners[i]])
+				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[winners[i]],'-> keeping. Formula is now:',deparse(formula)))
+				totest = totest[-winners[i]]
 			}
 			if (!quiet) message(paste('Adding the final remaining term:',totest))
 			terms = c(terms,totest)
@@ -531,8 +539,8 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 	}
 	ret = mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (any(names(ma) == 'gam')) {
-		if (anova) ret@anova = anova(ma)
-		if (summary) ret@summary = summary(ma)
+		if (anova) ret@anova = anova(ma$gam)
+		if (summary) ret@summary = summary(ma$gam)
 		anova = F
 		summary = F
 	}
