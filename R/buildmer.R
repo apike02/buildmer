@@ -296,11 +296,10 @@ calcWald = function (table,i,sqrt=F) {
 	cbind(table,'p (Wald)'=2*pnorm(abs(data),lower.tail=F))
 }
 	
-#' Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
-#' @param formula The model formula; if you include random effects, use lme4 syntax for them.
+#' Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
+#' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param nAGQ The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation).
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
@@ -311,8 +310,7 @@ calcWald = function (table,i,sqrt=F) {
 #' @param summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
-#' @param verbose The verbosity level passed to (g)lmer fits.
-#' @param maxfun The maximum number of iterations to allow for (g)lmer fits.
+#' @param ... Additional options to be passed to (g)lmer or gamm4.
 #' @return A buildmer object containing the following slots:
 #' \itemize{
 #' \item table: a dataframe containing the results of the elimination process
@@ -321,17 +319,18 @@ calcWald = function (table,i,sqrt=F) {
 #' \item summary: the model's summary, if 'summary=TRUE' was passed
 #' \item anova: the model's anova, if 'anova=TRUE' was passed
 #' }
-#' @keywords buildmer, fit
+#' @keywords buildmer, fit, stepwise elimination, term order
 #' @examples
-#' buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
+#' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,verbose=0,maxfun=2e5) {
+buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest() && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr()) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
 	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
 	data.name = substitute(data)
 	family = as.character(substitute(family))
+	dots = list(...)
 
 	elim = function (type) {
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
@@ -354,17 +353,17 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 			bars = lme4::findbars(formula)
 			random = if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
 			if (!quiet) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
-			m = if (family == 'gaussian') gamm4(fixed,random,data=data,REML=REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else gamm4(fixed,random,family,data,nAGQ=nAGQ,control=glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			m = do.call('gamm4',c(list(fixed,random,family,data,REML=REML),dots))
 			if (!is.null(data.name)) m$mer@call$data = data.name
 			m = if (want.gamm.obj) m else m$mer
 		}
 		else if (is.null(lme4::findbars(formula))) {
 			if (!quiet) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') lm(formula,data) else glm(formula,family,data)
+			m = if (family == 'gaussian') do.call('lm',c(list(formula,data),dots)) else do.call('glm',c(list(formula,family,data),dots))
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
 			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') lmer(formula,data,REML,control=lmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose) else glmer(formula,data,family,nAGQ=nAGQ,glmerControl(optCtrl=list(maxfun=maxfun)),verbose=verbose)
+			m = if (family == 'gaussian') do.call('lmer',c(list(formula,data,REML=REML),dots)) else do.call('glmer',c(list(formula,data,family),dots))
 			if (!is.null(data.name)) m@call$data = data.name
 		}
 		return(m)
@@ -555,6 +554,32 @@ buildmer = function (formula,data,family=gaussian,nAGQ=1,adjust.p.chisq=TRUE,reo
 		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
 	}
 	ret
+}
+
+#' A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
+#' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
+#' @param data The data to fit the models to.
+#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
+#' @param ... Additional parameters that override buildmer defaults, see 'buildmer'.
+#' @return A buildmer object containing the following slots:
+#' \itemize{
+#' \item table: a dataframe containing the results of the elimination process
+#' \item model: the final model containing only the terms that survived elimination
+#' \item messages: any warning messages
+#' \item summary: the model's summary, if 'summary=TRUE' was passed
+#' \item anova: the model's anova, if 'anova=TRUE' was passed
+#' }
+#' @keywords buildmer, SPSS, stepwise elimination, term order
+#' @examples
+#' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+#' @export
+buildmer = function (formula,data,family=gaussian,...) {
+	if (!have.lmerTest()) stop('Please install the lmerTest package')
+	if (!have.kr()) stop('Please install the pbkrtest package')
+	data.name = substitute(data)
+	family.name = substitute(family)
+	dots = list(...)
+	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name),dots))
 }
 
 #' Convert a summary to LaTeX code (biased towards vowel analysis)

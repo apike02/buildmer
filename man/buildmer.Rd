@@ -2,22 +2,20 @@
 % Please edit documentation in R/buildmer.R
 \name{buildmer}
 \alias{buildmer}
-\title{Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance}
+\title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance}
 \usage{
-buildmer(formula, data, family = gaussian, nAGQ = 1,
-  adjust.p.chisq = TRUE, reorder.terms = TRUE, reduce.fixed = TRUE,
-  reduce.random = TRUE, protect.intercept = TRUE, direction = "backward",
-  anova = TRUE, summary = TRUE, ddf = "Wald", quiet = FALSE,
-  verbose = 0, maxfun = 2e+05)
+buildmer(formula, data, family = gaussian, ...)
+
+buildmer(formula, data, family = gaussian, ...)
 }
 \arguments{
-\item{formula}{The model formula; if you include random effects, use lme4 syntax for them.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
 
 \item{data}{The data to fit the models to.}
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
-\item{nAGQ}{The number of Adaptive Gauss-Hermitian Quadrature points to use for glmer fits; default 1 (= Laplace approximation).}
+\item{...}{Additional options to be passed to (g)lmer or gamm4.}
 
 \item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
@@ -39,9 +37,13 @@ buildmer(formula, data, family = gaussian, nAGQ = 1,
 
 \item{quiet}{Whether to suppress progress messages.}
 
-\item{verbose}{The verbosity level passed to (g)lmer fits.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
 
-\item{maxfun}{The maximum number of iterations to allow for (g)lmer fits.}
+\item{data}{The data to fit the models to.}
+
+\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+
+\item{...}{Additional parameters that override buildmer defaults, see 'buildmer'.}
 }
 \value{
 A buildmer object containing the following slots:
@@ -52,13 +54,30 @@ A buildmer object containing the following slots:
 \item summary: the model's summary, if 'summary=TRUE' was passed
 \item anova: the model's anova, if 'anova=TRUE' was passed
 }
+
+A buildmer object containing the following slots:
+\itemize{
+\item table: a dataframe containing the results of the elimination process
+\item model: the final model containing only the terms that survived elimination
+\item messages: any warning messages
+\item summary: the model's summary, if 'summary=TRUE' was passed
+\item anova: the model's anova, if 'anova=TRUE' was passed
+}
 }
 \description{
-Construct and fit as complete a model as possible, and perform backward stepwise elimination using the change in deviance
+Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
+
+A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
 }
 \examples{
-buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
+buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 }
+\keyword{SPSS,}
 \keyword{buildmer,}
-\keyword{fit}
+\keyword{elimination,}
+\keyword{fit,}
+\keyword{order}
+\keyword{stepwise}
+\keyword{term}
 
