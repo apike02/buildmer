@@ -1,4 +1,5 @@
 library(lme4)
+library(mgcv)
 have.gamm4 = function () require('gamm4')
 have.kr = function () have.lmerTest() && require('pbkrtest')
 have.lmerTest = function () require('lmerTest')
