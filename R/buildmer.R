@@ -171,8 +171,16 @@ add.terms = function (formula,add) {
 		test = attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 		test = test[test != x]
 		if (!length(test)) return(T)
-		if (!is.null(grouping)) test = paste0(test,'|',grouping)
-		all(test %in% terms)
+		if (is.null(grouping)) return(all(test %in% terms))
+		any(innerapply(random.terms,function (term) {
+			grouping. = term[[3]]
+			if (grouping. != grouping) return(F)
+			terms = as.character(term[2])
+			form = as.formula(paste0('~',terms))
+			terms = terms(form)
+			terms = attr(terms,'term.labels')
+			all(test %in% terms)
+		}))
 	}
 
 	dep = as.character(formula[2])
@@ -194,7 +202,7 @@ add.terms = function (formula,add) {
 			form = as.formula(paste0('~',terms))
 			terms = terms(form)
 			terms = attr(terms,'term.labels')
-			if (!all(sapply(terms,function (x) interactions.ok(x,grouping=grouping)))) return(F)
+			if (!all(sapply(terms,function (x) interactions.ok(x,grouping)))) return(F)
 			# Do not add a random term if it doesn't have a corresponding fixed term present
 			all(terms %in% fixed.terms)
 		}))
@@ -225,7 +233,12 @@ add.terms = function (formula,add) {
 						terms = paste(terms,collapse='+')
 						paste0('(',terms,'|',grouping,')')
 					})
-				} else random.terms = c(random.terms,paste0('(',paste(bar.terms,collapse='+'),'|',bar.grouping,')')) #still have to tack it on at the end in the end...
+				} else {
+					#still have to tack it on at the end in the end...
+					term = paste(bar.terms,collapse='+')
+					if (!'1' %in% bar.terms) term = paste0('0+',term)
+					random.terms = c(random.terms,paste0('(',term,'|',bar.grouping,')'))
+				}
 			}
 		} else fixed.terms = c(fixed.terms,term)
 	}
@@ -348,7 +361,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		F
 	}
 
-	fit = function (formula,REML=reml,want.gamm.obj=F) {
+	fit = function (formula,REML=reml,want.gamm.obj=F,quiet=quiet) {
 		if (have.gamm4() && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed = lme4::nobars(formula)
@@ -448,17 +461,17 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		testlist = list()
 		if (reduce.fixed) testlist$fixed = fixed[fixed != '1'] else terms = fixed
 		if (reduce.random) testlist$random = random else terms = c(terms,random)
-		for (totest in testlist) { #FIXME: random[2:end] should be fit using REML...
+		for (totest in testlist) {
 			while (length(totest)) {
 				tested.formulas = list(formula)
 				comps = c()
+				if (!quiet) message(paste('Currently evaluating:',paste(totest,collapse=', ')))
 				if (length(totest) > 1) {
 					for (x in totest) {
 						f = add.terms(formula,totest[totest != x])
-						#if (!f %in% tested.formulas) {
 						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
 							tested.formulas = c(tested.formulas,f)
-							m = fit(f)
+							m = fit(f,quiet=T)
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
@@ -468,7 +481,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 				formula = add.terms(formula,totest[[i]])
 				terms = c(terms,totest[i])
 				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:'))
-				if (!quiet) message(deparse(formula))
+				if (!quiet) message(paste0(dep,' ~ ',formula[3]))
 				totest = totest[-i]
 			}
 		}
