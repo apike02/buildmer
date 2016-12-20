@@ -4,9 +4,10 @@
 \alias{buildmer}
 \title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance}
 \usage{
-buildmer(formula, data, family = gaussian, ...)
-
-buildmer(formula, data, family = gaussian, ...)
+buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
+  reorder.terms = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
+  protect.intercept = TRUE, direction = "backward", anova = TRUE,
+  summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
@@ -14,8 +15,6 @@ buildmer(formula, data, family = gaussian, ...)
 \item{data}{The data to fit the models to.}
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
-
-\item{...}{Additional options to be passed to (g)lmer or gamm4.}
 
 \item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
@@ -37,24 +36,9 @@ buildmer(formula, data, family = gaussian, ...)
 
 \item{quiet}{Whether to suppress progress messages.}
 
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
-
-\item{data}{The data to fit the models to.}
-
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
-
-\item{...}{Additional parameters that override buildmer defaults, see 'buildmer'.}
+\item{...}{Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like 'subset=...' and expect things to work. The single exception is the 'control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)}
 }
 \value{
-A buildmer object containing the following slots:
-\itemize{
-\item table: a dataframe containing the results of the elimination process
-\item model: the final model containing only the terms that survived elimination
-\item messages: any warning messages
-\item summary: the model's summary, if 'summary=TRUE' was passed
-\item anova: the model's anova, if 'anova=TRUE' was passed
-}
-
 A buildmer object containing the following slots:
 \itemize{
 \item table: a dataframe containing the results of the elimination process
@@ -66,14 +50,10 @@ A buildmer object containing the following slots:
 }
 \description{
 Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
-
-A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
 }
 \examples{
 buildmer(Reaction~Days+(Days|Subject),sleepstudy)
-buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 }
-\keyword{SPSS,}
 \keyword{buildmer,}
 \keyword{elimination,}
 \keyword{fit,}

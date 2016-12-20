@@ -311,7 +311,7 @@ calcWald = function (table,i,sqrt=F) {
 #' @param summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
-#' @param ... Additional options to be passed to (g)lmer or gamm4.
+#' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like 'subset=...' and expect things to work. The single exception is the 'control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)
 #' @return A buildmer object containing the following slots:
 #' \itemize{
 #' \item table: a dataframe containing the results of the elimination process
@@ -332,6 +332,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 	data.name = substitute(data)
 	family = as.character(substitute(family))
 	dots = list(...)
+	filtered.dots = dots[names(dots) != 'control' & names(dots) %in% names(c(formals(lm),formals(glm)))]
 
 	elim = function (type) {
 		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
@@ -354,17 +355,17 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 			bars = lme4::findbars(formula)
 			random = if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
 			if (!quiet) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
-			m = do.call('gamm4',c(list(fixed,random,family,data,REML=REML),dots))
+			m = do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots))
 			if (!is.null(data.name)) m$mer@call$data = data.name
 			m = if (want.gamm.obj) m else m$mer
 		}
 		else if (is.null(lme4::findbars(formula))) {
 			if (!quiet) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') do.call('lm',c(list(formula,data),dots)) else do.call('glm',c(list(formula,family,data),dots))
+			m = if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots))
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
 			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') do.call('lmer',c(list(formula,data,REML=REML),dots)) else do.call('glmer',c(list(formula,data,family),dots))
+			m = if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots))
 			if (!is.null(data.name)) m@call$data = data.name
 		}
 		return(m)
@@ -461,11 +462,13 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
+					if (!length(comps)) stop('Ordering paradox - none of the predictors could be added!')
 					i = rev(order(comps))[1]
 				} else 	i = 1
 				formula = add.terms(formula,totest[[i]])
 				terms = c(terms,totest[i])
-				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:',deparse(formula)))
+				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:'))
+				if (!quiet) message(deparse(formula))
 				totest = totest[-i]
 			}
 		}
@@ -574,7 +577,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer = function (formula,data,family=gaussian,...) {
+stepwise = function (formula,data,family=gaussian,...) {
 	if (!have.lmerTest()) stop('Please install the lmerTest package')
 	if (!have.kr()) stop('Please install the pbkrtest package')
 	data.name = substitute(data)
