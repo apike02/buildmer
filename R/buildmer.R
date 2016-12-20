@@ -236,7 +236,7 @@ add.terms = function (formula,add) {
 				} else {
 					#still have to tack it on at the end in the end...
 					term = paste(bar.terms,collapse='+')
-					if (!'1' %in% bar.terms) term = paste0('0+',term)
+					if (!any(bar.terms == '1')) term = paste0('0+',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
 					random.terms = c(random.terms,paste0('(',term,'|',bar.grouping,')'))
 				}
 			}
@@ -361,7 +361,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		F
 	}
 
-	fit = function (formula,REML=reml,want.gamm.obj=F,quiet=quiet) {
+	fit = function (formula,REML=reml,want.gamm.obj=F) {
 		if (have.gamm4() && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed = lme4::nobars(formula)
@@ -378,9 +378,10 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
 			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-			m = if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots))
+			m = if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots))
 			if (!is.null(data.name)) m@call$data = data.name
 		}
+		print("Bye")
 		return(m)
 	}
 
@@ -448,6 +449,8 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		if (!quiet) message('Determining predictor order')
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
+		intercept.terms = substr(random,1,2) == '1|'
+		random = c(random[intercept.terms],random[!intercept.terms])
 		dep = as.character(formula[2])
 		if ('1' %in% terms) {
 			intercept = T
