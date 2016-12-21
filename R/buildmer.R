@@ -415,7 +415,17 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		unravel = function (x,sym) if (length(x) > 1 && x[[1]] == sym) c(unravel(x[[2]],sym=sym),x[[3]]) else x
 		# Test for marginality
 		can.eval = function (orig.terms) {
-			terms = if (is.random.term(terms)) as.character(get.random.terms(terms)[[1]][2]) else orig.terms
+			if (is.random.term(orig.terms)) {
+				grouping.factors = innerapply(orig.terms,function (x) x[[3]])
+				return(sapply(unique(grouping.factors),function (g) {
+					eligible = which(grouping.factors == g)
+					orig.terms[eligible] = sapply(orig.terms[eligible],function (x) as.character(get.random.terms(x)[[1]][2]))
+					ok = if ('1' %in% orig.terms[eligible]) '1' else can.eval(orig.terms[eligible])
+					paste0(ok,'|',g)
+				}))
+			}
+			terms = orig.terms
+terms = if (is.random.term(orig.terms)) as.character(get.random.terms(orig.terms)[[1]][2]) else orig.terms
 			terms = terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
 			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
 			terms = unravel(terms,'+')
@@ -433,36 +443,6 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 				T
 			})
 			orig.terms[ok]
-		}
-		# Remove all traces of a single term - both the term itself as well as any interactions
-		scorch = function (orig.terms,kill) {
-			scorch = function (orig.terms,kill) {
-				terms = terms(as.formula(paste0('~',paste(orig.terms,collapse='+'))),keep.order=T)[[2]]
-				terms = unravel(terms,'+')
-				# Substitute all interactions with the naked term and then remove all instances of the naked term
-				terms = sapply(terms,function (x) if (any(unravel(x,':') == kill)) kill else x)
-				terms = terms[terms != kill]
-				sapply(terms,deparse)
-			}
-			if (!is.random.term(orig.terms)) return(scorch(orig.terms,kill))
-			kill.list = sapply(get.random.terms(kill),function (term) {
-				grouping = as.character(term[[3]])
-				terms = terms(as.formula(paste0('~',as.character(term[2]))))
-				intercept = if (attr(terms,'intercept')) 1 else NULL
-				terms = attr(terms,'term.labels')
-				ret = list(c(intercept,terms))
-				names(ret) = grouping
-				ret
-			})
-			sapply(get.random.terms(orig.terms),function (term) {
-				grouping = as.character(term[[3]])
-				terms = as.character(term[2])
-				if (grouping %in% names(kill.list)) {
-					kill = kill.list[[names(kill.list) == grouping]]
-					terms = scorch(terms,kill)
-				}
-				terms
-			})
 		}
 
 		if (!quiet) message('Determining predictor order')
@@ -490,11 +470,10 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 				if (!quiet) message(paste('Currently evaluating:',paste(can.eval(totest),collapse=', ')))
 				if (length(totest) > 1) {
 					for (x in can.eval(totest)) {
-						#f = add.terms(formula,scorch(totest,x))
 						f = add.terms(formula,x)
 						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
 							tested.formulas = c(tested.formulas,f)
-							m = fit(f,quietly=T)
+							m = fit(f,quietly=F)
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
@@ -583,17 +562,29 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		anova = F
 		summary = F
 	}
-	if (anova) {
-		if (!quiet) message('Calculating ANOVA statistics')
-		fun = if (have.lmerTest() && ddf != 'Wald') lmerTest::anova else function (x,ddf) anova(x)
-		ret@anova = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
+	calc.anova = anova
+	calc.summary = summary
+	if (any(class(ma) == 'lm') || !have.lmerTest() || has.smooth.terms(formula(ma))) {
+		anovafun = function (x,ddf) anova(x)
+		summaryfun = function (x,ddf) summary(x)
+	} else {
+		anovafun = anova
+		summaryfun = summary
+		rm('anova','summary')
 	}
-	if (summary) {
+	if (calc.anova) {
+		if (!quiet) message('Calculating ANOVA statistics')
+		if (ddf == 'Wald') {
+			ret@anova = anovafun(ma,ddf='lme4')
+			if (!any(class(ma) == 'lm') && isLMM(ma)) ret@anova = calcWald(ret@anova,4)
+		} else ret@anova = anovafun(ma,ddf=ddf)
+	}
+	if (calc.summary) {
 		if (!quiet) message('Calculating summary statistics')
-		fun = if (have.lmerTest() && ddf != 'Wald') lmerTest::summary else function (x,ddf) summary(x)
-		ret@summary = fun(ma,ddf=ddf)
-		if (ddf == 'Wald' && !any(class(ma) == 'lm') && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
+		if (ddf == 'Wald') {
+			ret@summary = summaryfun(ma,ddf='lme4')
+			if (!any(class(ma) == 'lm') && isLMM(ma)) ret@summary$coefficients = calcWald(ret@summary$coefficients,3)
+		} else ret@summary = summaryfun(ma,ddf=ddf)
 	}
 	ret
 }
