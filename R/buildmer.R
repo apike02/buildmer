@@ -1,5 +1,5 @@
-library(lme4)
 library(mgcv)
+library(lme4)
 have.gamm4 = function () require('gamm4')
 have.kr = function () have.lmerTest() && require('pbkrtest')
 have.lmerTest = function () require('lmerTest')
@@ -166,23 +166,6 @@ remove.terms = function (formula,remove=c(),formulize=T) {
 #' @keywords add terms
 #' @export
 add.terms = function (formula,add) {
-	interactions.ok = function (x,grouping=NULL) {
-		x.star = gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
-		test = attr(terms(as.formula(paste0('~',x.star))),'term.labels')
-		test = test[test != x]
-		if (!length(test)) return(T)
-		if (is.null(grouping)) return(all(test %in% terms))
-		any(innerapply(random.terms,function (term) {
-			grouping. = term[[3]]
-			if (grouping. != grouping) return(F)
-			terms = as.character(term[2])
-			form = as.formula(paste0('~',terms))
-			terms = terms(form)
-			terms = attr(terms,'term.labels')
-			all(test %in% terms)
-		}))
-	}
-
 	dep = as.character(formula[2])
 	terms = terms(formula)
 	intercept = attr(terms,'intercept')
@@ -191,22 +174,6 @@ add.terms = function (formula,add) {
 	random.terms = Filter(is.random.term,terms)
 	# Apparently, terms() removes parentheses around random terms. We need to restore those...
 	if (length(random.terms)) random.terms = paste('(',random.terms,')')
-
-	# Check marginality restrictions
-	add = add[sapply(add,function (x) {
-		if (!is.random.term(x)) return(interactions.ok(x))
-		all(sapply(get.random.terms(x),function (term) {
-			grouping = term[[3]]
-			terms = as.character(term[2])
-			if (all(terms == '1')) return(intercept) #this is a boolean referring to the intercept dredged out from the already-present fixed terms!
-			form = as.formula(paste0('~',terms))
-			terms = terms(form)
-			terms = attr(terms,'term.labels')
-			if (!all(sapply(terms,function (x) interactions.ok(x,grouping)))) return(F)
-			# Do not add a random term if it doesn't have a corresponding fixed term present
-			all(terms %in% fixed.terms)
-		}))
-	})]
 
 	for (term in add) {
 		if (is.random.term(term)) {
@@ -361,27 +328,26 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		F
 	}
 
-	fit = function (formula,REML=reml,want.gamm.obj=F) {
+	fit = function (formula,REML=reml,want.gamm.obj=F,quietly=quiet) {
 		if (have.gamm4() && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed = lme4::nobars(formula)
 			bars = lme4::findbars(formula)
 			random = if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
-			if (!quiet) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
+			if (!quietly) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
 			m = do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots))
 			if (!is.null(data.name)) m$mer@call$data = data.name
 			m = if (want.gamm.obj) m else m$mer
 		}
 		else if (is.null(lme4::findbars(formula))) {
-			if (!quiet) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
+			if (!quietly) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots))
 			if (!is.null(data.name)) m$call$data = data.name
 		} else {
-			if (!quiet) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
+			if (!quietly) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
 			m = if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots))
 			if (!is.null(data.name)) m@call$data = data.name
 		}
-		print("Bye")
 		return(m)
 	}
 
@@ -446,6 +412,40 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 	random.saved = c()
 
 	if (reorder.terms) {
+		unravel = function (x,sym) if (length(x) > 1 && x[[1]] == sym) c(unravel(x[[2]],sym=sym),x[[3]]) else x
+		prep.terms = function (terms) {
+			terms = if (is.random.term(terms)) as.character(get.random.terms(terms)[[1]][2]) else terms
+			terms = terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
+			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
+			unravel(terms,'+')
+		}
+		can.eval = function (orig.terms) {
+			# Test for marginality
+			terms = prep.terms(orig.terms)
+			#if (length(terms) < 2) return(orig.terms) #will not happen
+			if (terms[[1]] == ':') return(orig.terms)
+			terms = sapply(terms,function (x) as.character(unravel(x,':')))
+			ok = sapply(1:(length(terms)),function (i) {
+				# We cannot take the terms already in the formula into account, because that will break things like nesting
+				# Thus, we have to define marginality as ok if there is no lower-order interaction term whose components are a proper subset of the current term
+				if (i == 1) return(T)
+				test = terms[[i]]
+				for (x in terms[1:(i-1)]) {
+					if (all(x %in% test)) return(F)
+				}
+				T
+			})
+			orig.terms[ok]
+		}
+		scorch = function (orig.terms,marked.for.death) {
+			# Remove all traces of a single term - both the term itself as well as any interactions
+			terms = prep.terms(orig.terms)
+			# Substitute all interactions with the naked term and then remove all instances of the naked term
+			terms = sapply(terms,function (x) if (any(unravel(x,':') == marked.for.death)) marked.for.death else x)
+			terms = terms[terms != marked.for.death]
+			sapply(terms,deparse)
+		}
+
 		if (!quiet) message('Determining predictor order')
 		fixed = Filter(Negate(is.random.term),terms)
 		random = Filter(is.random.term,terms)
@@ -468,23 +468,21 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 			while (length(totest)) {
 				tested.formulas = list(formula)
 				comps = c()
-				if (!quiet) message(paste('Currently evaluating:',paste(totest,collapse=', ')))
+				if (!quiet) message(paste('Currently evaluating:',paste(can.eval(totest),collapse=', ')))
 				if (length(totest) > 1) {
-					for (x in totest) {
-						f = add.terms(formula,totest[totest != x])
+					for (x in can.eval(totest)) {
+						f = add.terms(formula,scorch(totest,x))
 						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
 							tested.formulas = c(tested.formulas,f)
-							m = fit(f,quiet=T)
+							m = fit(f,quietly=T)
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
-					if (!length(comps)) stop('Ordering paradox - none of the predictors could be added!')
 					i = rev(order(comps))[1]
 				} else 	i = 1
 				formula = add.terms(formula,totest[[i]])
 				terms = c(terms,totest[i])
-				if (!quiet) message(paste('Biggest increase in deviance incurred by removing',totest[i],'-> keeping. Formula is now:'))
-				if (!quiet) message(paste0(dep,' ~ ',formula[3]))
+				if (!quiet) message(paste('Updating formula:',dep,'~',formula[3]))
 				totest = totest[-i]
 			}
 		}
@@ -519,6 +517,8 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 	}
 	if (any(direction == 'backward')) {
 		if (!quiet) message('Beginning backward elimination')
+		print(terms)
+		print(formula)
 		fa = formula
 		reml = reduce.random || !reduce.fixed
 		if (reduce.random) {
