@@ -320,7 +320,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		if (!conv(mb)) return(record(type,t,NA))
 		p = modcomp(ma,fa,mb,fb)
 		record(type,t,p)
-		if ((direction == 'backward' && p >= .05) || (direction == 'forward' && p < .05)) {
+		if ((curdir == 'backward' && p >= .05) || (curdir == 'forward' && p < .05)) {
 			fa <<- fb
 			ma <<- mb
 			return(T)
@@ -495,6 +495,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 
 	if (!any(direction %in% c('forward','backward'))) ma = fit(formula,T)
 	if (any(direction == 'forward')) {
+		curdir = 'forward'
 		if (!quiet) message('Beginning forward elimination')
 		base = paste0(dep,'~',fixed.terms[[1]])
 		reml = !reduce.fixed
@@ -516,9 +517,8 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		}
 	}
 	if (any(direction == 'backward')) {
+		curdir = 'backward'
 		if (!quiet) message('Beginning backward elimination')
-		print(terms)
-		print(formula)
 		fa = formula
 		reml = reduce.random || !reduce.fixed
 		if (reduce.random) {
