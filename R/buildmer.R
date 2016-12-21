@@ -422,7 +422,7 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		can.eval = function (orig.terms) {
 			# Test for marginality
 			terms = prep.terms(orig.terms)
-			#if (length(terms) < 2) return(orig.terms) #will not happen
+			if (length(terms) < 2) return(orig.terms) #can happen with random intercepts
 			if (terms[[1]] == ':') return(orig.terms)
 			terms = sapply(terms,function (x) as.character(unravel(x,':')))
 			ok = sapply(1:(length(terms)),function (i) {
@@ -717,5 +717,6 @@ mer2tex = function (summary,vowel='',formula=F,label='',aliases=list(
 #' @docType data
 #' @usage data(vowels)
 #' @format A standard data frame.
-#' @examples buildmer(f1 ~ vowel*timepoint*following + stress + information + (vowel*timepoint*following|participant),data=vowels)
+#' @examples
+#' #buildmer(f1 ~ vowel*timepoint*following + stress + information + (vowel*timepoint*following|participant),data=vowels,ddf='Satterthwaite',verbose=2,control=lmerControl(optCtrl=list(maxfun=250000))) #VERY slow
 "vowels"
