@@ -413,15 +413,12 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 
 	if (reorder.terms) {
 		unravel = function (x,sym) if (length(x) > 1 && x[[1]] == sym) c(unravel(x[[2]],sym=sym),x[[3]]) else x
-		prep.terms = function (terms) {
-			terms = if (is.random.term(terms)) as.character(get.random.terms(terms)[[1]][2]) else terms
+		# Test for marginality
+		can.eval = function (orig.terms) {
+			terms = if (is.random.term(terms)) as.character(get.random.terms(terms)[[1]][2]) else orig.terms
 			terms = terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
 			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
-			unravel(terms,'+')
-		}
-		can.eval = function (orig.terms) {
-			# Test for marginality
-			terms = prep.terms(orig.terms)
+			terms = unravel(terms,'+')
 			if (length(terms) < 2) return(orig.terms) #can happen with random intercepts
 			if (terms[[1]] == ':') return(orig.terms)
 			terms = sapply(terms,function (x) as.character(unravel(x,':')))
@@ -437,13 +434,35 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 			})
 			orig.terms[ok]
 		}
-		scorch = function (orig.terms,marked.for.death) {
-			# Remove all traces of a single term - both the term itself as well as any interactions
-			terms = prep.terms(orig.terms)
-			# Substitute all interactions with the naked term and then remove all instances of the naked term
-			terms = sapply(terms,function (x) if (any(unravel(x,':') == marked.for.death)) marked.for.death else x)
-			terms = terms[terms != marked.for.death]
-			sapply(terms,deparse)
+		# Remove all traces of a single term - both the term itself as well as any interactions
+		scorch = function (orig.terms,kill) {
+			scorch = function (orig.terms,kill) {
+				terms = terms(as.formula(paste0('~',paste(orig.terms,collapse='+'))),keep.order=T)[[2]]
+				terms = unravel(terms,'+')
+				# Substitute all interactions with the naked term and then remove all instances of the naked term
+				terms = sapply(terms,function (x) if (any(unravel(x,':') == kill)) kill else x)
+				terms = terms[terms != kill]
+				sapply(terms,deparse)
+			}
+			if (!is.random.term(orig.terms)) return(scorch(orig.terms,kill))
+			kill.list = sapply(get.random.terms(kill),function (term) {
+				grouping = as.character(term[[3]])
+				terms = terms(as.formula(paste0('~',as.character(term[2]))))
+				intercept = if (attr(terms,'intercept')) 1 else NULL
+				terms = attr(terms,'term.labels')
+				ret = list(c(intercept,terms))
+				names(ret) = grouping
+				ret
+			})
+			sapply(get.random.terms(orig.terms),function (term) {
+				grouping = as.character(term[[3]])
+				terms = as.character(term[2])
+				if (grouping %in% names(kill.list)) {
+					kill = kill.list[[names(kill.list) == grouping]]
+					terms = scorch(terms,kill)
+				}
+				terms
+			})
 		}
 
 		if (!quiet) message('Determining predictor order')
@@ -471,14 +490,15 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 				if (!quiet) message(paste('Currently evaluating:',paste(can.eval(totest),collapse=', ')))
 				if (length(totest) > 1) {
 					for (x in can.eval(totest)) {
-						f = add.terms(formula,scorch(totest,x))
+						#f = add.terms(formula,scorch(totest,x))
+						f = add.terms(formula,x)
 						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
 							tested.formulas = c(tested.formulas,f)
 							m = fit(f,quietly=T)
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
-					i = rev(order(comps))[1]
+					i = order(comps)[1]
 				} else 	i = 1
 				formula = add.terms(formula,totest[[i]])
 				if (!quiet) message(paste('Updating formula:',dep,'~',formula[3]))
