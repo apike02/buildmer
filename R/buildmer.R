@@ -425,7 +425,6 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 				}))
 			}
 			terms = orig.terms
-terms = if (is.random.term(orig.terms)) as.character(get.random.terms(orig.terms)[[1]][2]) else orig.terms
 			terms = terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
 			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
 			terms = unravel(terms,'+')
@@ -473,7 +472,7 @@ terms = if (is.random.term(orig.terms)) as.character(get.random.terms(orig.terms
 						f = add.terms(formula,x)
 						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
 							tested.formulas = c(tested.formulas,f)
-							m = fit(f,quietly=F)
+							m = fit(f,quietly=T)
 							comps = c(comps,ifelse(conv(m),devfun(m),Inf))
 						}
 					}
