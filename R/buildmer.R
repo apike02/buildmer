@@ -481,11 +481,13 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 					i = rev(order(comps))[1]
 				} else 	i = 1
 				formula = add.terms(formula,totest[[i]])
-				terms = c(terms,totest[i])
 				if (!quiet) message(paste('Updating formula:',dep,'~',formula[3]))
 				totest = totest[-i]
 			}
 		}
+		# The order of interaction term components might have changed, so extract them again
+		formula = remove.terms(formula,c(),formulize=T)
+		terms   = remove.terms(formula,c(),formulize=F)
 	}
 
 	fixed.terms = Filter(Negate(is.random.term),terms)
