@@ -567,9 +567,9 @@ buildmer = function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.te
 		anovafun = function (x,ddf) anova(x)
 		summaryfun = function (x,ddf) summary(x)
 	} else {
+		rm('anova','summary')
 		anovafun = anova
 		summaryfun = summary
-		rm('anova','summary')
 	}
 	if (calc.anova) {
 		if (!quiet) message('Calculating ANOVA statistics')
