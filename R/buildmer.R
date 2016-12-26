@@ -1,6 +1,6 @@
 .onAttach <- function(libname,pkgname) {
-	library(mgcv)
-	library(lme4)
+	require('mgcv') || stop('Please fix your installation of the mgcv package.')
+	require('lme4') || stop('Please fix your installation of the lme4 package.')
 	have.lmerTest <<- require('lmerTest')
 	have.kr <<- have.lmerTest && require('pbkrtest')
 	have.gamm4 <<- require('gamm4')
@@ -456,8 +456,6 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 				}
 				T
 			})
-			print (terms)
-			print(ok)
 			orig.terms[ok]
 		}
 
