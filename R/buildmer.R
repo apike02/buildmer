@@ -579,7 +579,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	calc.anova <- anova
 	calc.summary <- summary
 	rm('anova','summary')
-	if (any(class(ma) == 'lm') || !have.lmerTest || has.smooth.terms(formula(ma))) {
+	if (any(class(ma) == 'lm') || !have.lmerTest || has.smooth.terms(fa)) {
 		anovafun <- function (x,ddf) anova(x)
 		summaryfun <- function (x,ddf) summary(x)
 	} else {
