@@ -1,4 +1,5 @@
 .onAttach <- function(libname,pkgname) {
+	require('nlme') || stop('Please fix your installation of the nlme package.')
 	require('mgcv') || stop('Please fix your installation of the mgcv package.')
 	require('lme4') || stop('Please fix your installation of the lme4 package.')
 	have.lmerTest <<- require('lmerTest')
@@ -62,7 +63,7 @@ elim <- function (object) object@table
 #' @return Whether the model converged or not.
 #' @keywords convergence
 #' @export
-conv <- function (model) any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0
+conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
 
 #' Get the level-2 terms contained within a level-1 lme4 random term
 #' @param term The term.
@@ -123,7 +124,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
 	remove <- sapply(remove,function (x) {
 		if (!is.random.term(x)) return(x)
-		if (substr(x,nchar(x),nchar(x)) == ')') return(x)
+		if (substr(x,1,1) == '(' && substr(x,nchar(x),nchar(x)) == ')') return(x)
 		paste0('(',x,')')
 	})
 
@@ -343,20 +344,22 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			fixed <- lme4::nobars(formula)
 			bars <- lme4::findbars(formula)
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
-			if (!quietly) message(paste0('Fitting as GAMM: ',deparse(fixed),', random=',deparse(random)))
-			m <- do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots))
-			if (!is.null(data.name)) m$mer@call$data <- data.name
-			m <- if (want.gamm.obj) m else m$mer
+			if (!quietly) message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed),', random=',deparse(random)))
+			m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots)))
+			if (!any(class(m) == 'try-error') {
+				if (!is.null(data.name)) m$mer@call$data <- data.name
+				m <- if (want.gamm.obj) m else m$mer
+			}
+			return(m)
 		}
-		else if (is.null(lme4::findbars(formula))) {
+		if (is.null(lme4::findbars(formula))) {
 			if (!quietly) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
-			m <- if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots))
-			if (!is.null(data.name)) m$call$data <- data.name
+			m <- try(if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots)))
 		} else {
 			if (!quietly) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-			m <- if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots))
-			if (!is.null(data.name)) m@call$data <- data.name
+			m <- try(if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots)))
 		}
+		if (!any(class(m) == 'try-error') && !is.null(data.name)) m$call$data <- data.name
 		return(m)
 	}
 
@@ -412,12 +415,12 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		results[counter,] <<- c(type,term,p)
 	}
 
-	formula   <- remove.terms(formula,c(),formulize=T) #sanitize formula: sanitize order, expand interactions etc
-	terms     <- remove.terms(formula,c(),formulize=F)
-	prealloc  <- length(terms)
+	formula <- remove.terms(formula,c(),formulize=T) #sanitize formula: sanitize order, expand interactions etc
+	terms   <- remove.terms(formula,c(),formulize=F)
+	prealloc<- length(terms)
 	results <- data.frame(type=character(prealloc),term=character(prealloc),p=numeric(prealloc),stringsAsFactors=F)
 	counter <- 0
-	messages <- character()
+	messages<- character()
 	random.saved <- c()
 
 	if (reorder.terms) {
@@ -617,7 +620,7 @@ stepwise <- function (formula,data,family=gaussian,...) {
 	data.name <- substitute(data)
 	family.name <- substitute(family)
 	dots <- list(...)
-	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,anova=F,summary=T),dots))
+	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,summary=T),dots))
 }
 
 #' Convert a summary to LaTeX code (biased towards vowel analysis)
