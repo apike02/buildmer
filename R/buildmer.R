@@ -355,11 +355,12 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		if (is.null(lme4::findbars(formula))) {
 			if (!quietly) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m <- try(if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots)))
+			if (!any(class(m) == 'try-error') && !is.null(data.name)) m$call$data <- data.name
 		} else {
 			if (!quietly) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
 			m <- try(if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots)))
+			if (!any(class(m) == 'try-error') && !is.null(data.name)) m@call$data <- data.name
 		}
-		if (!any(class(m) == 'try-error') && !is.null(data.name)) m$call$data <- data.name
 		return(m)
 	}
 
