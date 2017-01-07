@@ -346,7 +346,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
 			if (!quietly) message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed),', random=',deparse(random)))
 			m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots)))
-			if (!any(class(m) == 'try-error') {
+			if (!any(class(m) == 'try-error')) {
 				if (!is.null(data.name)) m$mer@call$data <- data.name
 				m <- if (want.gamm.obj) m else m$mer
 			}
