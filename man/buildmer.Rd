@@ -14,7 +14,7 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
 \item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
@@ -26,17 +26,17 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 
 \item{protect.intercept}{If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.}
 
-\item{direction}{The direction for stepwise elimination; either 'forward' or 'backward' (default). Both or neither are also understood.}
+\item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
 
 \item{anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
 
 \item{summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
 
-\item{ddf}{The method used for calculating p-values if summary=T. Options are 'Wald' (default), 'Satterthwaite' (if lmerTest is available), 'Kenward-Roger' (if lmerTest and pbkrtest are available), and 'lme4' (no p-values).}
+\item{ddf}{The method used for calculating p-values if summary=T. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
 
 \item{quiet}{Whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like 'subset=...' and expect things to work. The single exception is the 'control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)}
+\item{...}{Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)}
 }
 \value{
 A buildmer object containing the following slots:
@@ -44,8 +44,8 @@ A buildmer object containing the following slots:
 \item table: a dataframe containing the results of the elimination process
 \item model: the final model containing only the terms that survived elimination
 \item messages: any warning messages
-\item summary: the model's summary, if 'summary=TRUE' was passed
-\item anova: the model's anova, if 'anova=TRUE' was passed
+\item summary: the model's summary, if `summary=TRUE' was passed
+\item anova: the model's anova, if `anova=TRUE' was passed
 }
 }
 \description{

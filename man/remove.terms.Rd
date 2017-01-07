@@ -9,7 +9,7 @@ remove.terms(formula, remove = c(), formulize = T)
 \arguments{
 \item{formula}{The lme4 formula.}
 
-\item{remove}{A vector of terms to remove. To remove terms nested inside random-effect groups, use 'term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.}
+\item{remove}{A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.}
 
 \item{formulize}{Whether to return a formula (default) or a simple list of terms.}
 }

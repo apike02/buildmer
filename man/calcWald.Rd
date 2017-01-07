@@ -7,14 +7,14 @@
 calcWald(table, i, sqrt = F)
 }
 \arguments{
-\item{table}{A table from a summary or anova output.}
+\item{table}{A coefficient table from a summary or anova output.}
 
-\item{i}{The number of the column in that table containing the t-values}
+\item{i}{The number of the column in that table containing the t-values.}
 
-\item{sqrt}{Whether we're testing F values or t values (default)}
+\item{sqrt}{Whether we're testing F values or t values (default).}
 }
 \value{
-The table augmented with a column 'p (Wald)' containing Wald p values
+The table augmented with p-values.
 }
 \description{
 Calculate p-values based on Wald z-scores

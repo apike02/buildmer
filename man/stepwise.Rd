@@ -11,19 +11,12 @@ stepwise(formula, data, family = gaussian, ...)
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or 'gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through. Commonly-used options are either nothing/`gaussian' (linear regression), `binomial' (logistic regression), or `poisson' (loglin regression), although many other families exist (e.g. cloglog, ...).}
 
 \item{...}{Additional parameters that override buildmer defaults, see 'buildmer'.}
 }
 \value{
-A buildmer object containing the following slots:
-\itemize{
-\item table: a dataframe containing the results of the elimination process
-\item model: the final model containing only the terms that survived elimination
-\item messages: any warning messages
-\item summary: the model's summary, if 'summary=TRUE' was passed
-\item anova: the model's anova, if 'anova=TRUE' was passed
-}
+A buildmer object, which you can use summary() on to get a summary of the final model, and elim() to get the list of eliminated terms.
 }
 \description{
 A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination

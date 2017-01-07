@@ -12,9 +12,9 @@
 
 \item{messages}{Any warning messages.}
 
-\item{summary:}{The model's summary, if the model was built with 'summary=TRUE'.}
+\item{summary:}{The model's summary, if the model was built with `summary=TRUE'.}
 
-\item{anova:}{The model's ANOVA, if the model was built with 'anova=TRUE'.}
+\item{anova:}{The model's ANOVA, if the model was built with `anova=TRUE'.}
 }
 \description{
 Make a buildmer object
