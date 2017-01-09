@@ -5,6 +5,10 @@
 	have.lmerTest <<- require('lmerTest')
 	have.kr <<- have.lmerTest && require('pbkrtest')
 	have.gamm4 <<- require('gamm4')
+	if (require('parallel')) {
+		cl <<- makeCluster(detectCores())
+		mySapply <<- function (...) parSapply(cl,...)
+	} else mySapply <<- sapply
 }
 
 #' Make a buildmer object
@@ -21,7 +25,10 @@ setMethod('show','buildmer',function (object) {
 	show(object@model)
 	cat('\nElimination table:\n\n')
 	show(object@table)
-	if (length(object@messages)) warn(messages)
+	if (length(object@messages)) {
+		cat('\nWarning messages:\n\n')
+		cat(object@messages)
+	}
 })
 setMethod('anova','buildmer',function (object,ddf='Wald') {
 	anv <- if (!is.null(object@anova)) object@anova else {
@@ -31,7 +38,7 @@ setMethod('anova','buildmer',function (object,ddf='Wald') {
 		anv <- if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
 		if (ddf == 'Wald' && !'lm' %in% class(object@model) && is.null(object@model$gam)) anv <- calcWald(anv,4)
 	}
-	if (length(object@messages)) warn(messages)
+	if (length(object@messages)) warning(object@messages)
 	anv
 })
 setMethod('summary','buildmer',function (object,ddf='Wald') {
@@ -47,7 +54,7 @@ setMethod('summary','buildmer',function (object,ddf='Wald') {
 		smy <- if (have.lmerTest && !'lm' %in% class(object@model) && is.null(object@model$gam)) summary(object@model,ddf=ddf) else summary(object@model)
 		if (calcWald) smy$coefficients <- calcWald(smy$coefficients,3)
 	}
-	if (length(object@messages)) warn(messages)
+	if (length(object@messages)) warning(object@messages)
 	smy
 })
 
@@ -338,13 +345,13 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		F
 	}
 
-	fit <- function (formula,REML=reml,want.gamm.obj=F,quietly=quiet) {
+	fit <- function (formula,REML=reml,want.gamm.obj=F) {
 		if (have.gamm4 && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed <- lme4::nobars(formula)
 			bars <- lme4::findbars(formula)
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
-			if (!quietly) message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed),', random=',deparse(random)))
+			message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed),', random=',deparse(random)))
 			m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots)))
 			if (!any(class(m) == 'try-error')) {
 				if (!is.null(data.name)) m$mer@call$data <- data.name
@@ -353,11 +360,11 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			return(m)
 		}
 		if (is.null(lme4::findbars(formula))) {
-			if (!quietly) message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
+			message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
 			m <- try(if (family == 'gaussian') do.call('lm',c(list(formula=formula,data=data),filtered.dots)) else do.call('glm',c(list(formula=formula,family=family,data=data),filtered.dots)))
 			if (!any(class(m) == 'try-error') && !is.null(data.name)) m$call$data <- data.name
 		} else {
-			if (!quietly) message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
+			message(paste0(ifelse(REML,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
 			m <- try(if (family == 'gaussian') do.call('lmer',c(list(formula=formula,data=data.name,REML=REML),dots)) else do.call('glmer',c(list(formula=formula,data=data,family=family),dots)))
 			if (!any(class(m) == 'try-error') && !is.null(data.name)) m@call$data <- data.name
 		}
@@ -369,7 +376,11 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		no.failures <- T
 		while (!conv(ma)) {
 			no.failures <- F
-			message(if (stage == 'fixed') 'The base model failed to converge during the fixed-effects elimination. Proceeding with fewer random slopes than had been warranted by the maximal fixed-effect structure. (They will be reintegrated into the model for the final fit.)' else "Base model didn't converge, reducing slope terms.")
+			if (stage == 'fixed') {
+				msg = 'Convergence failures were encountered during the fixed-effects elimination step. Some random effects have been removed during fixed-effects elimination, and will be re-added when calculating the final model. If there happened to be any competition between fixed-effects and the eliminated random effect(s), the contribution of these fixed effects might have been over-estimated.\n'
+				warning(msg)
+				messages <- c(messages,msg)
+			} else message("Base model didn't converge, reducing slope terms.")
 			cand <- get.last.random.slope(fa)
 			record(stage,cand,NA)
 			fa <<- remove.terms(fa,cand,formulize=T)
@@ -424,33 +435,48 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	messages<- character()
 	random.saved <- c()
 
+	complete <- complete.cases(data)
+	if (!all(complete)) {
+		data = data[complete,]
+		msg = 'Encountered missing values; rows containing missing values have been removed from the dataset to prevent problems with the model comparisons.\n'
+		warning(msg)
+		messages <- c(messages,msg)
+	}
+
 	if (reorder.terms) {
 		unravel <- function (x,sym) {
 			if (length(x) > 1) {
 				if (x[[1]] == sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
-				if (length(x) == 2) return(x[[2]]) #e.g.: 'scale(x)' -> return x
+				if (length(x) == 2) return(x[2]) #e.g.: 'scale(x)' -> return x; 'I(365*Days) -> return 365*Days)
 			}
 			x
 		}
 		# Test for marginality
 		can.eval <- function (orig.terms) {
-			if (is.random.term(orig.terms)) {
-				grouping.factors <- innerapply(orig.terms,function (x) x[[3]])
-				return(sapply(unique(grouping.factors),function (g) {
-					eligible <- which(grouping.factors == g)
-					orig.terms[eligible] <- sapply(orig.terms[eligible],function (x) as.character(get.random.terms(x)[[1]][2]))
-					ok <- if ('1' %in% orig.terms[eligible]) '1' else can.eval(orig.terms[eligible])
-					paste0(ok,'|',g)
-				}))
-			}
 			terms <- orig.terms
 			terms <- terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
 			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
+			print(terms)
 			terms <- unravel(terms,'+')
-			if (length(terms) < 2) return(orig.terms) #can happen with random intercepts
-			if (terms[[1]] == ':') return(orig.terms)
-			terms <- sapply(terms,function (x) as.character(unravel(x,':')))
+			print(terms)
+			if (length(terms) < 2) return(1:length(orig.terms)) #can happen with random intercepts
+			if (terms[[1]] == ':') return(1:length(orig.terms))
+			terms <- lapply(terms,function (x) as.character(unravel(x,':')))
 			ok <- sapply(1:(length(terms)),function (i) {
+				# First, check if we are dealing with a random effect, which must be grouped with its siblings
+				this = as.character(terms[[i]][2])
+				if (is.random.term(this)) {
+					grouping = terms[[i]][[3]]
+					siblings = Filter(function (t) {
+						for (t in get.random.terms(t)) {
+							if (t[[3]] == grouping) return(T)
+						}
+						F
+					},orig.terms)
+					siblings = sapply(siblings,function (x) as.character(x[2]))
+					siblings = siblings[siblings != this]
+					return(1 %in% can.eval(c(this,siblings)))
+				}
 				# We cannot take the terms already in the formula into account, because that will break things like nesting
 				# Thus, we have to define marginality as ok if there is no lower-order interaction term whose components are a proper subset of the current term
 				if (i == 1) return(T)
@@ -460,7 +486,8 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 				}
 				T
 			})
-			orig.terms[ok]
+			stopifnot(length(ok) == length(orig.terms))
+			which(ok)
 		}
 
 		if (!quiet) message('Determining predictor order')
@@ -483,23 +510,19 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		if (reduce.random) testlist$random <- random else terms <- c(terms,random)
 		for (totest in testlist) {
 			while (length(totest)) {
-				tested.formulas <- list(formula)
-				comps <- c()
-				if (!quiet) message(paste('Currently evaluating:',paste(can.eval(totest),collapse=', ')))
-				if (length(totest) > 1) {
-					for (x in can.eval(totest)) {
-						f <- add.terms(formula,x)
-						if (!any(sapply(tested.formulas,function (x) isTRUE(all.equal(x,f))))) {
-							tested.formulas <- c(tested.formulas,f)
-							m <- fit(f,quietly=T)
-							comps <- c(comps,ifelse(conv(m),devfun(m),Inf))
-						}
-					}
+				ok <- can.eval(totest)
+				if (!quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
+				if (length(ok) > 1) {
+					comps <- mySapply(ok,function (x) {
+						f <- add.terms(formula,totest[[x]])
+						m <- fit(f)
+						if (conv(m)) devfun(m) else Inf
+					})
 					i <- order(comps)[1]
 				} else 	i <- 1
-				formula <- add.terms(formula,totest[[i]])
+				formula <- add.terms(formula,totest[[ok[i]]])
 				if (!quiet) message(paste('Updating formula:',dep,'~',formula[3]))
-				totest <- totest[-i]
+				totest <- totest[-ok[i]]
 			}
 		}
 		# The order of interaction term components might have changed, so extract them again
