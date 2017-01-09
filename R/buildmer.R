@@ -1,14 +1,16 @@
-.onAttach <- function(libname,pkgname) {
+.onAttach <- function (libname,pkgname) {
 	require('nlme') || stop('Please fix your installation of the nlme package.')
 	require('mgcv') || stop('Please fix your installation of the mgcv package.')
 	require('lme4') || stop('Please fix your installation of the lme4 package.')
 	have.lmerTest <<- require('lmerTest')
 	have.kr <<- have.lmerTest && require('pbkrtest')
 	have.gamm4 <<- require('gamm4')
-	if (require('parallel')) {
-		cl <<- makeCluster(detectCores())
-		mySapply <<- function (...) parSapply(cl,...)
-	} else mySapply <<- sapply
+	mySapply <<- if (require('parallel')) function (...) {
+		cl <- makeCluster(detectCores())
+		ret = parSapply(cl,...)
+		stopCluster(cl)
+		ret
+	} else sapply
 }
 
 #' Make a buildmer object
