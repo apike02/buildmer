@@ -472,6 +472,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 					test <- sapply(test,as.character) #poor man's unlist() for symbol objects
 					for (x in have[1:(i-1)]) {
 						x <- as.character(x)
+						if (any(x == '1')) return(F) #intercept should always come first
 						if (all(x %in% test)) return(F)
 					}
 					T
