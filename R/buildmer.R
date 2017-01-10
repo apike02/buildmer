@@ -451,7 +451,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		# Test for marginality
 		can.eval <- function (orig.terms) {
 			terms <- lapply(orig.terms,function (x) terms(as.formula(paste0('~',x)),keep.order=T)[[2]])
-			if (length(terms) < 2) return(1:length(orig.terms)) #can happen with random intercepts
+			if (length(terms) < 2) return(T) #can happen with random intercepts
 
 			# 1. If there are random effects, evaluate them as a group
 			# We cannot use get.random.terms here, because that will expand double verts which will cause us to receive a list of potentially multiple terms; we rather want the unexpanded term, because we just want to match the grouping factor
@@ -459,7 +459,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			for (g in unique(groupings)) {
 				if (g == '') next
 				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
-				terms[groupings == g] <- T#can.eval(terms[groupings == g])
+				terms[groupings == g] <- can.eval(terms[groupings == g])
 			}
 			
 			# 2. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting
