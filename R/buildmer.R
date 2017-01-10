@@ -5,12 +5,6 @@
 	have.lmerTest <<- require('lmerTest')
 	have.kr <<- have.lmerTest && require('pbkrtest')
 	have.gamm4 <<- require('gamm4')
-	mySapply <<- if (require('parallel')) function (...) {
-		cl <- makeCluster(detectCores())
-		ret = parSapply(cl,...)
-		stopCluster(cl)
-		ret
-	} else sapply
 }
 
 #' Make a buildmer object
@@ -302,6 +296,7 @@ calcWald <- function (table,i,sqrt=F) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
+#' @param parallel Whether to, if possible, parallellize the fitting of the candidate models during term reordering.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
@@ -323,7 +318,7 @@ calcWald <- function (table,i,sqrt=F) {
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -446,7 +441,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 
 	if (reorder.terms) {
-		unravel <- function (x,sym) {
+		unravel <- function (x,sym=':') {
 			if (length(x) > 1) {
 				if (x[[1]] == sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
 				if (length(x) == 2) return(x[2]) #e.g.: 'scale(x)' -> return x; 'I(365*Days) -> return 365*Days)
@@ -455,41 +450,32 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		}
 		# Test for marginality
 		can.eval <- function (orig.terms) {
-			terms <- orig.terms
-			terms <- terms(as.formula(paste0('~',paste(terms,collapse='+'))),keep.order=T)[[2]]
-			# The terms are represented as: +(+(+(a,b),c),d) - unwrap this
-			print(terms)
-			terms <- unravel(terms,'+')
-			print(terms)
+			terms <- lapply(orig.terms,function (x) terms(as.formula(paste0('~',x)),keep.order=T)[[2]])
 			if (length(terms) < 2) return(1:length(orig.terms)) #can happen with random intercepts
-			if (terms[[1]] == ':') return(1:length(orig.terms))
-			terms <- lapply(terms,function (x) as.character(unravel(x,':')))
-			ok <- sapply(1:(length(terms)),function (i) {
-				# First, check if we are dealing with a random effect, which must be grouped with its siblings
-				this = as.character(terms[[i]][2])
-				if (is.random.term(this)) {
-					grouping = terms[[i]][[3]]
-					siblings = Filter(function (t) {
-						for (t in get.random.terms(t)) {
-							if (t[[3]] == grouping) return(T)
-						}
-						F
-					},orig.terms)
-					siblings = sapply(siblings,function (x) as.character(x[2]))
-					siblings = siblings[siblings != this]
-					return(1 %in% can.eval(c(this,siblings)))
-				}
-				# We cannot take the terms already in the formula into account, because that will break things like nesting
-				# Thus, we have to define marginality as ok if there is no lower-order interaction term whose components are a proper subset of the current term
+
+			# 1. If there are random effects, evaluate them as a group
+			# We cannot use get.random.terms here, because that will expand double verts which will cause us to receive a list of potentially multiple terms; we rather want the unexpanded term, because we just want to match the grouping factor
+			groupings = sapply(terms,function (x) if (length(x) > 1 && x[[1]] == '|') x[[3]] else '')
+			for (g in unique(groupings)) {
+				if (g == '') next
+				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
+				terms[groupings == g] <- T#can.eval(terms[groupings == g])
+			}
+			
+			# 2. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting
+			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term
+			have <- lapply(terms[groupings == ''],unravel)
+			terms[groupings == ''] <- lapply(1:length(have),function (i) {
 				if (i == 1) return(T)
-				test <- terms[[i]]
-				for (x in terms[1:(i-1)]) {
+				test <- have[[i]]
+				test <- sapply(test,as.character) #poor man's unlist() for symbol objects
+				for (x in have[1:(i-1)]) {
+					x <- as.character(x)
 					if (all(x %in% test)) return(F)
 				}
 				T
 			})
-			stopifnot(length(ok) == length(orig.terms))
-			which(ok)
+			unlist(terms)
 		}
 
 		if (!quiet) message('Determining predictor order')
@@ -512,10 +498,10 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		if (reduce.random) testlist$random <- random else terms <- c(terms,random)
 		for (totest in testlist) {
 			while (length(totest)) {
-				ok <- can.eval(totest)
+				ok <- which(can.eval(totest))
 				if (!quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
 				if (length(ok) > 1) {
-					comps <- mySapply(ok,function (x) {
+					comps <- sapply(ok,function (x) {
 						f <- add.terms(formula,totest[[x]])
 						m <- fit(f)
 						if (conv(m)) devfun(m) else Inf
