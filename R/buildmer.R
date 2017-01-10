@@ -461,20 +461,22 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
 				terms[groupings == g] <- can.eval(terms[groupings == g])
 			}
-			
+
 			# 2. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting
 			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term
 			have <- lapply(terms[groupings == ''],unravel)
-			terms[groupings == ''] <- lapply(1:length(have),function (i) {
-				if (i == 1) return(T)
-				test <- have[[i]]
-				test <- sapply(test,as.character) #poor man's unlist() for symbol objects
-				for (x in have[1:(i-1)]) {
-					x <- as.character(x)
-					if (all(x %in% test)) return(F)
-				}
-				T
-			})
+			if (length(have)) { #did we have any fixed terms at all?
+				terms[groupings == ''] <- lapply(1:length(have),function (i) {
+					if (i == 1) return(T)
+					test <- have[[i]]
+					test <- sapply(test,as.character) #poor man's unlist() for symbol objects
+					for (x in have[1:(i-1)]) {
+						x <- as.character(x)
+						if (all(x %in% test)) return(F)
+					}
+					T
+				})
+			}
 			unlist(terms)
 		}
 
