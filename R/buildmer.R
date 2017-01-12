@@ -664,7 +664,14 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 'FS2'='following segment=obs',
 'FS1'='following segment=/l/',
 'ppn'='participants',
-'word'='words')) {
+'word'='words',
+'phonemeDec'='rhyme decision',
+'belgianTRUE'='Belgian',
+'step1'='step 1 vs 2',
+'step2'='step 2 vs 3',
+'step3'='step 3 vs 4',
+'lTRUE'='coda /l/'
+)) {
 	tblprintln <- function (x) {
 		l <- paste0(x,collapse=' & ')
 		cat(l,'\\\\\n',sep='')
@@ -688,15 +695,29 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		ir
 	}
 	nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
+	stars <- function (x)  if (x < .001) '$**$$*$'
+				else if (x < .01) '$**$'
+				else if (x < .05) '$*$'
+				else ''
 
 	d <- summary$coefficients
-	df <- ncol(d) > 4
+	expme <- summary$family == 'binomial'
+	if (is.null(d)) { #GAMM
+		d <- summary$p.table
+		df <- F
+		tname <- 't'
+		form <- summary$formula
+		smooths <- summary$s.table
+	} else {
+		df <- ncol(d) > 4
+		tname <- ifelse(df,'t','z')
+		form <- summary$call[[2]]
+		smooths <- NULL
+	}
 	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
 	if (formula) {
 		mcprintln <- function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
-		#cat('\\hline\n')
-		form <- summary$call[[2]]
-		mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
+		#mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
 		mcprintln(c('Dependent variable: ',paperify(as.character(form[[2]]))))
 		terms <- Filter(function (x) grepl('|',x,fixed=T),attr(terms(form),'term.labels'))
 		slopes <- list()
@@ -706,15 +727,15 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 			factors <- unlist(strsplit(factors,' + ',T))
 			factors <- Filter(function (x) x != '0' & x != '- 1',factors)
 			factors <- sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x))
-			slopesmsg <- c('Random slopes for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
+			slopesmsg <- c('Random effects for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
 			mcprintln(slopesmsg)
 		}
 		cat('\\hline\n')
 	}
-	cat(paste0(sapply(if (df) c('Factor','Estimate (SE)','df','$t$','$p$','Sig.')
-	                     else c('Factor','Estimate (SE)','$t$','$p$','Sig.')
+	cat(paste0(sapply(if (df) c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
+	                     else c('Factor','Estimate (SE)',     paste0('$',tname,'$'),'$p$','Sig.')
 		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
-	if (!df) d <- cbind(d[,1:2],0,d[,3:4]) #add empty df
+	if (!df) d <- cbind(d[,1:2],exp(d[,1]),d[,3:4]) #add exp(B) in place of empty df
 	names <- sapply(rownames(d),function (x) {
 		x <- unlist(strsplit(x,':',T))
 		x <- sapply(x,paperify)
@@ -728,18 +749,25 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		data[i,4] <- custround(d[i,3],neg=F)			# df
 		data[i,5] <- custround(d[i,4])				# t
 		data[i,6] <- ifelse(d[i,5] < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
-		data[i,7] <-  if (d[i,5] < .001) '$**$$*$'		# stars
-				else if (d[i,5] <  .01) '$**$'
-				else if (d[i,5] <  .05) '$*$'
-				else ''
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df,4,5):7])) #print for table
+		data[i,7] <- stars(d[i,5])				# stars
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df||summary$family=='binomial',4,5):7])) #print for table
 	}
-	#if (formula) cat('\\hline')
+	if (!is.null(smooths)) {
+		cat('\\hline\n')
+		cat(paste('\\textit{Factor}','\\textit{df}','\\textit{ref.\\ df}','$F$','$p$','\\textit{Sig.}',sep=' & '),'\\\\\\hline\n')
+		for (i in 1:nrow(smooths)) {
+			line <- dimnames(smooths)[[i]] # factor
+			line <- c(line,sapply(smooths[1:3],function (x) custround(x,neg=F))) # edf,refdf,F
+			line <- c(line,ifelse(smooths[4] < .001,'$<$.001',custround(smooths[4],neg=F,trunc=T))) # p
+			line <- c(line,stars(smooths[4])) # starrs
+			cat(paste0(line,sep=' & '),'\\\\\n')
+		}
+	}
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
 
 	cat('\n\n\n')
 	for (i in 1:length(names)) cat(
-		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $t_{',ifelse(d[i,3]>0,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
+		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $',tname,'_{',ifelse(df,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
 				d[i,5] < .001,
 				'$<$ .001',
 				paste0('= ',data[i,6])
