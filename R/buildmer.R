@@ -149,9 +149,9 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		terms <- remove.possible(terms,grouping)
 		if (!length(terms) && !intercept) return(NULL)
 		if (intercept) terms <- c('1',terms)
-		else terms[[1]] <- paste0('0+',terms[[1]])
-		if (formulize) terms <- paste(terms,collapse='+')
-		terms <- paste0(terms,'|',grouping)
+		else terms[[1]] <- paste0('0 + ',terms[[1]])
+		if (formulize) terms <- paste(terms,collapse=' + ')
+		terms <- paste0(terms,' | ',grouping)
 		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
 		terms
 	})
