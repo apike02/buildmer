@@ -134,7 +134,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 	dep <- as.character(formula)[2]
 	terms <- terms(formula)
 	intercept <- attr(terms,'intercept')
-	if ('1' %in% remove && intercept && !'1' %in% remove.possible('1',test='1')) intercept <- 0
+	if ('1' %in% remove && !'1' %in% remove.possible(terms,test='1')) intercept <- 0
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
 	fixed.terms <- remove.possible(fixed.terms)
@@ -152,7 +152,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		else terms[[1]] <- paste0('0+',terms[[1]])
 		if (formulize) terms <- paste(terms,collapse='+')
 		terms <- paste0(terms,'|',grouping)
-		if (formulize) terms <- paste0('(',terms,')')
+		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
 		terms
 	})
 	random.terms <- Filter(Negate(is.null),unlist(random.terms))
@@ -193,6 +193,7 @@ add.terms <- function (formula,add) {
 			if (substr(term,nchar(term),nchar(term)) == ')') {
 				# independent term: tack it on at the end
 				random.terms <- c(random.terms,term)
+				next
 			}
 			for (bar in get.random.terms(term)) {
 				bar.grouping <- bar[[3]]
@@ -455,11 +456,18 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 
 			# 1. If there are random effects, evaluate them as a group
 			# We cannot use get.random.terms here, because that will expand double verts which will cause us to receive a list of potentially multiple terms; we rather want the unexpanded term, because we just want to match the grouping factor
-			groupings = sapply(terms,function (x) if (length(x) > 1 && x[[1]] == '|') x[[3]] else '')
+			groupings <- sapply(terms,function (x) {
+				while (length(x) > 1 && x[[1]] == '(') x <- x[[2]]
+				if (length(x) > 1 && x[[1]] == '|') x[[3]] else ''
+			})
 			for (g in unique(groupings)) {
 				if (g == '') next
 				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
-				terms[groupings == g] <- can.eval(terms[groupings == g])
+				# Having extracted the level-2 terms, we can now call can.eval() on them to evaluate them normally, with one exception: if there is an intercept in there, we must force all other terms to 0. This will correctly force intercepts to go first in diagonal covariance structures, e.g. '(1|Subject) + (0+Days|Subject)'.
+				if ('1' %in% terms[groupings == g]) {
+					terms[groupings == g & terms != '1'] <- F
+					terms[groupings == g & terms == '1'] <- T
+				} else terms[groupings == g] <- can.eval(terms[groupings == g])
 			}
 
 			# 2. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting
@@ -664,7 +672,15 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 'FS2'='following segment=obs',
 'FS1'='following segment=/l/',
 'ppn'='participants',
-'word'='words')) {
+'word'='words',
+'phonemeDec'='rhyme decision',
+'belgianTRUE'='Belgian',
+'step1'='step 1 vs 2',
+'step2'='step 2 vs 3',
+'step3'='step 3 vs 4',
+'lTRUE'='coda /l/',
+'lFALSE'='no coda /l/'
+)) {
 	tblprintln <- function (x) {
 		l <- paste0(x,collapse=' & ')
 		cat(l,'\\\\\n',sep='')
@@ -675,6 +691,7 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
 	}
 	custround <- function (i,neg=T,trunc=F) {
+		i = as.numeric(i) #the matrix changes to a character matrix because of calcor
 		prec <- 3
 		ir <- round(i,prec)
 		while (i > 0 && ir == 0) {
@@ -688,12 +705,18 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		ir
 	}
 	nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
-	stars <- function (x)  if (x < .001) '$**$$*$'
-				else if (x < .01) '$**$'
-				else if (x < .05) '$*$'
+	stars <- function (x)  if (as.numeric(x) < .001) '$**$$*$'
+				else if (as.numeric(x) < .01) '$**$'
+				else if (as.numeric(x) < .05) '$*$'
 				else ''
+	calcor <- function (x) {
+		x <- exp(x)
+		if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
+		else       paste0(     custround(  x,neg=F,trunc=T),':1')
+	}
 
 	d <- summary$coefficients
+	expme <- !is.null(summary$family)
 	if (is.null(d)) { #GAMM
 		d <- summary$p.table
 		df <- F
@@ -724,10 +747,11 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		}
 		cat('\\hline\n')
 	}
-	cat(paste0(sapply(if (df) c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
-	                     else c('Factor','Estimate (SE)',     paste0('$',tname,'$'),'$p$','Sig.')
+	cat(paste0(sapply(if (df)            c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
+	                     else if (expme) c('Factor','Estimate (SE)','Odds Ratio',paste0('$',tname,'$'),'$p$','Sig.')
+			     else            c('Factor','Estimate (SE)',paste0('$',tname,'$'),'$p$','Sig.')
 		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
-	if (!df) d <- cbind(d[,1:2],0,d[,3:4]) #add empty df
+	if (!df) d <- cbind(d[,1:2],sapply(d[,1],calcor),d[,3:4]) #add exp(B) in place of empty df
 	names <- sapply(rownames(d),function (x) {
 		x <- unlist(strsplit(x,':',T))
 		x <- sapply(x,paperify)
@@ -738,22 +762,28 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 		data[i,1] <- names[i]					# factor
 		data[i,2] <- custround(d[i,1])				# estimate
 		data[i,3] <- custround(d[i,2],neg=F)			# SE
-		data[i,4] <- custround(d[i,3],neg=F)			# df
+		data[i,4] <- if (df) custround(d[i,3],neg=F) else d[i,3]# df / OR
 		data[i,5] <- custround(d[i,4])				# t
-		data[i,6] <- ifelse(d[i,5] < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
+		data[i,6] <- ifelse(as.numeric(d[i,5]) < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
 		data[i,7] <- stars(d[i,5])				# stars
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df,4,5):7])) #print for table
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df||expme,4,5):7])) #print for table
 	}
 	if (!is.null(smooths)) {
-		cat('\\hline\n\\\\\n')
-		cat(paste('Factor','','df','ref.\\ df','$F$','$p$','Sig.',sep=' & '))
-		for (i in 1:nrow(smooths)) cat(paste(c(dimnames(smooths)[i],sapply(smooths,function (x) custround(x,neg=F))),sep=' & '),'\\\\\n')
+		cat('\\hline\n')
+		cat(paste('\\textit{Factor}','\\textit{df}','\\textit{ref.\\ df}','$F$','$p$','\\textit{Sig.}',sep=' & '),'\\\\\\hline\n')
+		for (i in 1:nrow(smooths)) {
+			line <- dimnames(smooths)[[i]] # factor
+			line <- c(line,sapply(smooths[1:3],function (x) custround(x,neg=F))) # edf,refdf,F
+			line <- c(line,ifelse(smooths[4] < .001,'$<$.001',custround(smooths[4],neg=F,trunc=T))) # p
+			line <- c(line,stars(smooths[4])) # starrs
+			cat(paste0(line,sep=' & '),'\\\\\n')
+		}
 	}
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
 
 	cat('\n\n\n')
 	for (i in 1:length(names)) cat(
-		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $',tname,'_{',ifelse(d[i,3]>0,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
+		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $',tname,'_{',ifelse(df,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
 				d[i,5] < .001,
 				'$<$ .001',
 				paste0('= ',data[i,6])
