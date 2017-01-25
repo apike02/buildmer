@@ -421,7 +421,9 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			return(NA)
 		}
 		if (all(class(a) == class(b))) {
-			res <- if (any(class(a) == 'lm')) anova(a,b) else anova(a,b,refit=F)
+			p <- if (any(class(a) == 'glm')) anova(a,b,test='Chisq')
+			     else if (any(class(a) == 'lm')) anova(a,b)
+			     else anova(a,b,refit=F)
 			p <- res[[length(res)]][[2]]
 			if (!quiet) message(paste0('ANOVA p-value: ',p))
 		} else {
