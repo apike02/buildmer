@@ -102,13 +102,14 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 	remove.possible <- function(terms,grouping=NULL,test=remove) {
 		if (!length(terms)) return(terms)
 		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
+		forbidden <- c()
 		for (x in terms) {
 			x.star <- gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
-			forbidden <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
-			forbidden <- forbidden[forbidden != x]
+			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
+			forbidden <- c(forbidden,partterms[partterms != x])
 		}
 		# Do not remove fixed terms if they have corresponding random terms
-		if (!is.null(grouping)) forbidden <- paste0(forbidden,'|',grouping) else {
+		if (!is.null(grouping)) forbidden <- paste0(forbidden,' | ',grouping) else {
 			bars <- lme4::findbars(formula)
 			for (term in bars) {
 				terms. <- as.character(term[2])
@@ -121,7 +122,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 			}
 		}
 		ok.to.remove <- test[!test %in% forbidden]
-		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,'|',grouping,')') %in% ok.to.remove]
+		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,' | ',grouping,')') %in% ok.to.remove]
 	}
 
 	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
@@ -144,7 +145,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		terms <- as.character(term[2])
 		form <- as.formula(paste0('~',terms))
 		terms <- terms(form)
-		intercept <- if (paste0('(1|',grouping,')') %in% remove) 0 else attr(terms,'intercept')
+		intercept <- if (paste0('(1 |',grouping,')') %in% remove) 0 else attr(terms,'intercept')
 		terms <- attr(terms,'term.labels')
 		terms <- remove.possible(terms,grouping)
 		if (!length(terms) && !intercept) return(NULL)
@@ -156,7 +157,7 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		terms
 	})
 	random.terms <- Filter(Negate(is.null),unlist(random.terms))
-	if (length(fixed.terms))  names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
+	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
 	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
 	terms <- c(fixed.terms,random.terms)
 	if (!intercept && !length(terms)) return(NULL)
@@ -330,9 +331,15 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	filtered.dots <- dots[names(dots) != 'control' & names(dots) %in% names(c(formals(lm),formals(glm)))]
 
 	elim <- function (type) {
-		if (isTRUE(all.equal(fa,fb))) return(record(type,t,NA))
+		if (isTRUE(all.equal(fa,fb))) {
+			if (!quiet) message('Could not remove term (marginality)')
+			return(NA)
+		}
 		mb <<- fit(fb)
-		if (!conv(mb)) return(record(type,t,NA))
+		if (!conv(mb)) {
+			if (!quiet) message('Convergence failure for the alternative model')
+			return(record(type,t,NA))
+		}
 		p <- modcomp(ma,fa,mb,fb)
 		record(type,t,p)
 		if ((curdir == 'backward' && p >= .05) || (curdir == 'forward' && p < .05)) {
@@ -399,22 +406,30 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		only.fixed.b <- is.null(lme4::findbars(fb))
 		same.fixed.effects <- isTRUE(all.equal(lme4::nobars(fa),lme4::nobars(fb)))
 		reml <- if (only.fixed.a && only.fixed.b) NA
-		else if (only.fixed.a != only.fixed.b)   F
-		else if (!same.fixed.effects)            F
-		else T
+		else if (only.fixed.a != only.fixed.b)    F
+		else if (!same.fixed.effects)             F
+		else                                      T
 	
 		a <- refit.if.needed(a,fa,reml)
-		if (!conv(a)) return(NA)
+		if (!conv(a)) {
+			if (!quiet) message('Converge failure during refit (model A)')
+			return(NA)
+		}
 		b <- refit.if.needed(b,fb,reml)
-		if (!conv(b)) return(NA)
-		p <- if (all(class(a) == class(b))) {
+		if (!conv(b)) {
+			if (!quiet) message('Convergence failure during refit (model B)')
+			return(NA)
+		}
+		if (all(class(a) == class(b))) {
 			res <- if (any(class(a) == 'lm')) anova(a,b) else anova(a,b,refit=F)
-			res[[length(res)]][[2]]
+			p <- res[[length(res)]][[2]]
+			if (!quiet) message(paste0('ANOVA p-value: ',p))
 		} else {
 			# Compare the models by hand
 			# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 			diff <- abs(devfun(a) - devfun(b))
-			pchisq(diff,1,lower.tail=F)
+			p <- pchisq(diff,1,lower.tail=F)
+			if (!quiet) message(paste0('Manual deviance comparison p-value: ',p))
 		}
 		if (adjust.p.chisq) p/2 else p
 	}
