@@ -99,11 +99,11 @@ innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sa
 #' @keywords remove terms
 #' @export
 remove.terms <- function (formula,remove=c(),formulize=T) {
-	remove.possible <- function(terms,grouping=NULL,test=remove) {
+	remove.possible <- function(terms,grouping=NULL,other=NULL,test=remove) {
 		if (!length(terms)) return(terms)
 		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
 		forbidden <- c()
-		for (x in terms) {
+		for (x in c(terms,other)) {
 			x.star <- gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
 			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
@@ -132,6 +132,20 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		paste0('(',x,')')
 	})
 
+	ranterms.with.grouping <- function (random.terms,grouping) {
+		random.terms = lme4::findbars(as.formula(paste0('~',paste('(',random.terms,')'))))
+		ret <- c()
+		for (term in random.terms) {
+			if (term[[3]] == grouping) {
+				terms <- as.character(term[2])
+				form <- as.formula(paste0('~',terms))
+				terms <- terms(form)
+				terms <- attr(terms,'term.labels')
+				ret <- c(ret,terms)
+			}
+		}
+	}
+
 	dep <- as.character(formula)[2]
 	terms <- terms(formula)
 	intercept <- attr(terms,'intercept')
@@ -145,10 +159,10 @@ remove.terms <- function (formula,remove=c(),formulize=T) {
 		terms <- as.character(term[2])
 		form <- as.formula(paste0('~',terms))
 		terms <- terms(form)
-		intercept <- if (paste0('(1 |',grouping,')') %in% remove) 0 else attr(terms,'intercept')
+		intercept <- attr(terms,'intercept')
 		terms <- attr(terms,'term.labels')
-		terms <- remove.possible(terms,grouping)
-		if (!length(terms) && !intercept) return(NULL)
+		terms <- remove.possible(terms,grouping,other=ranterms.with.grouping(random.terms,grouping))
+		if (!length(terms) && (!intercept || paste0('(1 | ',grouping,')') %in% remove)) return(NULL)
 		if (intercept) terms <- c('1',terms)
 		else terms[[1]] <- paste0('0 + ',terms[[1]])
 		if (formulize) terms <- paste(terms,collapse=' + ')
@@ -211,15 +225,15 @@ add.terms <- function (formula,add) {
 						terms <- attr(terms,'term.labels')
 						terms <- c(terms,bar.terms)
 						if (intercept) terms <- c('1',terms)
-						else terms[[1]] <- paste0('0+',terms[[1]])
-						terms <- paste(terms,collapse='+')
-						paste0('(',terms,'|',grouping,')')
+						else terms[[1]] <- paste0('0 + ',terms[[1]])
+						terms <- paste(terms,collapse=' + ')
+						paste0('(',terms,' | ',grouping,')')
 					})
 				} else {
 					#still have to tack it on at the end in the end...
-					term <- paste(bar.terms,collapse='+')
-					if (!any(bar.terms == '1')) term <- paste0('0+',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
-					random.terms <- c(random.terms,paste0('(',term,'|',bar.grouping,')'))
+					term <- paste(bar.terms,collapse=' + ')
+					if (!any(bar.terms == '1')) term <- paste0('0 + ',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
+					random.terms <- c(random.terms,paste0('(',term,' | ',bar.grouping,')'))
 				}
 			}
 		} else fixed.terms <- c(fixed.terms,term)
@@ -254,10 +268,10 @@ diagonalize <- function(formula) {
 		sapply(get.random.terms(term),function (t) {
 			grouping <- t[[3]]
 			t <- as.character(t[2])
-			if (t == '1') paste0('(1|',grouping,')') else paste0('(0+',t,'|',grouping,')')
+			if (t == '1') paste0('(1 | ',grouping,')') else paste0('(0 + ',t,' | ',grouping,')')
 		})
 	}))
-	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse='+')))
+	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
 }
 
 #' Get the last random slope (or, if not available, the last random intercept) from a model formula
@@ -266,7 +280,7 @@ diagonalize <- function(formula) {
 get.last.random.slope <- function (formula) {
 	terms <- remove.terms(formula,c(),formulize=F)
 	random.terms <- terms[names(terms) == 'random']
-	cands <- Filter(function (x) substr(x,1,3) != '(1|',random.terms)
+	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
 	if (!length(cands)) cands <- random.terms
 	cands[[length(cands)]]
 }
@@ -421,7 +435,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			return(NA)
 		}
 		if (all(class(a) == class(b))) {
-			p <- if (any(class(a) == 'glm')) anova(a,b,test='Chisq')
+			res <- if (any(class(a) == 'glm')) anova(a,b,test='Chisq')
 			     else if (any(class(a) == 'lm')) anova(a,b)
 			     else anova(a,b,refit=F)
 			p <- res[[length(res)]][[2]]
@@ -663,7 +677,42 @@ stepwise <- function (formula,data,family=gaussian,...) {
 	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,summary=T),dots))
 }
 
-#' Convert a summary to LaTeX code (biased towards vowel analysis)
+# Custom, unexported functions for the *2tex functions
+tblprintln <- function (x) {
+	l <- paste0(x,collapse=' & ')
+	cat(l,'\\\\\n',sep='')
+}
+paperify <- function (x,aliases) {
+	if (!x %in% names(aliases)) return(x)
+	x <- names(aliases) == x
+	x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
+}
+custround <- function (i,neg=T,trunc=F) {
+	i = as.numeric(i) #the matrix changes to a character matrix because of calcor
+	prec <- 3
+	ir <- round(i,prec)
+	while (i > 0 && ir == 0) {
+		prec <- prec + 1
+		ir <- round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
+	}
+	ir <- as.character(ir)
+	while (nchar(sub('.*\\.','',ir)) < prec) ir <- paste0(ir,'0')
+	if (trunc) ir <- sub('^0+','',ir)
+	if (neg & i >= 0) ir <- paste0('\\hphantom{-}',ir)
+	ir
+}
+nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
+stars <- function (x)  return(if (as.numeric(x) < .001) '$**$$*$'
+			else if (as.numeric(x) < .01) '$**$'
+			else if (as.numeric(x) < .05) '$*$'
+			else '')
+calcor <- function (x) {
+	x <- exp(x)
+	if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
+	else       paste0(     custround(  x,neg=F,trunc=T),':1')
+}
+
+#' Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)
 #' @param summary The summary to convert.
 #' @param vowel The vowel you're analyzing.
 #' @param formula The formula as used in your final lmer object.
@@ -698,40 +747,6 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 'lTRUE'='coda /l/',
 'lFALSE'='no coda /l/'
 )) {
-	tblprintln <- function (x) {
-		l <- paste0(x,collapse=' & ')
-		cat(l,'\\\\\n',sep='')
-	}
-	paperify <- function (x) {
-		if (!x %in% names(aliases)) return(x)
-		x <- names(aliases) == x
-		x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
-	}
-	custround <- function (i,neg=T,trunc=F) {
-		i = as.numeric(i) #the matrix changes to a character matrix because of calcor
-		prec <- 3
-		ir <- round(i,prec)
-		while (i > 0 && ir == 0) {
-			prec <- prec + 1
-			ir <- round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
-		}
-		ir <- as.character(ir)
-		while (nchar(sub('.*\\.','',ir)) < prec) ir <- paste0(ir,'0')
-		if (trunc) ir <- sub('^0+','',ir)
-		if (neg & i >= 0) ir <- paste0('\\hphantom{-}',ir)
-		ir
-	}
-	nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
-	stars <- function (x)  if (as.numeric(x) < .001) '$**$$*$'
-				else if (as.numeric(x) < .01) '$**$'
-				else if (as.numeric(x) < .05) '$*$'
-				else ''
-	calcor <- function (x) {
-		x <- exp(x)
-		if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
-		else       paste0(     custround(  x,neg=F,trunc=T),':1')
-	}
-
 	d <- summary$coefficients
 	expme <- !is.null(summary$family)
 	if (is.null(d)) { #GAMM
@@ -771,7 +786,7 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 	if (!df) d <- cbind(d[,1:2],sapply(d[,1],calcor),d[,3:4]) #add exp(B) in place of empty df
 	names <- sapply(rownames(d),function (x) {
 		x <- unlist(strsplit(x,':',T))
-		x <- sapply(x,paperify)
+		x <- sapply(x,function (x) paperify(x,aliases=aliases))
 		paste(x,collapse=' $\\times$ ')
 	})
 	data <- matrix(nrow=length(names),ncol=7)
@@ -796,15 +811,70 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
 			cat(paste0(line,sep=' & '),'\\\\\n')
 		}
 	}
+}
+
+#' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
+#' @param model The fitted model (not its summary!)
+#' @param label The LaTeX label to put below your 'Results' caption.
+#' @aliases A list of aliases translating summary terms to LaTeX code.
+#' @keywords LaTeX
+#' @export
+mcmc2tex <- function (model,label='',aliases=list(
+'(Intercept)' = '2$\\upsigma$: stressed penult',
+'Vclass_ultB' = 'ultima = B vowel',
+'Vclass_ultD' = 'ultima = diphthong',
+'Vclass_penultB' = 'penult = B vowel',
+'Vclass_penultD' = 'penult = diphthong',
+'Vclass_antepenultB' = 'antepenult = B vowel',
+'Vclass_antepenultD' = 'antepenult = diphthong',
+'Vclass_preantepenultB' = 'preantepenult = B vowel',
+'Vclass_preantepenultD' = 'preantepenult = diphthong',
+'CodaType_ultson' = 'ultima = sonorant',
+'CodaType_ultobs' = 'ultima = obstruent',
+'CodaType_ultcomplex' = 'ultima = complex',
+'CodaType_penultson' = 'penult = sonorant',
+'CodaType_penultobs' = 'penult = obstruent',
+'CodaType_penultcomplex' = 'penult = complex',
+'CodaType_antepenultson' = 'antepenult = sonorant',
+'CodaType_antepenultobs' = 'antepenult = obstruent',
+'CodaType_antepenultcomplex' = 'antepenult = complex',
+'CodaType_preantepenultson' = 'preantepenult = sonorant',
+'CodaType_preantepenultobs' = 'preantepenult = obstruent',
+'CodaType_preantepenultcomplex' = 'preantepenult = complex',
+'traitklemtoon3.1' = '3$\\upsigma$: stressed ultima',
+'traitklemtoon3.3' = '3$\\upsigma$: stressed antepenult',
+'traitklemtoon4.1' = '4$\\upsigma$: stressed ultima',
+'traitklemtoon4.3' = '4$\\upsigma$: stressed antepenult',
+'traitklemtoon4.4' = '3$\\upsigma$: stressed preantepenult'
+)) {
+	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
+	cms <- colMeans(model$Sol)
+	names <- names(cms)
+	pvals <- 2*pmax(0.5/dim(model$Sol)[1], pmin(colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1], 1-colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1])) #directly stolen from mcmcglmm source code!
+	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
+	cat(paste0(sapply(c('Factor','Estimate (SE)','Odds Ratio','$p$','Sig.')
+		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
+	names <- sapply(names,function (x) {
+		x <- unlist(strsplit(x,':',T))
+		x <- sapply(x,function (x) paperify(x,aliases=aliases))
+		paste(x,collapse=' $\\times$ ')
+	})
+	data <- matrix(nrow=length(names),ncol=6)
+	for (i in 1:length(names)) {
+		data[i,1] <- names[i]                           # factor
+		data[i,2] <- custround(cms[i])                  # estimate
+		data[i,3] <- custround(sd(model$Sol[,i]),neg=F) # SE
+		data[i,4] <- custround(exp(cms[i]),neg=F)       # OR
+		data[i,5] <- ifelse(as.numeric(pvals[i]) < .001,'$<$.001',custround(pvals[i],neg=F,trunc=T))
+		data[i,6] <- stars(pvals[i])
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:6]))
+	}
 	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
 
 	cat('\n\n\n')
 	for (i in 1:length(names)) cat(
-		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', $',tname,'_{',ifelse(df,data[i,4],''),'}$ = ',nohp(data[i,5]),', $p$ ',ifelse(
-				d[i,5] < .001,
-				'$<$ .001',
-				paste0('= ',data[i,6])
-			),'),\n'
+		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', OR = ',data[i,4],', $p$ = ',data[i,5]
+		,'),\n'
 	,sep='')
 }
 
