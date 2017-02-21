@@ -1,0 +1,210 @@
+#' Calculate Odds Ratio; basically prints either 'exp(x):1' or '1:exp(x)'
+calcor <- function (x) {
+	x <- exp(x)
+	if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
+	else       paste0(     custround(  x,neg=F,trunc=T),':1')
+}
+
+#' Custom rounding function
+custround <- function (i,neg=T,trunc=F) {
+	i = as.numeric(i) #the matrix changes to a character matrix because of calcor
+	prec <- 3
+	ir <- round(i,prec)
+	while (i > 0 && ir == 0) {
+		prec <- prec + 1
+		ir <- round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
+	}
+	ir <- as.character(ir)
+	while (nchar(sub('.*\\.','',ir)) < prec) ir <- paste0(ir,'0')
+	if (trunc) ir <- sub('^0+','',ir)
+	if (neg & i >= 0) ir <- paste0('\\hphantom{-}',ir)
+	ir
+}
+
+#' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
+#' @param model The fitted model (not its summary!)
+#' @param label The LaTeX label to put below your 'Results' caption.
+#' @aliases A list of aliases translating summary terms to LaTeX code.
+#' @keywords LaTeX
+#' @export
+mcmc2tex <- function (model,label='',aliases=list(
+'(Intercept)' = '2$\\upsigma$: stressed penult',
+'Vclass_ultB' = 'ultima = B vowel',
+'Vclass_ultD' = 'ultima = diphthong',
+'Vclass_penultB' = 'penult = B vowel',
+'Vclass_penultD' = 'penult = diphthong',
+'Vclass_antepenultB' = 'antepenult = B vowel',
+'Vclass_antepenultD' = 'antepenult = diphthong',
+'Vclass_preantepenultB' = 'preantepenult = B vowel',
+'Vclass_preantepenultD' = 'preantepenult = diphthong',
+'CodaType_ultson' = 'ultima = sonorant',
+'CodaType_ultobs' = 'ultima = obstruent',
+'CodaType_ultcomplex' = 'ultima = complex',
+'CodaType_penultson' = 'penult = sonorant',
+'CodaType_penultobs' = 'penult = obstruent',
+'CodaType_penultcomplex' = 'penult = complex',
+'CodaType_antepenultson' = 'antepenult = sonorant',
+'CodaType_antepenultobs' = 'antepenult = obstruent',
+'CodaType_antepenultcomplex' = 'antepenult = complex',
+'CodaType_preantepenultson' = 'preantepenult = sonorant',
+'CodaType_preantepenultobs' = 'preantepenult = obstruent',
+'CodaType_preantepenultcomplex' = 'preantepenult = complex',
+'traitklemtoon3.1' = '3$\\upsigma$: stressed ultima',
+'traitklemtoon3.3' = '3$\\upsigma$: stressed antepenult',
+'traitklemtoon4.1' = '4$\\upsigma$: stressed ultima',
+'traitklemtoon4.3' = '4$\\upsigma$: stressed antepenult',
+'traitklemtoon4.4' = '3$\\upsigma$: stressed preantepenult'
+)) {
+	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
+	cms <- colMeans(model$Sol)
+	names <- names(cms)
+	pvals <- 2*pmax(0.5/dim(model$Sol)[1], pmin(colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1], 1-colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1])) #directly stolen from mcmcglmm source code!
+	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
+	cat(paste0(sapply(c('Factor','Estimate (SE)','Odds Ratio','$p$','Sig.')
+		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
+	names <- sapply(names,function (x) {
+		x <- unlist(strsplit(x,':',T))
+		x <- sapply(x,function (x) paperify(x,aliases=aliases))
+		paste(x,collapse=' $\\times$ ')
+	})
+	data <- matrix(nrow=length(names),ncol=6)
+	for (i in 1:length(names)) {
+		data[i,1] <- names[i]                           # factor
+		data[i,2] <- custround(cms[i])                  # estimate
+		data[i,3] <- custround(sd(model$Sol[,i]),neg=F) # SE
+		data[i,4] <- custround(exp(cms[i]),neg=F)       # OR
+		data[i,5] <- ifelse(as.numeric(pvals[i]) < .001,'$<$.001',custround(pvals[i],neg=F,trunc=T))
+		data[i,6] <- stars(pvals[i])
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:6]))
+	}
+	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
+
+	cat('\n\n\n')
+	for (i in 1:length(names)) cat(
+		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', OR = ',data[i,4],', $p$ = ',data[i,5]
+		,'),\n'
+	,sep='')
+}
+
+#' Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)
+#' @param summary The summary to convert.
+#' @param vowel The vowel you're analyzing.
+#' @param formula The formula as used in your final lmer object.
+#' @param label The LaTeX label to put below your 'Results' caption.
+#' @aliases A list of aliases translating summary terms to LaTeX code.
+#' @keywords LaTeX
+#' @export
+mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
+'(Intercept)'='Intercept',
+'Df1'='$\\Updelta$F1',
+'Df2'='$\\Updelta$F2',
+'2:'='\\o:',
+'9y'='\\oe y',
+'country1'='country=The Netherlands',
+'region1'='region=NR',
+'region2'='region=NM',
+'region3'='region=NS',
+'region4'='region=NN',
+'region5'='region=FE',
+'region6'='region=FL',
+'region7'='region=FW',
+'FS'='following segment',
+'FS2'='following segment=obs',
+'FS1'='following segment=/l/',
+'ppn'='participants',
+'word'='words',
+'phonemeDec'='rhyme decision',
+'belgianTRUE'='Belgian',
+'step1'='step 1 vs 2',
+'step2'='step 2 vs 3',
+'step3'='step 3 vs 4',
+'lTRUE'='coda /l/',
+'lFALSE'='no coda /l/'
+)) {
+	d <- summary$coefficients
+	expme <- !is.null(summary$family)
+	if (is.null(d)) { #GAMM
+		d <- summary$p.table
+		df <- F
+		tname <- 't'
+		form <- summary$formula
+		smooths <- summary$s.table
+	} else {
+		df <- ncol(d) > 4
+		tname <- ifelse(df,'t','z')
+		form <- summary$call[[2]]
+		smooths <- NULL
+	}
+	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
+	if (formula) {
+		mcprintln <- function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
+		#mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
+		mcprintln(c('Dependent variable: ',paperify(as.character(form[[2]]))))
+		terms <- Filter(function (x) grepl('|',x,fixed=T),attr(terms(form),'term.labels'))
+		slopes <- list()
+		for (t in terms) {
+			grouping <- sub('.*\\| ','',t)
+			factors <- sub(' \\|.*','',t)
+			factors <- unlist(strsplit(factors,' + ',T))
+			factors <- Filter(function (x) x != '0' & x != '- 1',factors)
+			factors <- sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x))
+			slopesmsg <- c('Random effects for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
+			mcprintln(slopesmsg)
+		}
+		cat('\\hline\n')
+	}
+	cat(paste0(sapply(if (df)            c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
+	                     else if (expme) c('Factor','Estimate (SE)','Odds Ratio',paste0('$',tname,'$'),'$p$','Sig.')
+			     else            c('Factor','Estimate (SE)',paste0('$',tname,'$'),'$p$','Sig.')
+		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
+	if (!df) d <- cbind(d[,1:2],sapply(d[,1],calcor),d[,3:4]) #add exp(B) in place of empty df
+	names <- sapply(rownames(d),function (x) {
+		x <- unlist(strsplit(x,':',T))
+		x <- sapply(x,function (x) paperify(x,aliases=aliases))
+		paste(x,collapse=' $\\times$ ')
+	})
+	data <- matrix(nrow=length(names),ncol=7)
+	for (i in 1:length(names)) {
+		data[i,1] <- names[i]					# factor
+		data[i,2] <- custround(d[i,1])				# estimate
+		data[i,3] <- custround(d[i,2],neg=F)			# SE
+		data[i,4] <- if (df) custround(d[i,3],neg=F) else d[i,3]# df / OR
+		data[i,5] <- custround(d[i,4])				# t
+		data[i,6] <- ifelse(as.numeric(d[i,5]) < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
+		data[i,7] <- stars(d[i,5])				# stars
+		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df||expme,4,5):7])) #print for table
+	}
+	if (!is.null(smooths)) {
+		cat('\\hline\n')
+		cat(paste('\\textit{Factor}','\\textit{df}','\\textit{ref.\\ df}','$F$','$p$','\\textit{Sig.}',sep=' & '),'\\\\\\hline\n')
+		for (i in 1:nrow(smooths)) {
+			line <- dimnames(smooths)[[i]] # factor
+			line <- c(line,sapply(smooths[1:3],function (x) custround(x,neg=F))) # edf,refdf,F
+			line <- c(line,ifelse(smooths[4] < .001,'$<$.001',custround(smooths[4],neg=F,trunc=T))) # p
+			line <- c(line,stars(smooths[4])) # starrs
+			cat(paste0(line,sep=' & '),'\\\\\n')
+		}
+	}
+}
+
+#' Remove \hphantom{-}
+nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
+
+#' Translate formula terms to aliases
+paperify <- function (x,aliases) {
+	if (!x %in% names(aliases)) return(x)
+	x <- names(aliases) == x
+	x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
+}
+
+#' LaTeXify significance stars
+stars <- function (x)  return(if (as.numeric(x) < .001) '$**$$*$'
+			else if (as.numeric(x) < .01) '$**$'
+			else if (as.numeric(x) < .05) '$*$'
+			else '')
+
+#' Print an R vector as a LaTeX table line
+tblprintln <- function (x) {
+	l <- paste0(x,collapse=' & ')
+	cat(l,'\\\\\n',sep='')
+}

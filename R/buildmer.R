@@ -7,185 +7,6 @@
 	have.gamm4 <<- require('gamm4')
 }
 
-#' Make a buildmer object
-#' @param table A dataframe containing the results of the elimination process.
-#' @param model The final model containing only the terms that survived elimination.
-#' @param messages Any warning messages.
-#' @param summary: The model's summary, if the model was built with `summary=TRUE'.
-#' @param anova: The model's ANOVA, if the model was built with `anova=TRUE'.
-#' @keywords buildmer
-#' @seealso buildmer
-#' @export
-mkBuildmer <- setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY',anova='ANY'))
-setMethod('show','buildmer',function (object) {
-	show(object@model)
-	cat('\nElimination table:\n\n')
-	show(object@table)
-	if (length(object@messages)) {
-		cat('\nWarning messages:\n\n')
-		cat(object@messages)
-	}
-})
-setMethod('anova','buildmer',function (object,ddf='Wald') {
-	anv <- if (!is.null(object@anova)) object@anova else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		anv <- if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
-		if (ddf == 'Wald' && !'lm' %in% class(object@model) && is.null(object@model$gam)) anv <- calcWald(anv,4)
-	}
-	if (length(object@messages)) warning(object@messages)
-	anv
-})
-setMethod('summary','buildmer',function (object,ddf='Wald') {
-	if (!is.null(object@summary)) smy <- object@summary else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'."))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		calcWald <- F
-		if (ddf == 'Wald' && isLMM(object@model)) {
-			calcWald <- T
-			ddf <- 'lme4'
-		}
-		smy <- if (have.lmerTest && !'lm' %in% class(object@model) && is.null(object@model$gam)) summary(object@model,ddf=ddf) else summary(object@model)
-		if (calcWald) smy$coefficients <- calcWald(smy$coefficients,3)
-	}
-	if (length(object@messages)) warning(object@messages)
-	smy
-})
-
-#' Get the elimination table from a buildmer object
-#' @param object The buildmer object.
-#' @keywords elimination
-#' @seealso buildmer
-#' @export
-elim <- function (object) object@table
-
-#' Test an merMod or equivalent object for convergence
-#' @param model The model object to test.
-#' @return Whether the model converged or not.
-#' @keywords convergence
-#' @export
-conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
-
-#' Get the level-2 terms contained within a level-1 lme4 random term
-#' @param term The term.
-#' @return A list of random terms.
-get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
-
-#' Test whether a formula term contains lme4 random terms
-#' @param term The term.
-#' @return A logical indicating whether the term was a random-effects term.
-#' @export
-is.random.term <- function (term) length(get.random.terms(term)) > 0
-
-#' Test whether a formula contains gamm4 smooth terms
-#' @param formula The formula.
-#' @return A logical indicating whether the formula has any gamm4 terms.
-#' @export
-has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
-
-#' Convenience function to immediately descend into a level-2 term
-#' @param random.terms Vector of level-1 terms to descend into.
-#' @param FUN The function to apply to the level-2 terms.
-#' @return The modified random.terms
-innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
-
-#' Remove terms from an lme4 formula
-#' @param formula The lme4 formula.
-#' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
-#' @param formulize Whether to return a formula (default) or a simple list of terms.
-#' @seealso buildmer
-#' @keywords remove terms
-#' @export
-remove.terms <- function (formula,remove=c(),formulize=T) {
-	remove.possible <- function(terms,grouping=NULL,other=NULL,test=remove) {
-		if (!length(terms)) return(terms)
-		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
-		forbidden <- c()
-		for (x in c(terms,other)) {
-			x.star <- gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
-			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
-			forbidden <- c(forbidden,partterms[partterms != x])
-		}
-		# Do not remove fixed terms if they have corresponding random terms
-		if (!is.null(grouping)) forbidden <- paste0(forbidden,' | ',grouping) else {
-			bars <- lme4::findbars(formula)
-			for (term in bars) {
-				terms. <- as.character(term[2])
-				form <- as.formula(paste0('~',terms.))
-				terms. <- terms(form)
-				intercept <- attr(terms.,'intercept')
-				terms. <- attr(terms.,'term.labels')
-				if (intercept) terms. <- c('1',terms.)
-				forbidden <- unique(c(forbidden,terms.))
-			}
-		}
-		ok.to.remove <- test[!test %in% forbidden]
-		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,' | ',grouping,')') %in% ok.to.remove]
-	}
-
-	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
-	remove <- sapply(remove,function (x) {
-		if (!is.random.term(x)) return(x)
-		if (substr(x,1,1) == '(' && substr(x,nchar(x),nchar(x)) == ')') return(x)
-		paste0('(',x,')')
-	})
-
-	ranterms.with.grouping <- function (random.terms,grouping) {
-		random.terms = lme4::findbars(as.formula(paste0('~',paste('(',random.terms,')'))))
-		ret <- c()
-		for (term in random.terms) {
-			if (term[[3]] == grouping) {
-				terms <- as.character(term[2])
-				form <- as.formula(paste0('~',terms))
-				terms <- terms(form)
-				terms <- attr(terms,'term.labels')
-				ret <- c(ret,terms)
-			}
-		}
-	}
-
-	dep <- as.character(formula)[2]
-	terms <- terms(formula)
-	intercept <- attr(terms,'intercept')
-	if ('1' %in% remove && !'1' %in% remove.possible(terms,test='1')) intercept <- 0
-	terms <- attr(terms,'term.labels')
-	fixed.terms <- Filter(Negate(is.random.term),terms)
-	fixed.terms <- remove.possible(fixed.terms)
-	random.terms <- Filter(is.random.term,terms)
-	random.terms <- innerapply(random.terms,function (term) {
-		grouping <- term[[3]]
-		terms <- as.character(term[2])
-		form <- as.formula(paste0('~',terms))
-		terms <- terms(form)
-		intercept <- attr(terms,'intercept')
-		terms <- attr(terms,'term.labels')
-		terms <- remove.possible(terms,grouping,other=ranterms.with.grouping(random.terms,grouping))
-		if (!length(terms) && (!intercept || paste0('(1 | ',grouping,')') %in% remove)) return(NULL)
-		if (intercept) terms <- c('1',terms)
-		else terms[[1]] <- paste0('0 + ',terms[[1]])
-		if (formulize) terms <- paste(terms,collapse=' + ')
-		terms <- paste0(terms,' | ',grouping)
-		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
-		terms
-	})
-	random.terms <- Filter(Negate(is.null),unlist(random.terms))
-	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
-	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
-	terms <- c(fixed.terms,random.terms)
-	if (!intercept && !length(terms)) return(NULL)
-	if (formulize) {
-		if (length(terms)) return(reformulate(terms,dep,intercept))
-		return(as.formula(paste0(dep,'~1')))
-	}
-	if (intercept) {
-		names(intercept) <- 'fixed'
-		return(c(intercept,terms))
-	}
-	terms
-}
-
 #' Add terms to an lme4 formula.
 #' @param formula The lme4 formula to add terms to.
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use `(term|group)' syntax if you want to add an independent random effect (e.g. `(olderterm|group) + (term|group)'), or use `term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
@@ -243,69 +64,6 @@ add.terms <- function (formula,add) {
 	as.formula(paste0(dep,'~',as.numeric(intercept)))
 }
 
-#' Extract a model's deviance
-#' @param model The fitted model object.
-#' @return The deviance or REML criterion.
-devfun <- function (model) {
-	if (any(class(model) == 'lm')) return(deviance(model))
-	comp <- getME(model,'devcomp')$cmp
-	if (isLMM(model) && hasREML(model)) comp['REML'] else comp['dev']
-}
-
-#' Diagonalize the random-effect covariance structure, possibly assisting convergence
-#' @param formula A model formula.
-#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
-#' @keywords diagonal covariance structure
-#' @export
-diagonalize <- function(formula) {
-	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
-	dep <- as.character(formula[[2]])
-	terms <- remove.terms(formula,c(),formulize=F)
-	fixed.terms  <- terms[names(terms) == 'fixed' ]
-	random.terms <- terms[names(terms) == 'random']
-	random.terms <- unlist(sapply(random.terms,function (term) {
-		# lme4::findbars returns a list of terms
-		sapply(get.random.terms(term),function (t) {
-			grouping <- t[[3]]
-			t <- as.character(t[2])
-			if (t == '1') paste0('(1 | ',grouping,')') else paste0('(0 + ',t,' | ',grouping,')')
-		})
-	}))
-	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
-}
-
-#' Get the last random slope (or, if not available, the last random intercept) from a model formula
-#' @param formula A model formula.
-#' @return The last random slope (or, if not available, the last random intercept).
-get.last.random.slope <- function (formula) {
-	terms <- remove.terms(formula,c(),formulize=F)
-	random.terms <- terms[names(terms) == 'random']
-	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
-	if (!length(cands)) cands <- random.terms
-	cands[[length(cands)]]
-}
-
-#' Test whether a model was fit with REML
-#' @param model A fitted model object.
-#' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
-#' @export
-hasREML <- function (model) {
-	if ('lm' %in% class(model)) return(NA)
-	if (!isLMM(model)) return(NA)
-	isREML(model)
-}
-
-#' Calculate p-values based on Wald z-scores
-#' @param table A coefficient table from a summary or anova output.
-#' @param i The number of the column in that table containing the t-values.
-#' @param sqrt Whether we're testing F values or t values (default).
-#' @return The table augmented with p-values.
-calcWald <- function (table,i,sqrt=F) {
-	data <- table[,i]
-	if (sqrt) data <- sqrt(data)
-	cbind(table,'Pr(>|t|)'=2*pnorm(abs(data),lower.tail=F))
-}
-	
 #' Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
@@ -660,6 +418,242 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	ret
 }
 
+#' Calculate p-values based on Wald z-scores
+#' @param table A coefficient table from a summary or anova output.
+#' @param i The number of the column in that table containing the t-values.
+#' @param sqrt Whether we're testing F values or t values (default).
+#' @return The table augmented with p-values.
+calcWald <- function (table,i,sqrt=F) {
+	data <- table[,i]
+	if (sqrt) data <- sqrt(data)
+	cbind(table,'Pr(>|t|)'=2*pnorm(abs(data),lower.tail=F))
+}
+
+#' Test an merMod or equivalent object for convergence
+#' @param model The model object to test.
+#' @return Whether the model converged or not.
+#' @keywords convergence
+#' @export
+conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
+
+#' Extract a model's deviance
+#' @param model The fitted model object.
+#' @return The deviance or REML criterion.
+devfun <- function (model) {
+	if (any(class(model) == 'lm')) return(deviance(model))
+	comp <- getME(model,'devcomp')$cmp
+	if (isLMM(model) && hasREML(model)) comp['REML'] else comp['dev']
+}
+
+setGeneric('diag')
+#' Diagonalize the random-effect covariance structure, possibly assisting convergence
+#' @param formula A model formula.
+#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
+#' @keywords diagonal covariance structure
+#' @export
+setMethod(diag,'formula',function (x) {
+	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
+	dep <- as.character(formula[[2]])
+	terms <- remove.terms(formula,c(),formulize=F)
+	fixed.terms  <- terms[names(terms) == 'fixed' ]
+	random.terms <- terms[names(terms) == 'random']
+	random.terms <- unlist(sapply(random.terms,function (term) {
+		# lme4::findbars returns a list of terms
+		sapply(get.random.terms(term),function (t) {
+			grouping <- t[[3]]
+			t <- as.character(t[2])
+			if (t == '1') paste0('(1 | ',grouping,')') else paste0('(0 + ',t,' | ',grouping,')')
+		})
+	}))
+	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
+})
+
+#' Get the last random slope (or, if not available, the last random intercept) from a model formula
+#' @param formula A model formula.
+#' @return The last random slope (or, if not available, the last random intercept).
+get.last.random.slope <- function (formula) {
+	terms <- remove.terms(formula,c(),formulize=F)
+	random.terms <- terms[names(terms) == 'random']
+	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
+	if (!length(cands)) cands <- random.terms
+	cands[[length(cands)]]
+}
+
+#' Get the level-2 terms contained within a level-1 lme4 random term
+#' @param term The term.
+#' @return A list of random terms.
+get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
+
+#' Test whether a model was fit with REML
+#' @param model A fitted model object.
+#' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
+#' @export
+hasREML <- function (model) {
+	if ('lm' %in% class(model)) return(NA)
+	if (!isLMM(model)) return(NA)
+	isREML(model)
+}
+
+#' Test whether a formula contains gamm4 smooth terms
+#' @param formula The formula.
+#' @return A logical indicating whether the formula has any gamm4 terms.
+#' @export
+has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
+
+#' Convenience function to immediately descend into a level-2 term
+#' @param random.terms Vector of level-1 terms to descend into.
+#' @param FUN The function to apply to the level-2 terms.
+#' @return The modified random.terms
+innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
+
+#' Test whether a formula term contains lme4 random terms
+#' @param term The term.
+#' @return A logical indicating whether the term was a random-effects term.
+#' @export
+is.random.term <- function (term) length(get.random.terms(term)) > 0
+
+#' Make a buildmer object
+#' @param table A dataframe containing the results of the elimination process.
+#' @param model The final model containing only the terms that survived elimination.
+#' @param messages Any warning messages.
+#' @param summary: The model's summary, if the model was built with `summary=TRUE'.
+#' @param anova: The model's ANOVA, if the model was built with `anova=TRUE'.
+#' @keywords buildmer
+#' @seealso buildmer
+#' @export
+mkBuildmer <- setClass('buildmer',slots=list(model='ANY',table='data.frame',messages='character',summary='ANY',anova='ANY'))
+setMethod('show','buildmer',function (object) {
+	show(object@model)
+	cat('\nElimination table:\n\n')
+	show(object@table)
+	if (length(object@messages)) {
+		cat('\nWarning messages:\n\n')
+		cat(object@messages)
+	}
+})
+setMethod('anova','buildmer',function (object,ddf='Wald') {
+	anv <- if (!is.null(object@anova)) object@anova else {
+		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		anv <- if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
+		if (ddf == 'Wald' && !'lm' %in% class(object@model) && is.null(object@model$gam)) anv <- calcWald(anv,4)
+	}
+	if (length(object@messages)) warning(object@messages)
+	anv
+})
+setMethod('summary','buildmer',function (object,ddf='Wald') {
+	if (!is.null(object@summary)) smy <- object@summary else {
+		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'."))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		calcWald <- F
+		if (ddf == 'Wald' && isLMM(object@model)) {
+			calcWald <- T
+			ddf <- 'lme4'
+		}
+		smy <- if (have.lmerTest && !'lm' %in% class(object@model) && is.null(object@model$gam)) summary(object@model,ddf=ddf) else summary(object@model)
+		if (calcWald) smy$coefficients <- calcWald(smy$coefficients,3)
+	}
+	if (length(object@messages)) warning(object@messages)
+	smy
+})
+
+#' Remove terms from an lme4 formula
+#' @param formula The lme4 formula.
+#' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
+#' @param formulize Whether to return a formula (default) or a simple list of terms.
+#' @seealso buildmer
+#' @keywords remove terms
+#' @export
+remove.terms <- function (formula,remove=c(),formulize=T) {
+	remove.possible <- function(terms,grouping=NULL,other=NULL,test=remove) {
+		if (!length(terms)) return(terms)
+		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
+		forbidden <- c()
+		for (x in c(terms,other)) {
+			x.star <- gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
+			forbidden <- c(forbidden,partterms[partterms != x])
+		}
+		# Do not remove fixed terms if they have corresponding random terms
+		if (!is.null(grouping)) forbidden <- paste0(forbidden,' | ',grouping) else {
+			bars <- lme4::findbars(formula)
+			for (term in bars) {
+				terms. <- as.character(term[2])
+				form <- as.formula(paste0('~',terms.))
+				terms. <- terms(form)
+				intercept <- attr(terms.,'intercept')
+				terms. <- attr(terms.,'term.labels')
+				if (intercept) terms. <- c('1',terms.)
+				forbidden <- unique(c(forbidden,terms.))
+			}
+		}
+		ok.to.remove <- test[!test %in% forbidden]
+		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,' | ',grouping,')') %in% ok.to.remove]
+	}
+
+	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
+	remove <- sapply(remove,function (x) {
+		if (!is.random.term(x)) return(x)
+		if (substr(x,1,1) == '(' && substr(x,nchar(x),nchar(x)) == ')') return(x)
+		paste0('(',x,')')
+	})
+
+	ranterms.with.grouping <- function (random.terms,grouping) {
+		random.terms = lme4::findbars(as.formula(paste0('~',paste('(',random.terms,')'))))
+		ret <- c()
+		for (term in random.terms) {
+			if (term[[3]] == grouping) {
+				terms <- as.character(term[2])
+				form <- as.formula(paste0('~',terms))
+				terms <- terms(form)
+				terms <- attr(terms,'term.labels')
+				ret <- c(ret,terms)
+			}
+		}
+	}
+
+	dep <- as.character(formula)[2]
+	terms <- terms(formula)
+	intercept <- attr(terms,'intercept')
+	if ('1' %in% remove && !'1' %in% remove.possible(terms,test='1')) intercept <- 0
+	terms <- attr(terms,'term.labels')
+	fixed.terms <- Filter(Negate(is.random.term),terms)
+	fixed.terms <- remove.possible(fixed.terms)
+	random.terms <- Filter(is.random.term,terms)
+	random.terms <- innerapply(random.terms,function (term) {
+		grouping <- term[[3]]
+		terms <- as.character(term[2])
+		form <- as.formula(paste0('~',terms))
+		terms <- terms(form)
+		intercept <- attr(terms,'intercept')
+		terms <- attr(terms,'term.labels')
+		terms <- remove.possible(terms,grouping,other=ranterms.with.grouping(random.terms,grouping))
+		if (!length(terms) && (!intercept || paste0('(1 | ',grouping,')') %in% remove)) return(NULL)
+		if (intercept) terms <- c('1',terms)
+		else terms[[1]] <- paste0('0 + ',terms[[1]])
+		if (formulize) terms <- paste(terms,collapse=' + ')
+		terms <- paste0(terms,' | ',grouping)
+		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
+		terms
+	})
+	random.terms <- Filter(Negate(is.null),unlist(random.terms))
+	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
+	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
+	terms <- c(fixed.terms,random.terms)
+	if (!intercept && !length(terms)) return(NULL)
+	if (formulize) {
+		if (length(terms)) return(reformulate(terms,dep,intercept))
+		return(as.formula(paste0(dep,'~1')))
+	}
+	if (intercept) {
+		names(intercept) <- 'fixed'
+		return(c(intercept,terms))
+	}
+	terms
+}
+
 #' A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
@@ -676,213 +670,3 @@ stepwise <- function (formula,data,family=gaussian,...) {
 	dots <- list(...)
 	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,summary=T),dots))
 }
-
-# Custom, unexported functions for the *2tex functions
-tblprintln <- function (x) {
-	l <- paste0(x,collapse=' & ')
-	cat(l,'\\\\\n',sep='')
-}
-paperify <- function (x,aliases) {
-	if (!x %in% names(aliases)) return(x)
-	x <- names(aliases) == x
-	x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
-}
-custround <- function (i,neg=T,trunc=F) {
-	i = as.numeric(i) #the matrix changes to a character matrix because of calcor
-	prec <- 3
-	ir <- round(i,prec)
-	while (i > 0 && ir == 0) {
-		prec <- prec + 1
-		ir <- round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
-	}
-	ir <- as.character(ir)
-	while (nchar(sub('.*\\.','',ir)) < prec) ir <- paste0(ir,'0')
-	if (trunc) ir <- sub('^0+','',ir)
-	if (neg & i >= 0) ir <- paste0('\\hphantom{-}',ir)
-	ir
-}
-nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
-stars <- function (x)  return(if (as.numeric(x) < .001) '$**$$*$'
-			else if (as.numeric(x) < .01) '$**$'
-			else if (as.numeric(x) < .05) '$*$'
-			else '')
-calcor <- function (x) {
-	x <- exp(x)
-	if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
-	else       paste0(     custround(  x,neg=F,trunc=T),':1')
-}
-
-#' Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)
-#' @param summary The summary to convert.
-#' @param vowel The vowel you're analyzing.
-#' @param formula The formula as used in your final lmer object.
-#' @param label The LaTeX label to put below your 'Results' caption.
-#' @aliases A list of aliases translating summary terms to LaTeX code.
-#' @keywords LaTeX
-#' @export
-mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
-'(Intercept)'='Intercept',
-'Df1'='$\\Updelta$F1',
-'Df2'='$\\Updelta$F2',
-'2:'='\\o:',
-'9y'='\\oe y',
-'country1'='country=The Netherlands',
-'region1'='region=NR',
-'region2'='region=NM',
-'region3'='region=NS',
-'region4'='region=NN',
-'region5'='region=FE',
-'region6'='region=FL',
-'region7'='region=FW',
-'FS'='following segment',
-'FS2'='following segment=obs',
-'FS1'='following segment=/l/',
-'ppn'='participants',
-'word'='words',
-'phonemeDec'='rhyme decision',
-'belgianTRUE'='Belgian',
-'step1'='step 1 vs 2',
-'step2'='step 2 vs 3',
-'step3'='step 3 vs 4',
-'lTRUE'='coda /l/',
-'lFALSE'='no coda /l/'
-)) {
-	d <- summary$coefficients
-	expme <- !is.null(summary$family)
-	if (is.null(d)) { #GAMM
-		d <- summary$p.table
-		df <- F
-		tname <- 't'
-		form <- summary$formula
-		smooths <- summary$s.table
-	} else {
-		df <- ncol(d) > 4
-		tname <- ifelse(df,'t','z')
-		form <- summary$call[[2]]
-		smooths <- NULL
-	}
-	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
-	if (formula) {
-		mcprintln <- function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
-		#mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
-		mcprintln(c('Dependent variable: ',paperify(as.character(form[[2]]))))
-		terms <- Filter(function (x) grepl('|',x,fixed=T),attr(terms(form),'term.labels'))
-		slopes <- list()
-		for (t in terms) {
-			grouping <- sub('.*\\| ','',t)
-			factors <- sub(' \\|.*','',t)
-			factors <- unlist(strsplit(factors,' + ',T))
-			factors <- Filter(function (x) x != '0' & x != '- 1',factors)
-			factors <- sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x))
-			slopesmsg <- c('Random effects for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
-			mcprintln(slopesmsg)
-		}
-		cat('\\hline\n')
-	}
-	cat(paste0(sapply(if (df)            c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
-	                     else if (expme) c('Factor','Estimate (SE)','Odds Ratio',paste0('$',tname,'$'),'$p$','Sig.')
-			     else            c('Factor','Estimate (SE)',paste0('$',tname,'$'),'$p$','Sig.')
-		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
-	if (!df) d <- cbind(d[,1:2],sapply(d[,1],calcor),d[,3:4]) #add exp(B) in place of empty df
-	names <- sapply(rownames(d),function (x) {
-		x <- unlist(strsplit(x,':',T))
-		x <- sapply(x,function (x) paperify(x,aliases=aliases))
-		paste(x,collapse=' $\\times$ ')
-	})
-	data <- matrix(nrow=length(names),ncol=7)
-	for (i in 1:length(names)) {
-		data[i,1] <- names[i]					# factor
-		data[i,2] <- custround(d[i,1])				# estimate
-		data[i,3] <- custround(d[i,2],neg=F)			# SE
-		data[i,4] <- if (df) custround(d[i,3],neg=F) else d[i,3]# df / OR
-		data[i,5] <- custround(d[i,4])				# t
-		data[i,6] <- ifelse(as.numeric(d[i,5]) < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
-		data[i,7] <- stars(d[i,5])				# stars
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df||expme,4,5):7])) #print for table
-	}
-	if (!is.null(smooths)) {
-		cat('\\hline\n')
-		cat(paste('\\textit{Factor}','\\textit{df}','\\textit{ref.\\ df}','$F$','$p$','\\textit{Sig.}',sep=' & '),'\\\\\\hline\n')
-		for (i in 1:nrow(smooths)) {
-			line <- dimnames(smooths)[[i]] # factor
-			line <- c(line,sapply(smooths[1:3],function (x) custround(x,neg=F))) # edf,refdf,F
-			line <- c(line,ifelse(smooths[4] < .001,'$<$.001',custround(smooths[4],neg=F,trunc=T))) # p
-			line <- c(line,stars(smooths[4])) # starrs
-			cat(paste0(line,sep=' & '),'\\\\\n')
-		}
-	}
-}
-
-#' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
-#' @param model The fitted model (not its summary!)
-#' @param label The LaTeX label to put below your 'Results' caption.
-#' @aliases A list of aliases translating summary terms to LaTeX code.
-#' @keywords LaTeX
-#' @export
-mcmc2tex <- function (model,label='',aliases=list(
-'(Intercept)' = '2$\\upsigma$: stressed penult',
-'Vclass_ultB' = 'ultima = B vowel',
-'Vclass_ultD' = 'ultima = diphthong',
-'Vclass_penultB' = 'penult = B vowel',
-'Vclass_penultD' = 'penult = diphthong',
-'Vclass_antepenultB' = 'antepenult = B vowel',
-'Vclass_antepenultD' = 'antepenult = diphthong',
-'Vclass_preantepenultB' = 'preantepenult = B vowel',
-'Vclass_preantepenultD' = 'preantepenult = diphthong',
-'CodaType_ultson' = 'ultima = sonorant',
-'CodaType_ultobs' = 'ultima = obstruent',
-'CodaType_ultcomplex' = 'ultima = complex',
-'CodaType_penultson' = 'penult = sonorant',
-'CodaType_penultobs' = 'penult = obstruent',
-'CodaType_penultcomplex' = 'penult = complex',
-'CodaType_antepenultson' = 'antepenult = sonorant',
-'CodaType_antepenultobs' = 'antepenult = obstruent',
-'CodaType_antepenultcomplex' = 'antepenult = complex',
-'CodaType_preantepenultson' = 'preantepenult = sonorant',
-'CodaType_preantepenultobs' = 'preantepenult = obstruent',
-'CodaType_preantepenultcomplex' = 'preantepenult = complex',
-'traitklemtoon3.1' = '3$\\upsigma$: stressed ultima',
-'traitklemtoon3.3' = '3$\\upsigma$: stressed antepenult',
-'traitklemtoon4.1' = '4$\\upsigma$: stressed ultima',
-'traitklemtoon4.3' = '4$\\upsigma$: stressed antepenult',
-'traitklemtoon4.4' = '3$\\upsigma$: stressed preantepenult'
-)) {
-	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
-	cms <- colMeans(model$Sol)
-	names <- names(cms)
-	pvals <- 2*pmax(0.5/dim(model$Sol)[1], pmin(colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1], 1-colSums(model$Sol[,1:length(names),drop=FALSE]>0)/dim(model$Sol)[1])) #directly stolen from mcmcglmm source code!
-	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
-	cat(paste0(sapply(c('Factor','Estimate (SE)','Odds Ratio','$p$','Sig.')
-		,function (x) paste0('\\textit{',x,'}')),collapse=' & '),'\\\\\\hline\n',sep='')
-	names <- sapply(names,function (x) {
-		x <- unlist(strsplit(x,':',T))
-		x <- sapply(x,function (x) paperify(x,aliases=aliases))
-		paste(x,collapse=' $\\times$ ')
-	})
-	data <- matrix(nrow=length(names),ncol=6)
-	for (i in 1:length(names)) {
-		data[i,1] <- names[i]                           # factor
-		data[i,2] <- custround(cms[i])                  # estimate
-		data[i,3] <- custround(sd(model$Sol[,i]),neg=F) # SE
-		data[i,4] <- custround(exp(cms[i]),neg=F)       # OR
-		data[i,5] <- ifelse(as.numeric(pvals[i]) < .001,'$<$.001',custround(pvals[i],neg=F,trunc=T))
-		data[i,6] <- stars(pvals[i])
-		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:6]))
-	}
-	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
-
-	cat('\n\n\n')
-	for (i in 1:length(names)) cat(
-		names[i],' ($\\hat\\beta$ = ',nohp(data[i,2]),', \\textit{SE} = ',data[i,3],', OR = ',data[i,4],', $p$ = ',data[i,5]
-		,'),\n'
-	,sep='')
-}
-
-#' Vowel data from a pilot study.
-#' @docType data
-#' @usage data(vowels)
-#' @format A standard data frame.
-#' @examples
-#' #buildmer(f1 ~ vowel*timepoint*following + stress + information + (vowel*timepoint*following|participant),data=vowels,ddf='Satterthwaite',verbose=2,control=lmerControl(optCtrl=list(maxfun=250000))) #VERY slow
-#' buildmer(f1 ~ vowel + timepoint + stress + following + information + vowel:timepoint + timepoint:following + vowel:following + vowel:timepoint:following + (1 + vowel + timepoint + following + vowel:timepoint + vowel:following + timepoint:following | participant),data=vowels,ddf='Satterthwaite',reduce.fixed=F,reduce.random=F,direction=NULL,start=c(0.567929,-0.0678053,-0.288065,-0.402232,-0.218813,-0.381153,-0.00170270,0.226449,-0.130479,0.304374,-0.0545927,-0.0540232,-0.0207310,0.106023,0.0406852,0.307277,0.227415,0.138530,0.227523,0.382057,0.235687,0.196619,-0.223459,-0.268986,-0.283158,-0.514559,-0.0852659,-0.0887947,-0.166943,-0.166356,0.0694036,0.104932,0.0315810,0.106377,0.572384,0.134674,0.0986679,-0.564443,-0.247899,-0.516127,0.0126328,0.0134181,0.156846,0.0735232,-0.295448,0.0760134,0.307895,-0.0320374,0.00561691,0.0263991,-0.0665717,-0.0271437,-0.375478,-0.225109,-0.138032,-0.167771,-0.314771,0.266541,0.143402,0.346499,-0.0542296,-0.0522401,-0.168416,-0.233742,-0.108847,0.169875,0.0587621,0.294170,-0.131189,0.00842303,0.00107080,-0.000140772,-0.000180338,-0.000391072,-0.000760899,0.000175467,0.000815001,0.000371120,0.00103038,7.76669e-05,-0.000361915,6.43889e-06,5.41626e-06,-6.29458e-06,5.28341e-06,-1.57044e-05,-1.21465e-05,-3.59313e-06,-1.08241e-05,3.79460e-06,-6.23642e-06,7.33735e-09,4.63050e-06,-1.05767e-06,8.90553e-06,5.19108e-06,1.14733e-06,4.10115e-06,-2.16305e-06,-3.79511e-07,6.61065e-08,2.25952e-07,-2.23288e-06,-1.86336e-07,1.99417e-07,-7.50342e-07,1.87314e-06,-5.57930e-07,2.81066e-08,1.74496e-06,-2.73743e-07,-1.26676e-07,4.62685e-07,-1.52272e-06,9.08249e-07,1.08874e-08,4.46392e-07,1.40782e-07,-7.20672e-09,1.00016e-07,-2.21006e-07,2.69678e-08,2.85674e-08,7.00216e-08,-2.39755e-07,7.03984e-08,8.71293e-08,4.31071e-08,-3.09939e-07,1.83222e-07,1.55808e-07,4.80558e-08,5.22165e-08,2.11040e-07,-1.53738e-07,3.32615e-07))
-"vowels"
