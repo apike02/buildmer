@@ -321,7 +321,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	fixed.terms <- Filter(Negate(is.random.term),terms)
 	if (!reduce.fixed) fixed.terms <- paste(fixed.terms,collapse='+')
 	random.terms <- Filter(is.random.term,terms)
-	if (!reduce.random) random.terms <- paste(random.terms.collapse='+')
+	if (!reduce.random) random.terms <- paste(random.terms,collapse='+')
 
 	if (!any(direction %in% c('forward','backward'))) ma <- fit(formula,T)
 	if (any(direction == 'forward')) {
