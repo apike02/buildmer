@@ -5,9 +5,10 @@
 \title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance}
 \usage{
 buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
-  reorder.terms = TRUE, reduce.fixed = TRUE, reduce.random = TRUE,
-  protect.intercept = TRUE, direction = "backward", anova = TRUE,
-  summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
+  reorder.terms = TRUE, parallel = TRUE, reduce.fixed = TRUE,
+  reduce.random = TRUE, protect.intercept = TRUE, direction = "backward",
+  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald", quiet = FALSE,
+  ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
@@ -20,6 +21,8 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 
 \item{reorder.terms}{Whether to reorder the terms by their contribution to the deviance before testing them.}
 
+\item{parallel}{Whether to, if possible, parallellize the fitting of the candidate models during term reordering.}
+
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 
 \item{reduce.random}{Whether to reduce the random-effect structure.}
@@ -28,9 +31,9 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 
 \item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
 
-\item{anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
+\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
 
-\item{summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
+\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
 
 \item{ddf}{The method used for calculating p-values if summary=T. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
 
@@ -44,8 +47,8 @@ A buildmer object containing the following slots:
 \item table: a dataframe containing the results of the elimination process
 \item model: the final model containing only the terms that survived elimination
 \item messages: any warning messages
-\item summary: the model's summary, if `summary=TRUE' was passed
-\item anova: the model's anova, if `anova=TRUE' was passed
+\item summary: the model's summary, if `calc.summary=TRUE' was passed
+\item anova: the model's anova, if `calc.anova=TRUE' was passed
 }
 }
 \description{

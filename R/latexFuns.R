@@ -27,34 +27,7 @@ custround <- function (i,neg=T,trunc=F) {
 #' @aliases A list of aliases translating summary terms to LaTeX code.
 #' @keywords LaTeX
 #' @export
-mcmc2tex <- function (model,label='',aliases=list(
-'(Intercept)' = '2$\\upsigma$: stressed penult',
-'Vclass_ultB' = 'ultima = B vowel',
-'Vclass_ultD' = 'ultima = diphthong',
-'Vclass_penultB' = 'penult = B vowel',
-'Vclass_penultD' = 'penult = diphthong',
-'Vclass_antepenultB' = 'antepenult = B vowel',
-'Vclass_antepenultD' = 'antepenult = diphthong',
-'Vclass_preantepenultB' = 'preantepenult = B vowel',
-'Vclass_preantepenultD' = 'preantepenult = diphthong',
-'CodaType_ultson' = 'ultima = sonorant',
-'CodaType_ultobs' = 'ultima = obstruent',
-'CodaType_ultcomplex' = 'ultima = complex',
-'CodaType_penultson' = 'penult = sonorant',
-'CodaType_penultobs' = 'penult = obstruent',
-'CodaType_penultcomplex' = 'penult = complex',
-'CodaType_antepenultson' = 'antepenult = sonorant',
-'CodaType_antepenultobs' = 'antepenult = obstruent',
-'CodaType_antepenultcomplex' = 'antepenult = complex',
-'CodaType_preantepenultson' = 'preantepenult = sonorant',
-'CodaType_preantepenultobs' = 'preantepenult = obstruent',
-'CodaType_preantepenultcomplex' = 'preantepenult = complex',
-'traitklemtoon3.1' = '3$\\upsigma$: stressed ultima',
-'traitklemtoon3.3' = '3$\\upsigma$: stressed antepenult',
-'traitklemtoon4.1' = '4$\\upsigma$: stressed ultima',
-'traitklemtoon4.3' = '4$\\upsigma$: stressed antepenult',
-'traitklemtoon4.4' = '3$\\upsigma$: stressed preantepenult'
-)) {
+mcmc2tex <- function (model,label='',aliases=list()) {
 	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
 	cms <- colMeans(model$Sol)
 	names <- names(cms)
@@ -94,33 +67,7 @@ mcmc2tex <- function (model,label='',aliases=list(
 #' @aliases A list of aliases translating summary terms to LaTeX code.
 #' @keywords LaTeX
 #' @export
-mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list(
-'(Intercept)'='Intercept',
-'Df1'='$\\Updelta$F1',
-'Df2'='$\\Updelta$F2',
-'2:'='\\o:',
-'9y'='\\oe y',
-'country1'='country=The Netherlands',
-'region1'='region=NR',
-'region2'='region=NM',
-'region3'='region=NS',
-'region4'='region=NN',
-'region5'='region=FE',
-'region6'='region=FL',
-'region7'='region=FW',
-'FS'='following segment',
-'FS2'='following segment=obs',
-'FS1'='following segment=/l/',
-'ppn'='participants',
-'word'='words',
-'phonemeDec'='rhyme decision',
-'belgianTRUE'='Belgian',
-'step1'='step 1 vs 2',
-'step2'='step 2 vs 3',
-'step3'='step 3 vs 4',
-'lTRUE'='coda /l/',
-'lFALSE'='no coda /l/'
-)) {
+mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 	d <- summary$coefficients
 	expme <- !is.null(summary$family)
 	if (is.null(d)) { #GAMM

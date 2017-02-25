@@ -2,9 +2,6 @@
 	require('nlme') || stop('Please fix your installation of the nlme package.')
 	require('mgcv') || stop('Please fix your installation of the mgcv package.')
 	require('lme4') || stop('Please fix your installation of the lme4 package.')
-	have.lmerTest <<- require('lmerTest')
-	have.kr <<- have.lmerTest && require('pbkrtest')
-	have.gamm4 <<- require('gamm4')
 }
 
 #' Add terms to an lme4 formula.
@@ -75,8 +72,8 @@ add.terms <- function (formula,add) {
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
-#' @param anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
-#' @param summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
+#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
+#' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=T. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
 #' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)
@@ -85,18 +82,18 @@ add.terms <- function (formula,add) {
 #' \item table: a dataframe containing the results of the elimination process
 #' \item model: the final model containing only the terms that survived elimination
 #' \item messages: any warning messages
-#' \item summary: the model's summary, if `summary=TRUE' was passed
-#' \item anova: the model's anova, if `anova=TRUE' was passed
+#' \item summary: the model's summary, if `calc.summary=TRUE' was passed
+#' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @keywords buildmer, fit, stepwise elimination, term order
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',anova=TRUE,summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
-	if (summary && !have.lmerTest && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
-	if (summary && ddf == 'Kenward-Roger' && !have.kr) stop('You requested a summary with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
-	if (summary && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
+	if ((calc.summary || calc.anova) && !require('lmerTest') && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary or ANOVA of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
+	if ((calc.summary || calc.anova) && ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop('You requested a summary or ANOVA with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
+	if ((calc.summary || calc.anova) && !is.null(ddf) && ddf != 'lme4' && ddf != 'Satterthwaite' && ddf != 'Kenward-Roger' && ddf != 'Wald') stop('Invalid specification for ddf')
 	data.name <- substitute(data)
 	family <- as.character(substitute(family))
 	dots <- list(...)
@@ -123,7 +120,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 
 	fit <- function (formula,REML=reml,want.gamm.obj=F) {
-		if (have.gamm4 && has.smooth.terms(formula)) {
+		if (require('gamm4') && has.smooth.terms(formula)) {
 			# fix up model formula
 			fixed <- lme4::nobars(formula)
 			bars <- lme4::findbars(formula)
@@ -286,16 +283,18 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		dep <- as.character(formula[2])
 		if ('1' %in% terms) {
 			intercept <- T
-			formula <- as.formula(paste0(dep,'~1'))
+			formula <- paste0(dep,'~1')
 		} else {
 			intercept <- F
-			formula <- as.formula(paste0(dep,'~0'))
+			formula <- paste0(dep,'~0')
 		}
+		if (!reduce.fixed) formula <- paste0(c(formula,fixed),collapse='+')
+		formula <- as.formula(formula)
 		terms <- if (intercept) '1' else c()
 		reml <- F
 		testlist <- list()
 		if (reduce.fixed) testlist$fixed <- fixed[fixed != '1'] else terms <- fixed
-		if (reduce.random) testlist$random <- random else terms <- c(terms,random)
+		if (reduce.random) testlist$random <- random
 		for (totest in testlist) {
 			while (length(totest)) {
 				ok <- which(can.eval(totest))
@@ -313,6 +312,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 				totest <- totest[-ok[i]]
 			}
 		}
+		if (!reduce.random) formula <- add.terms(formula,random)
 		# The order of interaction term components might have changed, so extract them again
 		formula <- remove.terms(formula,c(),formulize=T)
 		terms   <- remove.terms(formula,c(),formulize=F)
@@ -346,6 +346,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			}
 		}
 	}
+
 	if (any(direction == 'backward')) {
 		curdir <- 'backward'
 		if (!quiet) message('Beginning backward elimination')
@@ -386,15 +387,12 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 	ret <- mkBuildmer(model=ma,table=results[1:counter,],messages=messages)
 	if (any(names(ma) == 'gam')) {
-		if (anova) ret@anova <- anova(ma$gam)
-		if (summary) ret@summary <- summary(ma$gam)
-		anova <- F
-		summary <- F
+		if (calc.anova) ret@anova <- anova(ma$gam)
+		if (calc.summary) ret@summary <- summary(ma$gam)
+		calc.anova <- F
+		calc.summary <- F
 	}
-	calc.anova <- anova
-	calc.summary <- summary
-	rm('anova','summary')
-	if (any(class(ma) == 'lm') || !have.lmerTest || has.smooth.terms(fa)) {
+	if (any(class(ma) == 'lm') || !require('lmerTest') || has.smooth.terms(fa)) {
 		anovafun <- function (x,ddf) anova(x)
 		summaryfun <- function (x,ddf) summary(x)
 	} else {
@@ -534,9 +532,9 @@ setMethod('show','buildmer',function (object) {
 setMethod('anova','buildmer',function (object,ddf='Wald') {
 	anv <- if (!is.null(object@anova)) object@anova else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		anv <- if (have.lmerTest && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		anv <- if (require('lmerTest') && ddf != 'Wald') anova(model@anova,ddf=ddf) else anova(object@model)
 		if (ddf == 'Wald' && !'lm' %in% class(object@model) && is.null(object@model$gam)) anv <- calcWald(anv,4)
 	}
 	if (length(object@messages)) warning(object@messages)
@@ -545,14 +543,14 @@ setMethod('anova','buildmer',function (object,ddf='Wald') {
 setMethod('summary','buildmer',function (object,ddf='Wald') {
 	if (!is.null(object@summary)) smy <- object@summary else {
 		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'."))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !have.lmerTest) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !have.kr) stop(paste0('lmerTest is not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 		calcWald <- F
 		if (ddf == 'Wald' && isLMM(object@model)) {
 			calcWald <- T
 			ddf <- 'lme4'
 		}
-		smy <- if (have.lmerTest && !'lm' %in% class(object@model) && is.null(object@model$gam)) summary(object@model,ddf=ddf) else summary(object@model)
+		smy <- if (require('lmerTest') && !'lm' %in% class(object@model) && is.null(object@model$gam)) summary(object@model,ddf=ddf) else summary(object@model)
 		if (calcWald) smy$coefficients <- calcWald(smy$coefficients,3)
 	}
 	if (length(object@messages)) warning(object@messages)
