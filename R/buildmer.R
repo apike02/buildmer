@@ -396,8 +396,8 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 		anovafun <- function (x,ddf) anova(x)
 		summaryfun <- function (x,ddf) summary(x)
 	} else {
-		anovafun <- anova
-		summaryfun <- summary
+		anovafun <- lmerTest::anova
+		summaryfun <- lmerTest::summary
 	}
 	if (calc.anova) {
 		if (!quiet) message('Calculating ANOVA statistics')
