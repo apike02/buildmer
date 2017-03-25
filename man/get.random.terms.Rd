@@ -15,4 +15,3 @@ A list of random terms.
 \description{
 Get the level-2 terms contained within a level-1 lme4 random term
 }
-

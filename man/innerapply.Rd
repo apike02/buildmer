@@ -17,4 +17,3 @@ The modified random.terms
 \description{
 Convenience function to immediately descend into a level-2 term
 }
-

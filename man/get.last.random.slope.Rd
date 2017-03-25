@@ -15,4 +15,3 @@ The last random slope (or, if not available, the last random intercept).
 \description{
 Get the last random slope (or, if not available, the last random intercept) from a model formula
 }
-

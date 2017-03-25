@@ -30,4 +30,3 @@ buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 \keyword{order}
 \keyword{stepwise}
 \keyword{term}
-

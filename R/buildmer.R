@@ -228,13 +228,6 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 
 	if (reorder.terms) {
-		unravel <- function (x,sym=':') {
-			if (length(x) > 1) {
-				if (x[[1]] == sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
-				if (length(x) == 2) return(x[2]) #e.g.: 'scale(x)' -> return x; 'I(365*Days) -> return 365*Days)
-			}
-			x
-		}
 		# Test for marginality
 		can.eval <- function (orig.terms) {
 			terms <- lapply(orig.terms,function (x) terms(as.formula(paste0('~',x)),keep.order=T)[[2]])
@@ -564,75 +557,72 @@ setMethod('summary','buildmer',function (object,ddf='Wald') {
 #' @seealso buildmer
 #' @keywords remove terms
 #' @export
-remove.terms <- function (formula,remove=c(),formulize=T) {
-	remove.possible <- function(terms,grouping=NULL,other=NULL,test=remove) {
-		if (!length(terms)) return(terms)
-		# Do not remove main effects (or lower-order interaction terms) if they have corresponding (higher-order) interaction terms
+remove.terms <- function (formula,remove,formulize=T) {
+	get.random.list <- function (formula) {
+		bars <- lme4::findbars(formula)
+		groups <- unique(sapply(bars,function (x) x[[3]]))
+		randoms <- lapply(groups,function (g) {
+			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
+			terms <- sapply(terms,function (x) x[[2]])
+			terms <- sapply(terms,function (x) unravel(x,'+'))
+			terms <- unique(sapply(terms,as.character))
+			unique(unlist(if ('0' %in% terms) terms[terms != '0'] else c('1',terms)))
+		})
+		names(randoms) <- groups
+		randoms
+	}
+
+	marginality.ok <- function (remove,have) {
 		forbidden <- c()
-		for (x in c(terms,other)) {
-			x.star <- gsub(':','*',x) #replace the requested interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+		for (x in have) {
+			x.star <- gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
 			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
-		# Do not remove fixed terms if they have corresponding random terms
-		if (!is.null(grouping)) forbidden <- paste0(forbidden,' | ',grouping) else {
-			bars <- lme4::findbars(formula)
-			for (term in bars) {
-				terms. <- as.character(term[2])
-				form <- as.formula(paste0('~',terms.))
-				terms. <- terms(form)
-				intercept <- attr(terms.,'intercept')
-				terms. <- attr(terms.,'term.labels')
-				if (intercept) terms. <- c('1',terms.)
-				forbidden <- unique(c(forbidden,terms.))
-			}
-		}
-		ok.to.remove <- test[!test %in% forbidden]
-		if (is.null(grouping)) terms[!terms %in% ok.to.remove] else terms[!paste0('(',terms,' | ',grouping,')') %in% ok.to.remove]
+		!remove %in% forbidden
 	}
 
-	# The distinction between '(term|group)' and 'term|group' is meaningless here; normalize this by adding parentheses in any case
-	remove <- sapply(remove,function (x) {
-		if (!is.random.term(x)) return(x)
-		if (substr(x,1,1) == '(' && substr(x,nchar(x),nchar(x)) == ')') return(x)
-		paste0('(',x,')')
-	})
-
-	ranterms.with.grouping <- function (random.terms,grouping) {
-		random.terms = lme4::findbars(as.formula(paste0('~',paste('(',random.terms,')'))))
-		ret <- c()
-		for (term in random.terms) {
-			if (term[[3]] == grouping) {
-				terms <- as.character(term[2])
-				form <- as.formula(paste0('~',terms))
-				terms <- terms(form)
-				terms <- attr(terms,'term.labels')
-				ret <- c(ret,terms)
-			}
-		}
-	}
-
-	dep <- as.character(formula)[2]
+	dep <- formula[2]
 	terms <- terms(formula)
 	intercept <- attr(terms,'intercept')
-	if ('1' %in% remove && !'1' %in% remove.possible(terms,test='1')) intercept <- 0
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
-	fixed.terms <- remove.possible(fixed.terms)
+	if (intercept) fixed.terms <- c('1',fixed.terms)
 	random.terms <- Filter(is.random.term,terms)
+	random.list <- get.random.list(formula)
+	random.flat <- unique(unlist(random.list))
+
+	# Do not remove the fixed intercept if we have a random intercept
+	if ('1' %in% remove && !'1' %in% flat.randoms) intercept <- 0
+	remove <- remove[remove != '1']
+
+	if (!length(remove)) remove <- '0'
+	remove <- as.formula(paste0('~',paste(remove,collapse='+')))
+	remove.random <- get.random.list(remove)
+	remove.fixed <- attr(terms(remove),'term.labels')
+	remove.fixed <- Filter(Negate(is.random.term),remove.fixed)
+
+	# Do not remove fixed effects if they have corresponding random effects
+	remove.fixed <- remove.fixed[!remove.fixed %in% random.flat]
+
+	# Do not remove effects participating in higher-order interactions
+	remove.fixed <- remove.fixed[marginality.ok(remove.fixed,fixed.terms)]
+	for (g in names(remove.random)) remove.random[[g]] <- remove.random[[g]][marginality.ok(remove.random[[g]],random.list[[g]])]
+
+	# Perform actual removal
+	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
 	random.terms <- innerapply(random.terms,function (term) {
-		grouping <- term[[3]]
+		g <- as.character(term[[3]])
 		terms <- as.character(term[2])
 		form <- as.formula(paste0('~',terms))
 		terms <- terms(form)
-		intercept <- attr(terms,'intercept')
+		intercept <- if ('1' %in% remove.random[[g]]) F else attr(terms,'intercept')
 		terms <- attr(terms,'term.labels')
-		terms <- remove.possible(terms,grouping,other=ranterms.with.grouping(random.terms,grouping))
-		if (!length(terms) && (!intercept || paste0('(1 | ',grouping,')') %in% remove)) return(NULL)
-		if (intercept) terms <- c('1',terms)
-		else terms[[1]] <- paste0('0 + ',terms[[1]])
+		terms <- terms[!terms %in% remove.random[[g]]]
+		if (!length(terms) && !intercept) return(NULL)
+		if (intercept) terms <- c('1',terms) else terms[[1]] <- paste0('0 + ',terms[[1]])
 		if (formulize) terms <- paste(terms,collapse=' + ')
-		terms <- paste0(terms,' | ',grouping)
+		terms <- paste0(terms,' | ',g)
 		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
 		terms
 	})
@@ -667,4 +657,16 @@ stepwise <- function (formula,data,family=gaussian,...) {
 	family.name <- substitute(family)
 	dots <- list(...)
 	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,summary=T),dots))
+}
+
+#' Unravel interaction terms (default) or additive term lists (specify sym='+')
+#' @param x A terms object as obtained from terms(formula).
+#' @param sym The symbol to split this terms object on. By default, this is ':', indicating that interactions should be split into their constituent terms. Set it to '+' to split a formula into its individual terms.
+#' @return A character vector of all the terms encountered.
+unravel <- function (x,sym=':') {
+	if (length(x) == 1) return(as.character(x))
+	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
+	if (length(x) == 2) return(as.character(x)) #e.g.: 'scale(x)','I(365*Days)'
+	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
+	deparse(x)
 }

@@ -19,4 +19,3 @@ The table augmented with p-values.
 \description{
 Calculate p-values based on Wald z-scores
 }
-

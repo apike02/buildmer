@@ -16,4 +16,3 @@ Whether the model converged or not.
 Test an merMod or equivalent object for convergence
 }
 \keyword{convergence}
-

@@ -9,4 +9,3 @@ stars(x)
 \description{
 LaTeXify significance stars
 }
-

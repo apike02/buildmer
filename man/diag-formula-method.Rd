@@ -19,4 +19,3 @@ Diagonalize the random-effect covariance structure, possibly assisting convergen
 \keyword{covariance}
 \keyword{diagonal}
 \keyword{structure}
-

@@ -9,4 +9,3 @@ custround(i, neg = T, trunc = F)
 \description{
 Custom rounding function
 }
-

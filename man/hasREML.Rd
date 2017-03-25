@@ -15,4 +15,3 @@ TRUE or FALSE if the model was a linear mixed-effects model that was fit with RE
 \description{
 Test whether a model was fit with REML
 }
-

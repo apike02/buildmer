@@ -23,4 +23,3 @@ Make a buildmer object
 buildmer
 }
 \keyword{buildmer}
-

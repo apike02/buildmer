@@ -9,4 +9,3 @@ paperify(x, aliases)
 \description{
 Translate formula terms to aliases
 }
-

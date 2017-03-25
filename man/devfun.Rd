@@ -15,4 +15,3 @@ The deviance or REML criterion.
 \description{
 Extract a model's deviance
 }
-

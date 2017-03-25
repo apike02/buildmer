@@ -9,4 +9,3 @@ calcor(x)
 \description{
 Calculate Odds Ratio; basically prints either 'exp(x):1' or '1:exp(x)'
 }
-

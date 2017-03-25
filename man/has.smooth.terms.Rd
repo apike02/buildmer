@@ -15,4 +15,3 @@ A logical indicating whether the formula has any gamm4 terms.
 \description{
 Test whether a formula contains gamm4 smooth terms
 }
-

@@ -15,4 +15,3 @@ A logical indicating whether the term was a random-effects term.
 \description{
 Test whether a formula term contains lme4 random terms
 }
-

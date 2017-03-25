@@ -9,4 +9,3 @@ tblprintln(x)
 \description{
 Print an R vector as a LaTeX table line
 }
-
