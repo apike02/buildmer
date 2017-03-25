@@ -70,7 +70,6 @@ add.terms <- function (formula,add) {
 #' @param parallel Whether to, if possible, parallellize the fitting of the candidate models during term reordering.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param protect.intercept If TRUE, the fixed-effect intercept will not be removed from the model, even if it is deemed nonsignificant. This is strongly recommended.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
@@ -89,7 +88,7 @@ add.terms <- function (formula,add) {
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,protect.intercept=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if ((calc.summary || calc.anova) && !require('lmerTest') && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary or ANOVA of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if ((calc.summary || calc.anova) && ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop('You requested a summary or ANOVA with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -357,7 +356,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			random.saved <- lme4::findbars(fa)
 			if (fit.until.conv('fixed')) random.saved <- c()
 			for (t in Filter(Negate(is.random.term),rev(terms))) {
-				if (t == '1' && protect.intercept) {
+				if (t == '1') {
 					record('fixed',t,NA)
 					next
 				}
@@ -579,7 +578,9 @@ remove.terms <- function (formula,remove,formulize=T) {
 			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
-		!remove %in% forbidden
+		ok <- !remove %in% forbidden
+		if (!all(ok)) ok <- remove != '1' & ok #do not remove the intercept if there is any other effect in this block
+		ok
 	}
 
 	dep <- as.character(formula[2])
