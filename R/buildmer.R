@@ -124,7 +124,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			# fix up model formula
 			fixed <- lme4::nobars(formula)
 			bars <- lme4::findbars(formula)
-			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,deparse),')',collapse=' + '))) else NULL
+			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) deparse(x,width.cutoff=500)),')',collapse=' + '))) else NULL
 			message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
 			m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=family,data=data,REML=REML),dots)))
 			if (!any(class(m) == 'try-error')) {
@@ -371,7 +371,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	reml <- T
 	if (length(random.saved)) {
 		fa <- lme4::nobars(fa)
-		for (term in random.saved) fa <- update.formula(fa,paste0('.~.+(',deparse(term),')'))
+		for (term in random.saved) fa <- update.formula(fa,paste0('.~.+(',deparse(term,width.cutoff=500),')'))
 		fit.until.conv('random')
 	}
 	if (has.smooth.terms(fa)) ma <- fit(fa,want.gamm.obj=T) else {
@@ -563,8 +563,8 @@ remove.terms <- function (formula,remove,formulize=T) {
 		groups <- unique(sapply(bars,function (x) x[[3]]))
 		randoms <- lapply(groups,function (g) {
 			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
-			terms <- sapply(terms,function (x) x[[2]])
-			terms <- sapply(terms,function (x) unravel(x,'+'))
+			terms <- lapply(terms,function (x) x[[2]])
+			terms <- lapply(terms,function (x) unravel(x,'+'))
 			terms <- unique(sapply(terms,as.character))
 			unique(unlist(if ('0' %in% terms) terms[terms != '0'] else c('1',terms)))
 		})
@@ -668,5 +668,5 @@ unravel <- function (x,sym=':') {
 	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
 	if (length(x) == 2) return(as.character(x)) #e.g.: 'scale(x)','I(365*Days)'
 	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
-	deparse(x)
+	deparse(x,width.cutoff=500)
 }
