@@ -67,15 +67,14 @@ add.terms <- function (formula,add) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
-#' @param parallel Whether to, if possible, parallellize the fitting of the candidate models during term reordering.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
-#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
+#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
-#' @param ddf The method used for calculating p-values if summary=T. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
+#' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
-#' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for glm, and will NOT be passed on to glm.)
+#' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)
 #' @return A buildmer object containing the following slots:
 #' \itemize{
 #' \item table: a dataframe containing the results of the elimination process
@@ -88,7 +87,7 @@ add.terms <- function (formula,add) {
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,parallel=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (any(direction != 'forward' & direction != 'backward')) stop("Invalid 'direction' argument")
 	if ((calc.summary || calc.anova) && !require('lmerTest') && !is.null(ddf) && ddf != 'lme4' && ddf != 'Wald') stop('You requested a summary or ANOVA of the results with lmerTest-calculated denominator degrees of freedom, but the lmerTest package could not be loaded. Aborting')
 	if ((calc.summary || calc.anova) && ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop('You requested a summary or ANOVA with denominator degrees of freedom calculated by Kenward-Roger approximation (the default), but the pbkrtest package could not be loaded. Install pbkrtest, or specify ddf=NULL or ddf="lme4" if you do not want denominator degrees of freedom. Specify ddf="Satterthwaite" if you want to use Satterthwaite approximation. Aborting')
@@ -156,7 +155,7 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 			} else message("Base model didn't converge, reducing slope terms.")
 			cand <- get.last.random.slope(fa)
 			record(stage,cand,NA)
-			fa <<- remove.terms(fa,cand,formulize=T)
+			fa <<- remove.terms(fa,cand,formulize=TRUE)
 			ma <<- fit(fa)
 		}
 		no.failures
@@ -413,13 +412,13 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 #' @param i The number of the column in that table containing the t-values.
 #' @param sqrt Whether we're testing F values or t values (default).
 #' @return The table augmented with p-values.
-calcWald <- function (table,i,sqrt=F) {
+calcWald <- function (table,i,sqrt=FALSE) {
 	data <- table[,i]
 	if (sqrt) data <- sqrt(data)
 	cbind(table,'Pr(>|t|)'=2*pnorm(abs(data),lower.tail=F))
 }
 
-#' Test an merMod or equivalent object for convergence
+#' Test a merMod or equivalent object for convergence
 #' @param model The model object to test.
 #' @return Whether the model converged or not.
 #' @keywords convergence

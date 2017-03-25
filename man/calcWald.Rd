@@ -4,7 +4,7 @@
 \alias{calcWald}
 \title{Calculate p-values based on Wald z-scores}
 \usage{
-calcWald(table, i, sqrt = F)
+calcWald(table, i, sqrt = FALSE)
 }
 \arguments{
 \item{table}{A coefficient table from a summary or anova output.}

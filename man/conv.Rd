@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{conv}
 \alias{conv}
-\title{Test an merMod or equivalent object for convergence}
+\title{Test a merMod or equivalent object for convergence}
 \usage{
 conv(model)
 }
@@ -13,6 +13,6 @@ conv(model)
 Whether the model converged or not.
 }
 \description{
-Test an merMod or equivalent object for convergence
+Test a merMod or equivalent object for convergence
 }
 \keyword{convergence}
