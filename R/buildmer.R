@@ -444,7 +444,7 @@ setGeneric('diag')
 #' @export
 setMethod(diag,'formula',function (x) {
 	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
-	dep <- as.character(x[[2]])
+	dep <- as.character(x[2])
 	terms <- remove.terms(x,c(),formulize=F)
 	fixed.terms  <- terms[names(terms) == 'fixed' ]
 	random.terms <- terms[names(terms) == 'random']
@@ -582,7 +582,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 		!remove %in% forbidden
 	}
 
-	dep <- formula[2]
+	dep <- as.character(formula[2])
 	terms <- terms(formula)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
