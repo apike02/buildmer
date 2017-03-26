@@ -578,7 +578,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
 		ok <- !remove %in% forbidden
-		if (!all(ok)) ok <- remove != '1' & ok #do not remove the intercept if there is any other effect in this block
+		if (length(which(ok)) < length(have[have != '1'])) ok <- ok & remove != '1' #do not remove the intercept if there is any other effect in this block
 		ok
 	}
 
