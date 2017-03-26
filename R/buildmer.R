@@ -564,7 +564,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 			terms <- lapply(terms,function (x) x[[2]])
 			terms <- lapply(terms,function (x) unravel(x,'+'))
 			terms <- unique(sapply(terms,as.character))
-			unique(unlist(if ('0' %in% terms) terms[terms != '0'] else c('1',terms)))
+			unique(unlist(terms))
 		})
 		names(randoms) <- groups
 		randoms
@@ -578,7 +578,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
 		ok <- !remove %in% forbidden
-		if (length(which(ok)) < length(have[have != '1'])) ok <- ok & remove != '1' #do not remove the intercept if there is any other effect in this block
+		if (length(have[!(ok & have %in% remove) & have != '1'])) ok <- ok & remove != '1' #do not remove the intercept if there is any other effect in this block
 		ok
 	}
 
