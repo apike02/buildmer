@@ -6,17 +6,13 @@
 \alias{mkBuildmer}
 \title{Make a buildmer object}
 \arguments{
-\item{p}{Parameters used during the fitting process.}
-
-\item{table}{A dataframe containing the results of the elimination process.}
-
 \item{model}{The final model containing only the terms that survived elimination.}
 
-\item{messages}{Any warning messages.}
-
-\item{summary:}{The model's summary, if the model was built with `summary=TRUE'.}
+\item{p}{Parameters used during the fitting process.}
 
 \item{anova:}{The model's ANOVA, if the model was built with `anova=TRUE'.}
+
+\item{summary:}{The model's summary, if the model was built with `summary=TRUE'.}
 }
 \description{
 Make a buildmer object

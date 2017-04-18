@@ -39,9 +39,12 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 \value{
 A buildmer object containing the following slots:
 \itemize{
-\item table: a dataframe containing the results of the elimination process
 \item model: the final model containing only the terms that survived elimination
+\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\itemize{
+\item results: a dataframe containing the results of the elimination process
 \item messages: any warning messages
+}. This information is also printed as part of the show() method.
 \item summary: the model's summary, if `calc.summary=TRUE' was passed
 \item anova: the model's anova, if `calc.anova=TRUE' was passed
 }

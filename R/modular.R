@@ -77,9 +77,12 @@ add.terms <- function (formula,add) {
 #' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)
 #' @return A buildmer object containing the following slots:
 #' \itemize{
-#' \item table: a dataframe containing the results of the elimination process
 #' \item model: the final model containing only the terms that survived elimination
+#' \item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+#' \itemize{
+#' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
+#' }. This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -110,7 +113,12 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	if (reorder.terms) p <- order.terms(p)
 	for (d in direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
 	if (!quiet) message('Calculating final model')
-	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p$formula,final=T) else {
+	p$reml <- T
+	if (length(direction) == 0) {
+		p$fa <- p$formula
+		p <- fit.until.conv(p)
+	}
+	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p,p$formula,final=T) else {
 		p$ma <- refit.if.needed(p$ma,reml=T)
 		if (!conv(p$ma)) p <- fit.until.conv(p)
 		p$formula <- p$fa
@@ -118,8 +126,8 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
 	ret <- mkBuildmer(model=model,p=p)
-	if (calc.anova) ret@anova <- anova(ret)
-	if (calc.summary) ret@summary <- summary(ret)
+	if (calc.anova) ret@anova <- anova(ret,ddf=ddf)
+	if (calc.summary) ret@summary <- summary(ret,ddf=ddf)
 	ret
 }
 
@@ -173,23 +181,6 @@ setMethod(diag,'formula',function (x) {
 	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
 })
 
-#' Get the last random slope (or, if not available, the last random intercept) from a model formula
-#' @param formula A model formula.
-#' @return The last random slope (or, if not available, the last random intercept).
-get.last.random.slope <- function (formula) {
-	terms <- remove.terms(formula,c(),formulize=F)
-	random.terms <- terms[names(terms) == 'random']
-	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
-	if (!length(cands)) cands <- random.terms
-	if (!length(cands)) stop('get.last.random.slope: error: no random effects available for removal')
-	cands[[length(cands)]]
-}
-
-#' Get the level-2 terms contained within a level-1 lme4 random term
-#' @param term The term.
-#' @return A list of random terms.
-get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
-
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
@@ -206,12 +197,6 @@ hasREML <- function (model) {
 #' @export
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 
-#' Convenience function to immediately descend into a level-2 term
-#' @param random.terms Vector of level-1 terms to descend into.
-#' @param FUN The function to apply to the level-2 terms.
-#' @return The modified random.terms
-innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
-
 #' Test whether a formula term contains lme4 random terms
 #' @param term The term.
 #' @return A logical indicating whether the term was a random-effects term.
@@ -219,16 +204,14 @@ innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sa
 is.random.term <- function (term) length(get.random.terms(term)) > 0
 
 #' Make a buildmer object
-#' @param p Parameters used during the fitting process.
-#' @param table A dataframe containing the results of the elimination process.
 #' @param model The final model containing only the terms that survived elimination.
-#' @param messages Any warning messages.
-#' @param summary: The model's summary, if the model was built with `summary=TRUE'.
+#' @param p Parameters used during the fitting process.
 #' @param anova: The model's ANOVA, if the model was built with `anova=TRUE'.
+#' @param summary: The model's summary, if the model was built with `summary=TRUE'.
 #' @keywords buildmer
 #' @seealso buildmer
 #' @export
-mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',summary='ANY',anova='ANY'))
+mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
 setMethod('show','buildmer',function (object) {
 	show(object@model)
 	cat('\nElimination table:\n\n')
@@ -257,14 +240,17 @@ setMethod('summary','buildmer',function (object,ddf='Wald') {
 	if (!is.null(object@summary)) object@summary
 	else if (any(names(object@model) == 'gam')) summary(object@model$gam)
 	else if (is.na(hasREML(object@model))) summary(object@model)
-	else if (ddf %in% c('lme4','Wald')) summary(as(object@model,'lmerMod'))
-	else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		ret <- summary(object@model,ddf=ddf)
-		if (ddf == 'Wald') ret$coefficients <- calcWald(ret$coefficients,3)
+	else if (ddf == 'Wald') {
+		ret <- summary(as(object@model,'lmerMod'))
+		ret$coefficients <- calcWald(ret$coefficients,3)
 		ret
+	}
+	else if (ddf == 'lme4') summary(as(object@model,'lmerMod'))
+	else {
+		if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+		if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+		summary(as(object@model,'merModLmerTest'))
 	}
 })
 
@@ -355,10 +341,6 @@ remove.terms <- function (formula,remove,formulize=T) {
 		if (length(terms)) return(reformulate(terms,dep,intercept))
 		return(as.formula(paste0(dep,'~1')))
 	}
-	if (intercept) {
-		names(intercept) <- 'fixed'
-		return(c(intercept,terms))
-	}
 	terms
 }
 
@@ -368,9 +350,9 @@ remove.terms <- function (formula,remove,formulize=T) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through. Commonly-used options are either nothing/`gaussian' (linear regression), `binomial' (logistic regression), or `poisson' (loglin regression), although many other families exist (e.g. cloglog, ...).
 #' @param ... Additional parameters that override buildmer defaults, see 'buildmer'.
 #' @return A buildmer object, which you can use summary() on to get a summary of the final model, and elim() to get the list of eliminated terms.
-#' @keywords buildmer, SPSS, stepwise elimination, term order
+#' @keywords stepwise
 #' @examples
-#' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+#' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
 stepwise <- function (formula,data,family=gaussian,...) {
 	data.name <- substitute(data)

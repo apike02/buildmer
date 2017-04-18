@@ -2,7 +2,7 @@ backward <- function (p) {
 	if (!p$quiet) message('Beginning backward elimination')
 	p$fa <- p$formula
 	terms <- remove.terms(p$fa,NULL,formulize=F)
-	reml <- p$reduce.random || !p$reduce.fixed
+	p$reml <- p$reduce.random || !p$reduce.fixed
 	if (p$reduce.random) {
 		p <- fit.until.conv(p)
 		for (t in Filter(is.random.term,rev(terms))) {
@@ -11,7 +11,7 @@ backward <- function (p) {
 		}
 	}
 	if (p$reduce.fixed) {
-		reml <- F
+		p$reml <- F
 		#random.saved <- lme4::findbars(fa)
 		#if (fit.until.conv(p,'fixed')) random.saved <- c()
 		p <- fit.until.conv(p)
@@ -21,7 +21,7 @@ backward <- function (p) {
 				p <- record(p,t,NA)
 				next
 			}
-			fb <- remove.terms(p$fa,t,formulize=T)
+			p$fb <- remove.terms(p$fa,t,formulize=T)
 			elim(p,t,'backward')
 		}
 	}
@@ -54,7 +54,7 @@ fit <- function (p,formula,final=F) {
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) deparse(x,width.cutoff=500)),')',collapse=' + '))) else NULL
-		message(paste0('Fitting as GAMM, with ',ifelse(REML,'REML','ML'),': ',deparse(fixed,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
+		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',deparse(fixed,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
 		m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
 		if (!any(class(m) == 'try-error')) {
 			m$mer@call$data <- p$data.name
@@ -92,11 +92,22 @@ fit.until.conv <- function (p) {
 	p
 }
 
+get.last.random.slope <- function (formula) {
+	terms <- remove.terms(formula,c(),formulize=F)
+	random.terms <- terms[names(terms) == 'random']
+	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
+	if (!length(cands)) cands <- random.terms
+	if (!length(cands)) stop('get.last.random.slope: error: no random effects available for removal')
+	cands[[length(cands)]]
+}
+
+get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
+
 forward <- function (p) {
 	stop("Forward elimination has been disabled pending a code rewrite")
 	if (!quiet) message('Beginning forward elimination')
 	base <- paste0(dep,'~',fixed.terms[[1]])
-	reml <- !reduce.fixed
+	p$reml <- !reduce.fixed
 	fa <- as.formula(base)
 	ma <- fit(p,fa)
 	record(p,fixed.terms[[1]],NA) #can't remove the first term
@@ -106,7 +117,7 @@ forward <- function (p) {
 			elim('fixed')
 		}
 	}
-	reml <- T
+	p$reml <- T
 	if (length(random.terms)) {
 		for (t in random.terms) { #We will do a pointless REML fit for the first random effect (or later ones if the first one(s) is/are not included). I don't know how to avoid this...
 			fb <- add.terms(fa,t)
@@ -114,6 +125,8 @@ forward <- function (p) {
 		}
 	}
 }
+
+innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
 modcomp <- function (p) {
 	only.fixed.a <- is.null(lme4::findbars(p$fa))
@@ -145,7 +158,7 @@ modcomp <- function (p) {
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 		diff <- abs(devfun(a) - devfun(b))
 		pval <- pchisq(diff,1,lower.tail=F)
-		if (!quiet) message(paste0('Manual deviance comparison p-value: ',pval))
+		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
 	if (p$adjust.p.chisq) pval/2 else pval
 }
@@ -197,7 +210,7 @@ order.terms <- function (p) {
 			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
 			if (length(ok) > 1) {
 				comps <- sapply(ok,function (x) {
-					f <- add.terms(formula,totest[[x]])
+					f <- add.terms(p$formula,totest[[x]])
 					m <- fit(p,f)
 					if (conv(m)) devfun(m) else Inf
 				})

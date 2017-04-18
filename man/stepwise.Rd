@@ -22,11 +22,6 @@ A buildmer object, which you can use summary() on to get a summary of the final 
 A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
 }
 \examples{
-buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 }
-\keyword{SPSS,}
-\keyword{buildmer,}
-\keyword{elimination,}
-\keyword{order}
 \keyword{stepwise}
-\keyword{term}
