@@ -212,7 +212,7 @@ order.terms <- function (p) {
 				comps <- sapply(ok,function (x) {
 					f <- add.terms(p$formula,totest[[x]])
 					m <- fit(p,f)
-					if (conv(m)) deviance(m) else Inf
+					if (conv(m)) ifelse(!is.na(hasREML(m)) && hasREML(m),REMLcrit(m),deviance(m)) else Inf
 				})
 				if (all(comps == Inf)) {
 					if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
