@@ -149,15 +149,6 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' @export
 conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
 
-#' Extract a model's deviance
-#' @param model The fitted model object.
-#' @return The deviance or REML criterion.
-devfun <- function (model) {
-	if (any(class(model) == 'lm')) return(deviance(model))
-	comp <- getME(model,'devcomp')$cmp
-	if (isLMM(model) && hasREML(model)) comp['REML'] else comp['dev']
-}
-
 setGeneric('diag')
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
 #' @param formula A model formula.

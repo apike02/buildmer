@@ -156,7 +156,7 @@ modcomp <- function (p) {
 	} else {
 		# Compare the models by hand
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
-		diff <- abs(devfun(a) - devfun(b))
+		diff <- abs(deviance(a) - deviance(b))
 		pval <- pchisq(diff,1,lower.tail=F)
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
@@ -212,7 +212,7 @@ order.terms <- function (p) {
 				comps <- sapply(ok,function (x) {
 					f <- add.terms(p$formula,totest[[x]])
 					m <- fit(p,f)
-					if (conv(m)) devfun(m) else Inf
+					if (conv(m)) deviance(m) else Inf
 				})
 				if (all(comps == Inf)) {
 					if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
