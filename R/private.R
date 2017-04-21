@@ -2,15 +2,15 @@ backward <- function (p) {
 	if (!p$quiet) message('Beginning backward elimination')
 	p$fa <- p$formula
 	terms <- remove.terms(p$fa,NULL,formulize=F)
-	p$reml <- p$reduce.random || !p$reduce.fixed
-	if (p$reduce.random) {
+	if (p$reduce.random && any(names(terms) == 'random')) {
+		p$reml <- T
 		p <- fit.until.conv(p)
 		for (t in Filter(is.random.term,rev(terms))) {
 			p$fb <- remove.terms(p$fa,t,formulize=T)
 			elim(p,t,'backward')
 		}
 	}
-	if (p$reduce.fixed) {
+	if (p$reduce.fixed && any(names(terms) == 'fixed')) {
 		p$reml <- F
 		#random.saved <- lme4::findbars(fa)
 		#if (fit.until.conv(p,'fixed')) random.saved <- c()
