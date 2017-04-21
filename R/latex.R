@@ -1,26 +1,3 @@
-#' Calculate Odds Ratio; basically prints either 'exp(x):1' or '1:exp(x)'
-calcor <- function (x) {
-	x <- exp(x)
-	if (x < 1) paste0('1:',custround(1/x,neg=F,trunc=T)     )
-	else       paste0(     custround(  x,neg=F,trunc=T),':1')
-}
-
-#' Custom rounding function
-custround <- function (i,neg=T,trunc=F) {
-	i = as.numeric(i) #the matrix changes to a character matrix because of calcor
-	prec <- 3
-	ir <- round(i,prec)
-	while (i > 0 && ir == 0) {
-		prec <- prec + 1
-		ir <- round(i,prec+1) #3 -> 5 -> 6 -> 7 -> ...
-	}
-	ir <- as.character(ir)
-	while (nchar(sub('.*\\.','',ir)) < prec) ir <- paste0(ir,'0')
-	if (trunc) ir <- sub('^0+','',ir)
-	if (neg & i >= 0) ir <- paste0('\\hphantom{-}',ir)
-	ir
-}
-
 #' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
 #' @param model The fitted model (not its summary!)
 #' @param label The LaTeX label to put below your 'Results' caption.
@@ -132,26 +109,4 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 			cat(paste0(line,sep=' & '),'\\\\\n')
 		}
 	}
-}
-
-#' Remove \hphantom{-}
-nohp <- function (x) sub('\\hphantom{-}','',x,fixed=T)
-
-#' Translate formula terms to aliases
-paperify <- function (x,aliases) {
-	if (!x %in% names(aliases)) return(x)
-	x <- names(aliases) == x
-	x <- unlist(aliases[x]) #x <- aliases[[x]] gives 'attempt to select less than one element' error??
-}
-
-#' LaTeXify significance stars
-stars <- function (x)  return(if (as.numeric(x) < .001) '$**$$*$'
-			else if (as.numeric(x) < .01) '$**$'
-			else if (as.numeric(x) < .05) '$*$'
-			else '')
-
-#' Print an R vector as a LaTeX table line
-tblprintln <- function (x) {
-	l <- paste0(x,collapse=' & ')
-	cat(l,'\\\\\n',sep='')
 }
