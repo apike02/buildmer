@@ -1,8 +1,7 @@
 #' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
 #' @param model The fitted model (not its summary!)
 #' @param label The LaTeX label to put below your 'Results' caption.
-#' @aliases A list of aliases translating summary terms to LaTeX code.
-#' @keywords LaTeX
+#' @param aliases A list of aliases translating summary terms to LaTeX code.
 #' @export
 mcmc2tex <- function (model,label='',aliases=list()) {
 	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
@@ -41,8 +40,7 @@ mcmc2tex <- function (model,label='',aliases=list()) {
 #' @param vowel The vowel you're analyzing.
 #' @param formula The formula as used in your final lmer object.
 #' @param label The LaTeX label to put below your 'Results' caption.
-#' @aliases A list of aliases translating summary terms to LaTeX code.
-#' @keywords LaTeX
+#' @param aliases A list of aliases translating summary terms to LaTeX code.
 #' @export
 mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 	d <- summary$coefficients

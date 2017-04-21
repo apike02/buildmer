@@ -2,16 +2,6 @@
 % Please edit documentation in R/latex.R
 \name{mcmc2tex}
 \alias{mcmc2tex}
-\alias{A}
-\alias{list}
-\alias{of}
-\alias{aliases}
-\alias{translating}
-\alias{summary}
-\alias{terms}
-\alias{to}
-\alias{LaTeX}
-\alias{code.}
 \title{Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)}
 \usage{
 mcmc2tex(model, label = "", aliases = list())
@@ -20,8 +10,9 @@ mcmc2tex(model, label = "", aliases = list())
 \item{model}{The fitted model (not its summary!)}
 
 \item{label}{The LaTeX label to put below your 'Results' caption.}
+
+\item{aliases}{A list of aliases translating summary terms to LaTeX code.}
 }
 \description{
 Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
 }
-\keyword{LaTeX}

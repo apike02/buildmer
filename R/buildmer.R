@@ -9,7 +9,6 @@
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use `(term|group)' syntax if you want to add an independent random effect (e.g. `(olderterm|group) + (term|group)'), or use `term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
 #' @return The updated formula.
 #' @seealso buildmer
-#' @keywords add terms
 #' @export
 add.terms <- function (formula,add) {
 	dep <- as.character(formula[2])
@@ -67,6 +66,7 @@ add.terms <- function (formula,add) {
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
@@ -86,16 +86,16 @@ add.terms <- function (formula,add) {
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
-#' @keywords buildmer, fit, stepwise elimination, term order
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=as.character(substitute(family)),
 		adjust.p.chisq=adjust.p.chisq,
+		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		quiet=quiet,
@@ -145,7 +145,6 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' Test a merMod or equivalent object for convergence
 #' @param model The model object to test.
 #' @return Whether the model converged or not.
-#' @keywords convergence
 #' @export
 conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
 
@@ -153,7 +152,6 @@ setGeneric('diag')
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
 #' @param formula A model formula.
 #' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
-#' @keywords diagonal covariance structure
 #' @export
 setMethod(diag,'formula',function (x) {
 	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
@@ -194,12 +192,11 @@ has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smoot
 #' @export
 is.random.term <- function (term) length(get.random.terms(term)) > 0
 
-#' Make a buildmer object
+#' The buildmer class
 #' @param model The final model containing only the terms that survived elimination.
 #' @param p Parameters used during the fitting process.
-#' @param anova: The model's ANOVA, if the model was built with `anova=TRUE'.
-#' @param summary: The model's summary, if the model was built with `summary=TRUE'.
-#' @keywords buildmer
+#' @param anova The model's ANOVA, if the model was built with `anova=TRUE'.
+#' @param summary The model's summary, if the model was built with `summary=TRUE'.
 #' @seealso buildmer
 #' @export
 mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
@@ -250,7 +247,6 @@ setMethod('summary','buildmer',function (object,ddf='Wald') {
 #' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
 #' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
-#' @keywords remove terms
 #' @export
 remove.terms <- function (formula,remove,formulize=T) {
 	get.random.list <- function (formula) {
@@ -340,8 +336,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through. Commonly-used options are either nothing/`gaussian' (linear regression), `binomial' (logistic regression), or `poisson' (loglin regression), although many other families exist (e.g. cloglog, ...).
 #' @param ... Additional parameters that override buildmer defaults, see 'buildmer'.
-#' @return A buildmer object, which you can use summary() on to get a summary of the final model, and elim() to get the list of eliminated terms.
-#' @keywords stepwise
+#' @return A buildmer object, which you can use summary() on to get a summary of the final model, and table() to get the list of eliminated terms.
 #' @examples
 #' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
