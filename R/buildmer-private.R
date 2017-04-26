@@ -158,7 +158,7 @@ modcomp <- function (p) {
 		} else {
 			anv <- anova(a,b,refit=F)
 			pval <- anv[[length(anv)]][[2]]
-			if (adjust.p.chisq) pval <- pval/2
+			if (p$adjust.p.chisq) pval <- pval/2
 		}
 		if (!p$quiet) message(paste0('ANOVA p-value: ',pval))
 	} else {
@@ -214,8 +214,7 @@ order.terms <- function (p) {
 			unlist(terms)
 		}
 
-		evalfun <- function (i) {
-			f <- add.terms(p$formula,totest[[i]])
+		evalfun <- function (f) {
 			m <- fit(p,f)
 			if (!conv(m)) return(Inf)
 			reml <- hasREML(m)
@@ -223,7 +222,7 @@ order.terms <- function (p) {
 		}
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
-			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'),envir=environment())
+			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'),environment())
 			clusterEvalQ(p$cluster,.onAttach(NULL,NULL))
 		}
 
@@ -231,7 +230,8 @@ order.terms <- function (p) {
 			ok <- which(can.eval(totest))
 			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
 			if (length(ok)) {
-				comps <- compfun(ok)
+				forms <- lapply(ok,function (i) add.terms(p$formula,totest[[i]]))
+				comps <- compfun(forms)
 				if (all(comps == Inf)) {
 					if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 					return(p)
