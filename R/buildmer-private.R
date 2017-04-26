@@ -224,7 +224,7 @@ order.terms <- function (p) {
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
 			cat('Warning: parallel term reordering is currently experimental and may not work for you!')
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
-			clusterExport(p$cluster,'p','add.terms','fit','conv','hasREML','.onAttach')
+			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'))
 			clusterEvalQ(p$cluster,.onAttach(NULL,NULL))
 		}
 
