@@ -2,12 +2,13 @@ backward <- function (p) {
 	if (!p$quiet) message('Beginning backward elimination')
 	p$fa <- p$formula
 	terms <- remove.terms(p$fa,NULL,formulize=F)
+	elfun <- function (p) p >= .05
 	if (p$reduce.random && any(names(terms) == 'random')) {
 		p$reml <- T
 		p <- fit.until.conv(p)
 		for (t in Filter(is.random.term,rev(terms))) {
 			p$fb <- remove.terms(p$fa,t,formulize=T)
-			elim(p,t,'backward')
+			elim(p,t,elfun)
 		}
 	}
 	if (p$reduce.fixed && any(names(terms) == 'fixed')) {
@@ -22,13 +23,13 @@ backward <- function (p) {
 				next
 			}
 			p$fb <- remove.terms(p$fa,t,formulize=T)
-			elim(p,t,'backward')
+			elim(p,t,elfun)
 		}
 	}
 	p
 }
 
-elim <- function (p,t,dir) {
+elim <- function (p,t,choose.mb.if) {
 	if (isTRUE(all.equal(p$fa,p$fb))) {
 		if (!p$quiet) message('Could not remove term (marginality)')
 		return(p)
@@ -41,7 +42,7 @@ elim <- function (p,t,dir) {
 	}
 	pval <- modcomp(p)
 	p <- record(p,t,pval)
-	if ((dir == 'backward' && pval >= .05) || (dir == 'forward' && pval < .05)) {
+	if (choose.mb.if(pval)) {
 		p$fa <- p$fb
 		p$ma <- p$mb
 		return(p)
@@ -148,19 +149,27 @@ modcomp <- function (p) {
 		return(NA)
 	}
 	if (all(class(a) == class(b))) {
-		res <- if (any(class(a) == 'glm')) anova(a,b,test='Chisq')
-		     else if (any(class(a) == 'lm')) anova(a,b)
-		     else anova(a,b,refit=F)
-		pval <- res[[length(res)]][[2]]
+		if (any(class(a) == 'glm')) {
+			anv <- anova(a,b,test='Chisq')
+			pval <- anv[[length(anv)]][[2]]
+		} else if (any(class(a) == 'lm')) {
+			anv <- anova(a,b)
+			pval <- anv[[length(anv)]][[2]]
+		} else {
+			anv <- anova(a,b,refit=F)
+			pval <- anv[[length(anv)]][[2]]
+			if (adjust.p.chisq) pval <- pval/2
+		}
 		if (!p$quiet) message(paste0('ANOVA p-value: ',pval))
 	} else {
 		# Compare the models by hand
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 		diff <- abs(deviance(a) - deviance(b))
 		pval <- pchisq(diff,1,lower.tail=F)
+		if (adjust.p.chisq) pval <- pval/2
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
-	if (p$adjust.p.chisq) pval/2 else pval
+	pval
 }
 
 order.terms <- function (p) {
@@ -215,8 +224,8 @@ order.terms <- function (p) {
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
 			cat('Warning: parallel term reordering is currently experimental and may not work for you!')
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
-			clusterExport(p$cluster,'p','add.terms','fit','conv','hasREML')
-			clusterEvalQ(p$cluster,library(buildmer))
+			clusterExport(p$cluster,'p','add.terms','fit','conv','hasREML','.onAttach')
+			clusterEvalQ(p$cluster,.onAttach(NULL,NULL))
 		}
 
 		while (length(totest)) {
