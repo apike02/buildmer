@@ -222,16 +222,15 @@ order.terms <- function (p) {
 			if (!is.na(reml) && reml) REMLcrit(m) else deviance(m)
 		}
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
-			cat('Warning: parallel term reordering is currently experimental and may not work for you!')
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
-			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'))
+			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'),envir=environment())
 			clusterEvalQ(p$cluster,.onAttach(NULL,NULL))
 		}
 
 		while (length(totest)) {
 			ok <- which(can.eval(totest))
 			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
-			if (length(ok) > 1) {
+			if (length(ok)) {
 				comps <- compfun(ok)
 				if (all(comps == Inf)) {
 					if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
@@ -239,9 +238,10 @@ order.terms <- function (p) {
 				}
 				i <- order(comps)[1]
 			} else 	i <- 1
-			p$formula <- add.terms(p$formula,totest[[ok[i]]])
+			winner <- ok[i]
+			p$formula <- add.terms(p$formula,totest[[winner]])
 			if (!p$quiet) message(paste('Updating formula:',dep,'~',p$formula[3]))
-			totest <- totest[-ok[i]]
+			totest <- totest[-winner]
 		}
 		p
 	}
