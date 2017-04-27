@@ -158,7 +158,7 @@ modcomp <- function (p) {
 		} else {
 			anv <- anova(a,b,refit=F)
 			pval <- anv[[length(anv)]][[2]]
-			if (p$adjust.p.chisq) pval <- pval/2
+			pval <- pval/2
 		}
 		if (!p$quiet) message(paste0('ANOVA p-value: ',pval))
 	} else {
@@ -166,7 +166,7 @@ modcomp <- function (p) {
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
 		diff <- abs(deviance(a) - deviance(b))
 		pval <- pchisq(diff,1,lower.tail=F)
-		if (adjust.p.chisq) pval <- pval/2
+		pval <- pval/2
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
 	pval

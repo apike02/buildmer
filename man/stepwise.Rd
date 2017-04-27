@@ -16,7 +16,7 @@ stepwise(formula, data, family = gaussian, ...)
 \item{...}{Additional parameters that override buildmer defaults, see 'buildmer'.}
 }
 \value{
-A buildmer object, which you can use summary() on to get a summary of the final model, and table() to get the list of eliminated terms.
+A buildmer object, which you can use summary() on to get a summary of the final model.
 }
 \description{
 A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination

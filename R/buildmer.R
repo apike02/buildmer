@@ -64,7 +64,6 @@ add.terms <- function (formula,add) {
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param adjust.p.chisq Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).
 #' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
 #' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
@@ -89,12 +88,11 @@ add.terms <- function (formula,add) {
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=as.character(substitute(family)),
-		adjust.p.chisq=adjust.p.chisq,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -126,8 +124,8 @@ buildmer <- function (formula,data,family=gaussian,adjust.p.chisq=TRUE,reorder.t
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
 	ret <- mkBuildmer(model=model,p=p)
-	if (calc.anova) ret@anova <- anova(ret,ddf=ddf)
-	if (calc.summary) ret@summary <- summary(ret,ddf=ddf)
+	if (calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
+	if (calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
 	ret
 }
 
@@ -147,28 +145,6 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' @return Whether the model converged or not.
 #' @export
 conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$lme4$code == 0)
-
-setGeneric('diag')
-#' Diagonalize the random-effect covariance structure, possibly assisting convergence
-#' @param formula A model formula.
-#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
-#' @export
-setMethod(diag,'formula',function (x) {
-	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
-	dep <- as.character(x[2])
-	terms <- remove.terms(x,c(),formulize=F)
-	fixed.terms  <- terms[names(terms) == 'fixed' ]
-	random.terms <- terms[names(terms) == 'random']
-	random.terms <- unlist(sapply(random.terms,function (term) {
-		# lme4::findbars returns a list of terms
-		sapply(get.random.terms(term),function (t) {
-			grouping <- t[[3]]
-			t <- as.character(t[2])
-			if (t == '1') paste0('(1 | ',grouping,')') else paste0('(0 + ',t,' | ',grouping,')')
-		})
-	}))
-	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
-})
 
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
@@ -191,56 +167,6 @@ has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smoot
 #' @return A logical indicating whether the term was a random-effects term.
 #' @export
 is.random.term <- function (term) length(get.random.terms(term)) > 0
-
-#' The buildmer class
-#' @param model The final model containing only the terms that survived elimination.
-#' @param p Parameters used during the fitting process.
-#' @param anova The model's ANOVA, if the model was built with `anova=TRUE'.
-#' @param summary The model's summary, if the model was built with `summary=TRUE'.
-#' @seealso buildmer
-#' @export
-mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
-setMethod('show','buildmer',function (object) {
-	show(object@model)
-	cat('\nElimination table:\n\n')
-	show(object@p$results)
-	if (length(object@p$messages)) {
-		cat('\nWarning messages:\n\n')
-		cat(object@p$messages)
-	}
-})
-setMethod('anova','buildmer',function (object,ddf='Wald') {
-	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@anova)) object@anova
-	else if (any(names(object@model) == 'gam')) anova(object@model$gam)
-	else if (is.na(hasREML(object@model))) anova(object@model)
-	else if (ddf %in% c('lme4','Wald')) anova(as(object@model,'lmerMod'))
-	else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		ret <- anova(object@model,ddf=ddf)
-		if (ddf == 'Wald') calcWald(ret,4)
-	}
-})
-setMethod('summary','buildmer',function (object,ddf='Wald') {
-	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@summary)) object@summary
-	else if (any(names(object@model) == 'gam')) summary(object@model$gam)
-	else if (is.na(hasREML(object@model))) summary(object@model)
-	else if (ddf == 'Wald') {
-		ret <- summary(as(object@model,'lmerMod'))
-		ret$coefficients <- calcWald(ret$coefficients,3)
-		ret
-	}
-	else if (ddf == 'lme4') summary(as(object@model,'lmerMod'))
-	else {
-		if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		summary(as(object@model,'merModLmerTest'))
-	}
-})
 
 #' Remove terms from an lme4 formula
 #' @param formula The lme4 formula.
@@ -336,7 +262,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through. Commonly-used options are either nothing/`gaussian' (linear regression), `binomial' (logistic regression), or `poisson' (loglin regression), although many other families exist (e.g. cloglog, ...).
 #' @param ... Additional parameters that override buildmer defaults, see 'buildmer'.
-#' @return A buildmer object, which you can use summary() on to get a summary of the final model, and table() to get the list of eliminated terms.
+#' @return A buildmer object, which you can use summary() on to get a summary of the final model.
 #' @examples
 #' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export

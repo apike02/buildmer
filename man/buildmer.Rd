@@ -4,10 +4,10 @@
 \alias{buildmer}
 \title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance}
 \usage{
-buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
-  reorder.terms = TRUE, cl = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = "backward", calc.anova = TRUE,
-  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
+buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
+  cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
+  direction = "backward", calc.anova = TRUE, calc.summary = TRUE,
+  ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
@@ -15,8 +15,6 @@ buildmer(formula, data, family = gaussian, adjust.p.chisq = TRUE,
 \item{data}{The data to fit the models to.}
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
-
-\item{adjust.p.chisq}{Whether to adjust for overconservativity of the likelihood ratio test by dividing p-values by 2 (see Pinheiro & Bates 2000).}
 
 \item{reorder.terms}{Whether to reorder the terms by their contribution to the deviance before testing them.}
 
