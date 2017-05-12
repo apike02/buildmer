@@ -50,13 +50,14 @@ elim <- function (p,t,choose.mb.if) {
 }
 
 fit <- function (p,formula,final=F) {
+	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (require('gamm4') && has.smooth.terms(formula)) {
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) deparse(x,width.cutoff=500)),')',collapse=' + '))) else NULL
 		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',deparse(fixed,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
-		m <- try(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
+		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
 		if (!any(class(m) == 'try-error')) {
 			m$mer@call$data <- p$data.name
 			m <- if (final) m else m$mer
@@ -65,11 +66,11 @@ fit <- function (p,formula,final=F) {
 	}
 	if (is.null(lme4::findbars(formula))) {
 		message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
-		m <- try(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots)))
+		m <- wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots)))
 		if (!any(class(m) == 'try-error')) m$call$data <- p$data.name
 	} else {
 		message(paste0(ifelse(p$reml,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-		m <- try(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data.name,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data.name,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 		if (!any(class(m) == 'try-error')) m@call$data <- p$data.name
 	}
 	return(m)
