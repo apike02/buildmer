@@ -8,7 +8,7 @@ backward <- function (p) {
 		p <- fit.until.conv(p)
 		for (t in Filter(is.random.term,rev(terms))) {
 			p$fb <- remove.terms(p$fa,t,formulize=T)
-			elim(p,t,elfun)
+			p <- elim(p,t,elfun)
 		}
 	}
 	if (p$reduce.fixed && any(names(terms) == 'fixed')) {
@@ -23,7 +23,7 @@ backward <- function (p) {
 				next
 			}
 			p$fb <- remove.terms(p$fa,t,formulize=T)
-			elim(p,t,elfun)
+			p <- elim(p,t,elfun)
 		}
 	}
 	p
@@ -45,8 +45,8 @@ elim <- function (p,t,choose.mb.if) {
 	if (choose.mb.if(pval)) {
 		p$fa <- p$fb
 		p$ma <- p$mb
-		return(p)
 	}
+	p
 }
 
 fit <- function (p,formula,final=F) {
