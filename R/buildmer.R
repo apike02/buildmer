@@ -97,7 +97,6 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		quiet=quiet,
-		data.name=substitute(data),
 		dots=list(...)
 	)
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
@@ -123,6 +122,15 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		model <- p$ma
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
+	if ('gam' %in% names(model)) {
+		model$mer@call$data <- substitute(data)
+	}
+	else if (is.na(hasREML(model))) {
+		model$call$data <- substitute(data)
+	}
+	else {
+		model@call$data <- substitute(data)
+	}
 	ret <- mkBuildmer(model=model,p=p)
 	if (calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
 	if (calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
