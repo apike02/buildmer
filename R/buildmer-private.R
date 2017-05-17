@@ -50,7 +50,7 @@ elim <- function (p,t,choose.mb.if) {
 }
 
 fit <- function (p,formula,final=F) {
-	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
+	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (require('gamm4') && has.smooth.terms(formula)) {
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
@@ -70,7 +70,7 @@ fit <- function (p,formula,final=F) {
 		if (!any(class(m) == 'try-error')) m$call$data <- p$data.name
 	} else {
 		message(paste0(ifelse(p$reml,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
-		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data.name,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 		if (!any(class(m) == 'try-error')) m@call$data <- p$data.name
 	}
 	return(m)
