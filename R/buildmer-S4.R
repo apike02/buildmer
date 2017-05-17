@@ -17,35 +17,35 @@ show.buildmer <- function (object) {
 }
 anova.buildmer <- function (object,ddf='Wald') {
 	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@anova)) object@anova
-	else if (any(names(object@model) == 'gam')) anova(object@model$gam)
-	else if (is.na(hasREML(object@model))) anova(object@model)
-	else if (ddf %in% c('lme4','Wald')) anova(as(object@model,'lmerMod'))
-	else {
-		if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger','Wald')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		ret <- anova(object@model,ddf=ddf)
-		if (ddf == 'Wald') calcWald(ret,4)
+	if (!is.null(object@anova)) return(object@anova)
+	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
+	if (is.na(hasREML(object@model))) return(anova(object@model))
+	if (ddf == 'Wald') {
+		ret <- anova(as(object@model,'lmerMod'),ddf=ddf)
+		ret <- calcWald(ret,4)
+		return(ret)
 	}
+	if (ddf == 'lme4') return(anova(as(object@model,'lmerMod')))
+	if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+	if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+	return(summary(as(object@model),'merModLmerTest'),ddf=ddf)
 }
 summary.buildmer <- function (object,ddf='Wald') {
 	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@summary)) object@summary
-	else if (any(names(object@model) == 'gam')) summary(object@model$gam)
-	else if (is.na(hasREML(object@model))) summary(object@model)
-	else if (ddf == 'Wald') {
+	if (!is.null(object@summary)) return(object@summary)
+	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
+	if (is.na(hasREML(object@model))) return(summary(object@model))
+	if (ddf == 'Wald') {
 		ret <- summary(as(object@model,'lmerMod'))
 		ret$coefficients <- calcWald(ret$coefficients,3)
-		ret
+		return(ret)
 	}
-	else if (ddf == 'lme4') summary(as(object@model,'lmerMod'))
-	else {
-		if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-		if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-		if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-		summary(as(object@model,'merModLmerTest'))
-	}
+	if (ddf == 'lme4') return(summary(as(object@model,'lmerMod')))
+	if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
+	if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
+	return(summary(as(object@model,'merModLmerTest'),ddf=ddf))
 }
 setMethod('show','buildmer',show.buildmer)
 setGeneric('anova')
