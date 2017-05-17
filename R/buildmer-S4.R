@@ -29,7 +29,7 @@ anova.buildmer <- function (object,ddf='Wald') {
 	if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 	if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-	return(summary(as(object@model),'merModLmerTest'),ddf=ddf)
+	return(summary(as(object@model,'merModLmerTest'),ddf=ddf))
 }
 summary.buildmer <- function (object,ddf='Wald') {
 	if (length(object@p$messages)) warning(object@p$messages)
