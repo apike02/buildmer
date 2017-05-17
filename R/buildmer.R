@@ -124,12 +124,18 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
 	if ('gam' %in% names(model)) {
 		model$mer@call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model$mer@call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model$mer@call$control <- substitute(control)
 	}
 	else if (is.na(hasREML(model))) {
 		model$call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model$call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model$call$control <- substitute(control)
 	}
 	else {
 		model@call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model@call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model@call$control <- substitute(control)
 	}
 	ret <- mkBuildmer(model=model,p=p)
 	if (calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
@@ -275,8 +281,23 @@ remove.terms <- function (formula,remove,formulize=T) {
 #' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
 stepwise <- function (formula,data,family=gaussian,...) {
-	data.name <- substitute(data)
 	family.name <- substitute(family)
 	dots <- list(...)
-	do.call('buildmer',c(list(formula=formula,data=data.name,family=family.name,summary=T),dots))
+	model <- do.call('buildmer',c(list(formula=formula,data=data,family=family.name,summary=T),dots))
+	if ('gam' %in% names(model)) {
+		model$mer@call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model$mer@call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model$mer@call$control <- substitute(control)
+	}
+	else if (is.na(hasREML(model))) {
+		model$call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model$call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model$call$control <- substitute(control)
+	}
+	else {
+		model@call$data <- substitute(data)
+		if (!is.null(p$dots$subset)) model@call$subset <- substitute(subset)
+		if (!is.null(p$dots$control)) model@call$control <- substitute(control)
+	}
+	model
 }
