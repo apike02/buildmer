@@ -225,7 +225,7 @@ order.terms <- function (p) {
 		while (length(totest)) {
 			ok <- which(can.eval(totest))
 			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
-			if (length(ok)) {
+			if (length(ok) > 1) {
 				forms <- lapply(ok,function (i) add.terms(p$formula,totest[[i]]))
 				comps <- compfun(forms)
 				if (all(comps == Inf)) {
