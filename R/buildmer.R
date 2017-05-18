@@ -122,12 +122,12 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		model <- p$ma
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
-	if ('gam' %in% names(model)) {
+	if ('list' %in% class(model) && 'gam' %in% names(model)) {
 		model$mer@call$data <- substitute(data)
 		if (!is.null(p$dots$subset)) model$mer@call$subset <- substitute(subset)
 		if (!is.null(p$dots$control)) model$mer@call$control <- substitute(control)
 	}
-	else if (is.na(hasREML(model))) {
+	else if ('lm' %in% class(model)) {
 		model$call$data <- substitute(data)
 		if (!is.null(p$dots$subset)) model$call$subset <- substitute(subset)
 		if (!is.null(p$dots$control)) model$call$control <- substitute(control)
