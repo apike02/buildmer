@@ -100,6 +100,25 @@ get.last.random.slope <- function (formula) {
 
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 
+finalize <- function (model,data,subset,control) {
+	if ('gam' %in% names(model)) {
+		model$mer@call$data <- data
+		if (!is.null(p$dots$subset)) model$mer@call$subset <- subset
+		if (!is.null(p$dots$control)) model$mer@call$control <- control
+	}
+	else if (is.na(hasREML(model))) {
+		model$call$data <- data
+		if (!is.null(p$dots$subset)) model$call$subset <- subset
+		if (!is.null(p$dots$control)) model$call$control <- control
+	}
+	else {
+		model@call$data <- data
+		if (!is.null(p$dots$subset)) model@call$subset <- subset
+		if (!is.null(p$dots$control)) model@call$control <- control
+	}
+	model
+}
+
 forward <- function (p) {
 	stop("Forward elimination has been disabled pending a code rewrite")
 	if (!quiet) message('Beginning forward elimination')

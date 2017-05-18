@@ -122,21 +122,7 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		model <- p$ma
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
-	if ('list' %in% class(model) && 'gam' %in% names(model)) {
-		model$mer@call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model$mer@call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model$mer@call$control <- substitute(control)
-	}
-	else if ('lm' %in% class(model)) {
-		model$call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model$call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model$call$control <- substitute(control)
-	}
-	else {
-		model@call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model@call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model@call$control <- substitute(control)
-	}
+	model <- finalize(model,substitute(data),substitute(subset),substitute(control))
 	ret <- mkBuildmer(model=model,p=p)
 	if (calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
 	if (calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
@@ -283,21 +269,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 stepwise <- function (formula,data,family=gaussian,...) {
 	family.name <- substitute(family)
 	dots <- list(...)
-	model <- do.call('buildmer',c(list(formula=formula,data=data,family=family.name,summary=T),dots))
-	if ('gam' %in% names(model)) {
-		model$mer@call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model$mer@call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model$mer@call$control <- substitute(control)
-	}
-	else if (is.na(hasREML(model))) {
-		model$call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model$call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model$call$control <- substitute(control)
-	}
-	else {
-		model@call$data <- substitute(data)
-		if (!is.null(p$dots$subset)) model@call$subset <- substitute(subset)
-		if (!is.null(p$dots$control)) model@call$control <- substitute(control)
-	}
-	model
+	ret <- do.call('buildmer',c(list(formula=formula,data=data,family=family.name,summary=T),dots))
+	ret@model <- finalize(ret@model,substitute(data),substitute(subset),substitute(control))
+	ret
 }
