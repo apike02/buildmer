@@ -144,7 +144,7 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' @param model The model object to test.
 #' @return Whether the model converged or not.
 #' @export
-conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || model@optinfo$conv$opt == 0)
+conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
 
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.
