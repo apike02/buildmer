@@ -103,18 +103,18 @@ get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 finalize <- function (model,data,subset,control) {
 	if ('gam' %in% names(model)) {
 		model$mer@call$data <- data
-		if (!is.null(p$dots$subset)) model$mer@call$subset <- subset
-		if (!is.null(p$dots$control)) model$mer@call$control <- control
+		if (!is.null(subset)) model$mer@call$subset <- subset
+		if (!is.null(control)) model$mer@call$control <- control
 	}
 	else if (is.na(hasREML(model))) {
 		model$call$data <- data
-		if (!is.null(p$dots$subset)) model$call$subset <- subset
-		if (!is.null(p$dots$control)) model$call$control <- control
+		if (!is.null(subset)) model$call$subset <- subset
+		if (!is.null(control)) model$call$control <- control
 	}
 	else {
 		model@call$data <- data
-		if (!is.null(p$dots$subset)) model@call$subset <- subset
-		if (!is.null(p$dots$control)) model@call$control <- control
+		if (!is.null(subset)) model@call$subset <- subset
+		if (!is.null(control)) model@call$control <- control
 	}
 	model
 }
