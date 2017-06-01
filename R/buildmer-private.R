@@ -29,6 +29,51 @@ backward <- function (p) {
 	p
 }
 
+buildmer.fit <- function (p) {
+	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
+	complete <- complete.cases(p$data)
+	if (!all(complete)) {
+		p$data <- p$data[complete,]
+		msg <- 'Encountered missing values; rows containing missing values have been removed from the dataset to prevent problems with the model comparisons.\n'
+		warning(msg)
+		p$messages <- msg
+	}
+	if (p$reorder.terms) p <- order.terms(p)
+	for (d in p$direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
+	if (!p$quiet) message('Calculating final model')
+	p$reml <- T
+	if (length(p$direction) == 0) {
+		p$fa <- p$formula
+		p <- fit.until.conv(p)
+	}
+	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p,p$formula,final=T) else {
+		p$ma <- refit.if.needed(p$ma,reml=T)
+		if (!conv(p$ma)) p <- fit.until.conv(p)
+		p$formula <- p$fa
+		model <- p$ma
+	}
+	p$fa <- p$fb <- p$ma <- p$mb <- NULL
+	if ('gam' %in% names(model)) {
+		model$mer@call$data <- p$data.name
+		if (!is.null(p$subset)) model$mer@call$subset <- p$subset.name
+		if (!is.null(p$control)) model$mer@call$control <- p$control.name
+	}
+	else if (is.na(hasREML(model))) {
+		model$call$data <- data
+		if (!is.null(p$subset)) model$call$subset <- p$subset.name
+		if (!is.null(p$control)) model$call$control <- p$control.name
+	}
+	else {
+		model@call$data <- data
+		if (!is.null(p$subset)) model@call$subset <- p$subset.name
+		if (!is.null(p$control)) model@call$control <- p$control.name
+	}
+	ret <- mkBuildmer(model=model,p=p)
+	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
+	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
+	ret
+}
+
 elim <- function (p,t,choose.mb.if) {
 	if (isTRUE(all.equal(p$fa,p$fb))) {
 		if (!p$quiet) message('Could not remove term (marginality)')
@@ -51,12 +96,17 @@ elim <- function (p,t,choose.mb.if) {
 
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
+	if (!is.null(p$engine) && has.smooth.terms(formula)) {
+		message(paste0('Fitting using bam, with ',ifelse(p$reml,'fREML','ML'),': ',deparse(formula,width.cutoff=500)))
+		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'fREML','ML')),p$dots)))
+		return(m)	
+	}
 	if (require('gamm4') && has.smooth.terms(formula)) {
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) deparse(x,width.cutoff=500)),')',collapse=' + '))) else NULL
-		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',deparse(fixed,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
+		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',deparse(formula,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
 		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
 		if (!any(class(m) == 'try-error') && final) return(m)
 		return(m$mer)
@@ -89,39 +139,9 @@ fit.until.conv <- function (p) {
 	p
 }
 
-get.last.random.slope <- function (formula) {
-	terms <- remove.terms(formula,c(),formulize=F)
-	random.terms <- terms[names(terms) == 'random']
-	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
-	if (!length(cands)) cands <- random.terms
-	if (!length(cands)) stop('get.last.random.slope: error: no random effects available for removal')
-	cands[[length(cands)]]
-}
-
-get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
-
-finalize <- function (model,data,subset,control) {
-	if ('gam' %in% names(model)) {
-		model$mer@call$data <- data
-		if (!is.null(subset)) model$mer@call$subset <- subset
-		if (!is.null(control)) model$mer@call$control <- control
-	}
-	else if (is.na(hasREML(model))) {
-		model$call$data <- data
-		if (!is.null(subset)) model$call$subset <- subset
-		if (!is.null(control)) model$call$control <- control
-	}
-	else {
-		model@call$data <- data
-		if (!is.null(subset)) model@call$subset <- subset
-		if (!is.null(control)) model@call$control <- control
-	}
-	model
-}
-
 forward <- function (p) {
 	stop("Forward elimination has been disabled pending a code rewrite")
-	if (!quiet) message('Beginning forward elimination')
+	if (!p$quiet) message('Beginning forward elimination')
 	base <- paste0(dep,'~',fixed.terms[[1]])
 	p$reml <- !reduce.fixed
 	fa <- as.formula(base)
@@ -141,6 +161,17 @@ forward <- function (p) {
 		}
 	}
 }
+
+get.last.random.slope <- function (formula) {
+	terms <- remove.terms(formula,c(),formulize=F)
+	random.terms <- terms[names(terms) == 'random']
+	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
+	if (!length(cands)) cands <- random.terms
+	if (!length(cands)) stop('get.last.random.slope: error: no random effects available for removal')
+	cands[[length(cands)]]
+}
+
+get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 
 innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 

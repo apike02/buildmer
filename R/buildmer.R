@@ -2,6 +2,7 @@
 	require('nlme') || stop('Please fix your installation of the nlme package.')
 	require('mgcv') || stop('Please fix your installation of the mgcv package.')
 	require('lme4') || stop('Please fix your installation of the lme4 package.')
+	require('lmerTest')
 }
 
 #' Add terms to a formula.
@@ -60,6 +61,56 @@ add.terms <- function (formula,add) {
 	as.formula(paste0(dep,'~',as.numeric(intercept)))
 }
 
+#' Use buildmer to fit big generalized additive models using bam() from mgcv
+#' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
+#' @param data The data to fit the models to.
+#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
+#' @param reorder.terms Whether to reorder the terms by their contribution to the deviance before testing them.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param reduce.fixed Whether to reduce the fixed-effect structure.
+#' @param reduce.random Whether to reduce the random-effect structure.
+#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
+#' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
+#' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
+#' @param quiet Whether to suppress progress messages.
+#' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)
+#' @return A buildmer object containing the following slots:
+#' \itemize{
+#' \item model: the final model containing only the terms that survived elimination
+#' \item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+#' \itemize{
+#' \item results: a dataframe containing the results of the elimination process
+#' \item messages: any warning messages
+#' }. This information is also printed as part of the show() method.
+#' \item summary: the model's summary, if `calc.summary=TRUE' was passed
+#' \item anova: the model's anova, if `calc.anova=TRUE' was passed
+#' }
+#' @seealso buildmer
+#' @export
+buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+	p <- list(
+		formula=formula,
+		data=data,
+		family=as.character(substitute(family)),
+		reorder.terms=reorder.terms,
+		cluster=cl,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		calc.anova=calc.anova,
+		calc.summary=calc.summary,
+		ddf=ddf,
+		quiet=quiet,
+		engine='bam',
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		dots=list(...)
+	)
+	buildmer.fit(p)
+}
+
 #' Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
@@ -93,40 +144,22 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		formula=formula,
 		data=data,
 		family=as.character(substitute(family)),
+		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
+		direction=direction,
+		calc.anova=calc.anova,
+		calc.summary=calc.summary,
+		ddf=ddf,
 		quiet=quiet,
+		engine=NULL,
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
 		dots=list(...)
 	)
-	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
-	complete <- complete.cases(p$data)
-	if (!all(complete)) {
-		p$data <- p$data[complete,]
-		msg <- 'Encountered missing values; rows containing missing values have been removed from the dataset to prevent problems with the model comparisons.\n'
-		warning(msg)
-		p$messages <- msg
-	}
-	if (reorder.terms) p <- order.terms(p)
-	for (d in direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
-	if (!quiet) message('Calculating final model')
-	p$reml <- T
-	if (length(direction) == 0) {
-		p$fa <- p$formula
-		p <- fit.until.conv(p)
-	}
-	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p,p$formula,final=T) else {
-		p$ma <- refit.if.needed(p$ma,reml=T)
-		if (!conv(p$ma)) p <- fit.until.conv(p)
-		p$formula <- p$fa
-		model <- p$ma
-	}
-	p$fa <- p$fb <- p$ma <- p$mb <- NULL
-	model <- finalize(model,substitute(data),substitute(subset),substitute(control))
-	ret <- mkBuildmer(model=model,p=p)
-	if (calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
-	if (calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
-	ret
+	buildmer.fit(p)
 }
 
 #' Calculate p-values based on Wald z-scores
@@ -267,9 +300,26 @@ remove.terms <- function (formula,remove,formulize=T) {
 #' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
 stepwise <- function (formula,data,family=gaussian,...) {
-	family.name <- substitute(family)
 	dots <- list(...)
-	ret <- do.call('buildmer',c(list(formula=formula,data=data,family=family.name,summary=T),dots))
-	ret@model <- finalize(ret@model,substitute(data),substitute(subset),substitute(control))
-	ret
+	dots.buildmer <- dots[names(dots) %in% names(buildmer)]
+	dots <- dots[!names(dots) %in% names(buildmer)]
+	p <- list(
+		formula=formula,
+		data=data,
+		family=as.character(substitute(family)),
+		cluster=NULL,
+		reduce.fixed=T,
+		reduce.random=T,
+		direction='backward',
+		calc.anova=F,
+		calc.summary=T,
+		ddf='Wald',
+		quiet=F,
+		engine=NULL,
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		dots=list(...)
+	)
+	buildmer.fit(c(p,dots.buildmer))
 }
