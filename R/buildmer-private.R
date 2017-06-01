@@ -101,7 +101,7 @@ fit <- function (p,formula,final=F) {
 		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'fREML','ML')),p$dots)))
 		return(m)	
 	}
-	if (require('gamm4') && has.smooth.terms(formula)) {
+	if (has.smooth.terms(formula) && require('gamm4')) {
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
@@ -244,10 +244,9 @@ order.terms <- function (p) {
 			if (length(have)) { #did we have any fixed terms at all?
 				terms[groupings == ''] <- lapply(1:length(have),function (i) {
 					if (i == 1) return(T)
-					test <- have[[i]]
-					test <- sapply(test,as.character) #poor man's unlist() for symbol objects
-					for (x in have[1:(i-1)]) {
-						x <- as.character(x)
+					test <- unpack.smooth.terms(have[[i]])
+					for (x in have[1:(i-1)]) { #walk all previous terms
+						x <- unpack.smooth.terms(x)
 						if (any(x == '1')) return(F) #intercept should always come first
 						if (all(x %in% test)) return(F)
 					}
@@ -327,6 +326,13 @@ refit.if.needed <- function (m,reml) {
 	status <- hasREML(m)
 	if (is.na(status)) return(m)
 	if (status == reml) return(m) else update(m,REML=reml)
+}
+
+unpack.smooth.terms <- function (x) {
+	fm <- as.formula(paste0('~',x))
+	if (!has.smooth.terms(fm)) return(as.character(x))
+	term <- fm[[2]]
+	c(as.character(x),sapply(term[names(term) %in% c('','by')],as.character))
 }
 
 unravel <- function (x,sym=':') {

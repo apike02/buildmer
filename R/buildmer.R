@@ -1,5 +1,4 @@
 .onAttach <- function (libname,pkgname) {
-	require('nlme') || stop('Please fix your installation of the nlme package.')
 	require('mgcv') || stop('Please fix your installation of the mgcv package.')
 	require('lme4') || stop('Please fix your installation of the lme4 package.')
 	require('lmerTest')
@@ -275,7 +274,9 @@ remove.terms <- function (formula,remove,formulize=T) {
 	marginality.ok <- function (remove,have) {
 		forbidden <- c()
 		for (x in have) {
-			x.star <- gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+			# Unpack smooth terms: s(x,y,by=z) --> x:y:z
+			if (has.smooth.terms(as.formula(paste0('~',x)))) x <- paste(unpack.smooth.terms(x),collapse='*')
+			else x.star <- gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
 			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
