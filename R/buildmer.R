@@ -222,11 +222,26 @@ calcWald <- function (table,i,sqrt=FALSE) {
 	cbind(table,'Pr(>|t|)'=2*pnorm(abs(data),lower.tail=F))
 }
 
-#' Test a merMod or equivalent object for convergence
+#' Test a mgcv or merMod (or equivalent) object for convergence
 #' @param model The model object to test.
 #' @return Whether the model converged or not.
 #' @export
-conv <- function (model) !any(class(model) == 'try-error') && (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
+conv <- function (model) {
+	if (any(class(model) == 'try-error')) return(F)
+	if (any(class(model) == 'gam')) {
+		if (!is.null(model$outer.info)) {
+			if (model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
+			else {
+				warning(paste0("Unable to automatically check convergence of GAMs that were fit with optimizers other than 'newton' or 'bfgs'. Check convergence manually from the below information:\n",model$outer.info))
+				return(T)
+			}
+		} else {
+			if (length(model$sp) == 0) return(T)
+			return(mgcv.conv$fully.converged)
+		}
+	}
+	if (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0)) return(T)
+}
 
 #' Test whether a model was fit with REML
 #' @param model A fitted model object.

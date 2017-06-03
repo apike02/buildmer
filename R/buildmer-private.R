@@ -163,12 +163,26 @@ forward <- function (p) {
 }
 
 get.last.random.slope <- function (formula) {
-	terms <- remove.terms(formula,c(),formulize=F)
-	random.terms <- terms[names(terms) == 'random']
-	cands <- Filter(function (x) substr(x,1,4) != '(1 |',random.terms)
-	if (!length(cands)) cands <- random.terms
-	if (!length(cands)) stop('get.last.random.slope: error: no random effects available for removal')
-	cands[[length(cands)]]
+	search.smooth.type <- function (vars,spec) {
+		ss <- sapply(vars[2:length(vars)],function (x) {
+			s <- mgcv::interpret.gam(as.formula(paste0('~',list(x))))
+			if (class(s[[1]]) == spec) list(x)
+		})
+		ss[!sapply(ss,is.null)]
+		as.character(ss[length(ss)])
+	}
+
+	vars <- attr(formula,'variables')
+	# First try random smooths
+	ss <- search.smooth.type(vars,'fs.smooth.spec')
+	if (length(ss)) return(ss)
+	# Next try random slopes, and if they fail, try random intercepts: they are exactly as complex as bs='re' smooths, and will by design appear later in the formula than random intercepts will
+	bars <- lme4::findbars(formula)
+	if (length(bars)) return(as.character(bars[length(bars)]))
+	# Finally, try bs='re' smooths
+	ss <- search.smooth.type(vars,'re.smooth.spec')
+	if (length(ss)) return(ss)
+	stop('get.last.random.slope: error: no random effects available for removal')
 }
 
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
@@ -249,6 +263,13 @@ order.terms <- function (p) {
 						x <- unpack.smooth.terms(x)
 						if (any(x == '1')) return(F) #intercept should always come first
 						if (all(x %in% test)) return(F)
+					}
+					if ('random' %in% names(test)) {
+						# We've detected a factor smooth term. Be sure that none of its components still have to be included as non-factor-smooths in future terms. We cannot rely on the re-ordering that would otherwise have been performed by terms()!
+						for (x in have[-i]) {
+							x <- unpack.smooth.terms(x)
+							if (!'random' %in% names(x) && any(test %in% x)) return(F)
+						}
 					}
 					T
 				})
@@ -331,8 +352,15 @@ refit.if.needed <- function (m,reml) {
 unpack.smooth.terms <- function (x) {
 	fm <- as.formula(paste0('~',x))
 	if (!has.smooth.terms(fm)) return(as.character(x))
-	term <- fm[[2]]
-	c(as.character(x),sapply(term[names(term) %in% c('','by')],as.character))
+	smooth.args <- fm[[2]][2:length(fm[[2]])]
+	bs <- NULL
+	if (!all(is.null(names(smooth.args)))) {
+		bs <- as.character(smooth.args[names(smooth.args) == 'bs'])
+		smooth.args <- smooth.args[names(smooth.args) %in% c('','by')]
+	}
+	ret <- sapply(smooth.args,as.character)
+	names(ret) <- rep(if (length(bs) && bs == 'fs') 'random' else 'fixed',length(ret))
+	ret
 }
 
 unravel <- function (x,sym=':') {
