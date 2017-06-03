@@ -358,15 +358,15 @@ unpack.smooth.terms <- function (x) {
 		bs <- as.character(smooth.args[names(smooth.args) == 'bs'])
 		smooth.args <- smooth.args[names(smooth.args) %in% c('','by')]
 	}
-	ret <- sapply(smooth.args,as.character)
-	names(ret) <- rep(if (length(bs) && bs == 'fs') 'random' else 'fixed',length(ret))
-	ret
+	smooth.args <- unlist(lapply(smooth.args,function (x) as.character(unravel(x))))
+	names(smooth.args) <- rep(if (length(bs) && bs == 'fs') 'random' else 'fixed',length(smooth.args))
+	smooth.args
 }
 
 unravel <- function (x,sym=':') {
 	if (length(x) == 1) return(as.character(x))
 	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
-	if (length(x) == 2) return(as.character(x)) #e.g.: 'scale(x)','I(365*Days)'
+	if (length(x) == 2) return(as.character(list(x))) #e.g.: 'scale(x)','I(365*Days)'
 	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
 	deparse(x,width.cutoff=500)
 }
