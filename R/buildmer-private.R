@@ -97,7 +97,7 @@ elim <- function (p,t,choose.mb.if) {
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (!is.null(p$engine) && has.smooth.terms(formula)) {
-		message(paste0('Fitting using ',p$engine,', with ',ifelse(p$reml,'fREML','ML'),': ',deparse(formula,width.cutoff=500)))
+		message(paste0('Fitting using ',p$engine,', with ',ifelse(p$reml,'fREML','ML'),': ',as.character(list(formula))))
 		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'fREML','ML')),p$dots)))
 		return(m)	
 	}
@@ -105,17 +105,17 @@ fit <- function (p,formula,final=F) {
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
-		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) deparse(x,width.cutoff=500)),')',collapse=' + '))) else NULL
-		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',deparse(formula,width.cutoff=500),', random=',deparse(random,width.cutoff=500)))
+		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
+		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula)),', random=',as.character(list(random))))
 		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
 		if (!any(class(m) == 'try-error') && final) return(m)
 		return(m$mer)
 	}
 	if (is.null(lme4::findbars(formula))) {
-		message(paste0('Fitting as (g)lm: ',deparse(formula,width.cutoff=500)))
+		message(paste0('Fitting as (g)lm: ',as.character(list(formula))))
 		m <- wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots)))
 	} else {
-		message(paste0(ifelse(p$reml,'Fitting with REML: ','Fitting with ML: '),deparse(formula,width.cutoff=500)))
+		message(paste0(ifelse(p$reml,'Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
 		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 	return(m)
@@ -368,5 +368,5 @@ unravel <- function (x,sym=':') {
 	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
 	if (length(x) == 2) return(as.character(list(x))) #e.g.: 'scale(x)','I(365*Days)'
 	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
-	deparse(x,width.cutoff=500)
+	as.character(list(x))
 }
