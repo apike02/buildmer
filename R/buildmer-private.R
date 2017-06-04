@@ -1,6 +1,6 @@
 backward <- function (p) {
 	if (!p$quiet) message('Beginning backward elimination')
-	p$fa <- p$formula
+	p$fa <- remove.terms(p$formula,NULL) #makes sure that interaction terms have the proper order, so that all.equal() inside remove.terms() will work
 	terms <- remove.terms(p$fa,NULL,formulize=F)
 	elfun <- function (p) p >= .05
 	if (p$reduce.random && any(names(terms) == 'random')) {
@@ -209,16 +209,8 @@ modcomp <- function (p) {
 		return(NA)
 	}
 	if (all(class(a) == class(b))) {
-		if (any(class(a) == 'glm')) {
-			anv <- anova(a,b,test='Chisq')
-			pval <- anv[[length(anv)]][[2]]
-		} else if (any(class(a) == 'lm')) {
-			anv <- anova(a,b)
-			pval <- anv[[length(anv)]][[2]]
-		} else {
-			anv <- anova(a,b,refit=F)
-			pval <- anv[[length(anv)]][[2]]
-		}
+		anv <- if (any(class(a) %in% c('lmerMod','merModLmerTest'))) anova(a,b,refit=F) else anova(a,b,test='Chisq')
+		pval <- anv[[length(anv)]][[2]]
 	} else {
 		# Compare the models by hand
 		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
