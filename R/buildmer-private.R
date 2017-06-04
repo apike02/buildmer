@@ -58,19 +58,19 @@ buildmer.fit <- function (p) {
 		if (!is.null(p$subset)) model$mer@call$subset <- p$subset.name
 		if (!is.null(p$control)) model$mer@call$control <- p$control.name
 	}
-	else if (is.na(hasREML(model))) {
-		model$call$data <- data
-		if (!is.null(p$subset)) model$call$subset <- p$subset.name
-		if (!is.null(p$control)) model$call$control <- p$control.name
-	}
-	else {
+	else if (inherits(model,'lmerMod')) {
 		model@call$data <- data
 		if (!is.null(p$subset)) model@call$subset <- p$subset.name
 		if (!is.null(p$control)) model@call$control <- p$control.name
 	}
+	else {
+		model$call$data <- data
+		if (!is.null(p$subset)) model$call$subset <- p$subset.name
+		if (!is.null(p$control)) model$call$control <- p$control.name
+	}
 	ret <- mkBuildmer(model=model,p=p)
-	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=ddf)
-	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=ddf)
+	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
+	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	ret
 }
 
@@ -190,6 +190,24 @@ get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
 modcomp <- function (p) {
+	# Function for manually calculating chi-square p-values; also used for GAMs, where anova() is unreliable
+	comp.manual <- function (a,b,devfun,dffun,scalefun) {
+		if (devfun(a) == devfun(b)) return(1)
+		if (devfun(a) < devfun(b)) {
+			big <- a
+			small <- b
+		} else {
+			big <- b
+			small <- a
+		}
+		df <- dffun(big) - dffun(small)
+		if (!df > 0) return(1)
+		scale <- scalefun(big)
+		if (is.null(scale)) scale <- devfun(big) / dffun(big)
+		val <- (devfun(big) - devfun(small)) / scale
+		pchisq(val,df,lower.tail=F)
+	}
+
 	only.fixed.a <- is.null(lme4::findbars(p$fa))
 	only.fixed.b <- is.null(lme4::findbars(p$fb))
 	same.fixed.effects <- isTRUE(all.equal(lme4::nobars(p$fa),lme4::nobars(p$fb)))
@@ -209,13 +227,24 @@ modcomp <- function (p) {
 		return(NA)
 	}
 	if (all(class(a) == class(b))) {
-		anv <- if (any(class(a) %in% c('lmerMod','merModLmerTest'))) anova(a,b,refit=F) else anova(a,b,test='Chisq')
-		pval <- anv[[length(anv)]][[2]]
+		if (inherits(a,'gam')) {
+			# anova.gam is not reliable; implement its guts by hand
+			dffun <- function (m) {
+				n <- length(m$y)
+				dfc <- if (is.null(m$edf2)) 0 else sum(m$edf2) - sum(m$edf)
+				dfres <- n - sum(m$edf1) - dfc
+			}
+			devfun <- function (m) -2*as.numeric(logLik(m))
+			scalefun <- function (big) big$sig2
+			pval <- comp.manual(a,b,devfun,dffun,scalefun)
+			if (!p$quiet) message(paste0('GAM deviance comparison p-value: ',pval))
+		}
+		else {
+			anv <- if (inherits(a,'lmerMod')) anova(a,b,refit=F) else anova(a,b,test='Chisq')
+			pval <- anv[[length(anv)]][[2]]
+		}
 	} else {
-		# Compare the models by hand
-		# since this will only happen when comparing a random-intercept model with a fixed-intercept model, we can assume one degree of freedom in all cases
-		diff <- abs(deviance(a) - deviance(b))
-		pval <- pchisq(diff,1,lower.tail=F)
+		pval <- comp.manual(a,b,deviance,df.residual,function (big) devfun(big)/dffun(big))
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
 	pval/2
@@ -248,10 +277,9 @@ order.terms <- function (p) {
 			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term
 			have <- lapply(terms[groupings == ''],unravel)
 			if (length(have)) { #did we have any fixed terms at all?
-				terms[groupings == ''] <- lapply(1:length(have),function (i) {
-					if (i == 1) return(T)
+				check <- function (i) {
 					test <- unpack.smooth.terms(have[[i]])
-					for (x in have[1:(i-1)]) { #walk all previous terms
+					for (x in have[-i]) { #walk all other terms
 						x <- unpack.smooth.terms(x)
 						if (any(x == '1')) return(F) #intercept should always come first
 						if (all(x %in% test)) return(F)
@@ -264,7 +292,8 @@ order.terms <- function (p) {
 						}
 					}
 					T
-				})
+				}
+				terms[groupings == ''] <- lapply(1:length(have),check)
 			}
 			unlist(terms)
 		}
@@ -355,9 +384,9 @@ unpack.smooth.terms <- function (x) {
 	smooth.args
 }
 
-unravel <- function (x,sym=':') {
+unravel <- function (x,sym=c(':','interaction')) {
 	if (length(x) == 1) return(as.character(x))
-	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),x[[3]]))
+	if (as.character(x[[1]]) %in% sym) return(c(unravel(x[[2]],sym=sym),as.character(list(x[[3]]))))
 	if (length(x) == 2) return(as.character(list(x))) #e.g.: 'scale(x)','I(365*Days)'
 	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
 	as.character(list(x))

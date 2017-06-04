@@ -236,11 +236,12 @@ conv <- function (model) {
 				return(T)
 			}
 		} else {
-			if (length(model$sp) == 0) return(T)
+			if (!length(model$sp)) return(T)
 			return(mgcv.conv$fully.converged)
 		}
 	}
-	if (any(class(model) == 'lm') || !length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0)) return(T)
+	if (any(class(model) %in% c('lmerMod','merModLmerTest'))) return(!length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
+	T
 }
 
 #' Test whether a model was fit with REML
@@ -248,7 +249,8 @@ conv <- function (model) {
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
 #' @export
 hasREML <- function (model) {
-	if ('lm' %in% class(model)) return(NA)
+	if (any(class(model) == 'gam')) return(model$method %in% c('REML','fREML'))
+	if (!any(class(model) %in% c('lmerMod','merModLmerTest'))) return(NA)
 	if (!isLMM(model)) return(NA)
 	isREML(model)
 }
@@ -301,7 +303,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 	}
 
 	dep <- as.character(formula[2])
-	terms <- terms(formula)
+	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
@@ -333,7 +335,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 		g <- as.character(term[[3]])
 		terms <- as.character(term[2])
 		form <- as.formula(paste0('~',terms))
-		terms <- terms(form)
+		terms <- terms(form,keep.order=T)
 		intercept <- if ('1' %in% remove.random[[g]]) F else attr(terms,'intercept')
 		terms <- attr(terms,'term.labels')
 		terms <- terms[!terms %in% remove.random[[g]]]

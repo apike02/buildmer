@@ -19,7 +19,7 @@ anova.buildmer <- function (object,ddf='Wald') {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@anova)) return(object@anova)
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
-	if (is.na(hasREML(object@model))) return(anova(object@model))
+	if (!inherits(object@model,'lmerMod')) return(anova(object@model))
 	if (ddf == 'Wald') {
 		ret <- anova(as(object@model,'lmerMod'),ddf=ddf)
 		ret <- calcWald(ret,4)
@@ -35,7 +35,7 @@ summary.buildmer <- function (object,ddf='Wald') {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@summary)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
-	if (is.na(hasREML(object@model))) return(summary(object@model))
+	if (!inherits(object@model,'lmerMod')) return(summary(object@model))
 	if (ddf == 'Wald') {
 		ret <- summary(as(object@model,'lmerMod'))
 		ret$coefficients <- calcWald(ret$coefficients,3)
