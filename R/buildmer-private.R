@@ -97,8 +97,8 @@ elim <- function (p,t,choose.mb.if) {
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (!is.null(p$engine) && has.smooth.terms(formula)) {
-		message(paste0('Fitting using ',p$engine,', with ',ifelse(p$reml,'fREML','ML'),': ',as.character(list(formula))))
-		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'fREML','ML')),p$dots)))
+		message(paste0('Fitting using ',p$engine,', with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
+		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'REML','ML')),p$dots)))
 		return(m)	
 	}
 	if (has.smooth.terms(formula) && require('gamm4')) {
