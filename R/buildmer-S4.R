@@ -51,7 +51,7 @@ summary.buildmer <- function (object,ddf=NULL) {
 	if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 	adjunct <- lmerTest:::calcSummary(model=object@model,ddf=ddf)
 	table$coefficients <- cbind(table$coefficients,adjunct$df,adjunct$tpvalue)
-	colnames(table$coefficients) <- c(colnames(table$coefficients),'df','Pr(>|t|)')
+	colnames(table$coefficients)[length(colnames(table$coefficients))-1:0] <- c('df','Pr(>|t|)')
 	table$methTitle <- paste0(table$methTitle,'\n(p-values based on the ',ddf,' approximation to the denominator df)')
 	return(table)
 }

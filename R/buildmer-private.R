@@ -53,24 +53,27 @@ buildmer.fit <- function (p) {
 		model <- p$ma
 	}
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
-	if ('gam' %in% names(model)) {
-		model$mer@call$data <- p$data.name
-		if (!is.null(model$mer@call$subset)) model$mer@call$subset <- p$subset.name
-		if (!is.null(model$mer@call$control)) model$mer@call$control <- p$control.name
-	}
-	else if (inherits(model,'lmerMod')) {
-		model@call$data <- p$data.name
-		if (!is.null(model@call$subset)) model@call$subset <- p$subset.name
-		if (!is.null(model@call$control)) model@call$control <- p$control.name
-	}
-	else {
-		model$call$data <- p$data.name
-		if (!is.null(model$call$subset)) model$call$subset <- p$subset.name
-		if (!is.null(model$call$control)) model$call$control <- p$control.name
-	}
 	ret <- mkBuildmer(model=model,p=p)
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
+	if ('gam' %in% names(model)) {
+		ret@model$mer@call$data <- p$data.name
+		if (!is.null(ret@model$mer@call$subset)) ret@model$mer@call$subset <- p$subset.name
+		if (!is.null(ret@model$mer@call$control)) ret@model$mer@call$control <- p$control.name
+		if (p$calc.summary) ret@summary$call <- ret@model$mer@call
+	}
+	else if (inherits(ret@model,'lmerMod')) {
+		ret@model@call$data <- p$data.name
+		if (!is.null(ret@model@call$subset)) ret@model@call$subset <- p$subset.name
+		if (!is.null(ret@model@call$control)) ret@model@call$control <- p$control.name
+		if (p$calc.summary) ret@summary$call <- ret@model@call
+	}
+	else {
+		ret@model$call$data <- p$data.name
+		if (!is.null(ret@model$call$subset)) ret@model$call$subset <- p$subset.name
+		if (!is.null(ret@model$call$control)) ret@model$call$control <- p$control.name
+		if (p$calc.summary) ret@summary$call <- ret@model$call
+	}
 	ret
 }
 
