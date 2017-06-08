@@ -15,37 +15,45 @@ show.buildmer <- function (object) {
 		cat(object@p$messages)
 	}
 }
-anova.buildmer <- function (object,ddf=NULL) {
+anova.buildmer <- function (object,ddf=NULL,type=3) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@anova) && is.null(ddf)) return(object@anova)
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
 	if (!inherits(object@model,'lmerMod')) return(anova(object@model))
+	table <- anova(as(object@model,'lmerMod'))
 	if (is.null(ddf) || ddf == 'Wald') {
-		ret <- anova(as(object@model,'lmerMod'),ddf=ddf)
-		ret <- calcWald(ret,4)
-		return(ret)
+		table <- calcWald(table,4,sqrt=T)
+		attr(table,'heading') <- paste0('ANOVA based on type ',as.roman(type),' SS\n(p-values based on Wald z-scores)')
+		return(table)
 	}
-	if (ddf == 'lme4') return(anova(as(object@model,'lmerMod')))
-	if (!ddf %in% c('lme4','Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
-	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
-	if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-	return(anova(as(object@model,'merModLmerTest'),ddf=ddf))
+	if (ddf == 'lme4') return(table)
+	if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
+	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide anova with requested denominator degrees of freedom.'))
+	if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide anova with requested (Kenward-Roger) denominator degrees of freedom.'))
+	table <- lmerTest:::calcANOVA(model=object@model,ddf=ddf,type=type)
+	attr(table,'heading') <- paste0('ANOVA based on type ',as.roman(type),' SS\n(p-values based on the ',ddf,' approximation to the denominator df)')
+	return(table)
 }
 summary.buildmer <- function (object,ddf=NULL) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
 	if (!inherits(object@model,'lmerMod')) return(summary(object@model))
+	table <- summary(as(object@model,'lmerMod'))
 	if (is.null(ddf) || ddf == 'Wald') {
-		ret <- summary(as(object@model,'lmerMod'))
-		ret$coefficients <- calcWald(ret$coefficients,3)
-		return(ret)
+		table$coefficients <- calcWald(table$coefficients,3)
+		table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')
+		return(table)
 	}
-	if (ddf == 'lme4') return(summary(as(object@model,'lmerMod')))
+	if (ddf == 'lme4') return(table)
 	if (!ddf %in% c('Satterthwaite','Kenward-Roger')) stop(paste0("Invalid ddf specification '",ddf,"'"))
 	if (ddf %in% c('Satterthwaite','Kenward-Roger') && !require('lmerTest')) stop(paste0('lmerTest is not available, cannot provide summary with requested denominator degrees of freedom.'))
 	if (ddf == 'Kenward-Roger' && !require('pbkrtest')) stop(paste0('pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
-	return(summary(as(object@model,'merModLmerTest'),ddf=ddf))
+	adjunct <- lmerTest:::calcSummary(model=object@model,ddf=ddf)
+	table$coefficients <- cbind(table$coefficients,adjunct$df,adjunct$tpvalue)
+	colnames(table$coefficients) <- c(colnames(table$coefficients),'df','Pr(>|t|)')
+	table$methTitle <- paste0(table$methTitle,'\n(p-values based on the ',ddf,' approximation to the denominator df)')
+	return(table)
 }
 setMethod('show','buildmer',show.buildmer)
 setGeneric('anova')
