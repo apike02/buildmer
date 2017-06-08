@@ -15,12 +15,12 @@ show.buildmer <- function (object) {
 		cat(object@p$messages)
 	}
 }
-anova.buildmer <- function (object,ddf='Wald') {
+anova.buildmer <- function (object,ddf=NULL) {
 	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@anova)) return(object@anova)
+	if (!is.null(object@anova) && is.null(ddf)) return(object@anova)
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
 	if (!inherits(object@model,'lmerMod')) return(anova(object@model))
-	if (ddf == 'Wald') {
+	if (is.null(ddf) || ddf == 'Wald') {
 		ret <- anova(as(object@model,'lmerMod'),ddf=ddf)
 		ret <- calcWald(ret,4)
 		return(ret)
@@ -31,12 +31,12 @@ anova.buildmer <- function (object,ddf='Wald') {
 	if (ddf == 'Kenward-Roger' && !(require('lmerTest') && require('pbkrtest'))) stop(paste0('lmerTest/pbkrtest not available, cannot provide summary with requested (Kenward-Roger) denominator degrees of freedom.'))
 	return(anova(as(object@model,'merModLmerTest'),ddf=ddf))
 }
-summary.buildmer <- function (object,ddf='Wald') {
+summary.buildmer <- function (object,ddf=NULL) {
 	if (length(object@p$messages)) warning(object@p$messages)
-	if (!is.null(object@summary)) return(object@summary)
+	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
 	if (!inherits(object@model,'lmerMod')) return(summary(object@model))
-	if (ddf == 'Wald') {
+	if (is.null(ddf) || ddf == 'Wald') {
 		ret <- summary(as(object@model,'lmerMod'))
 		ret$coefficients <- calcWald(ret$coefficients,3)
 		return(ret)

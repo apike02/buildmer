@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{has.smooth.terms}
 \alias{has.smooth.terms}
-\title{Test whether a formula contains gamm4 smooth terms}
+\title{Test whether a formula contains mgcv smooth terms}
 \usage{
 has.smooth.terms(formula)
 }
@@ -13,5 +13,5 @@ has.smooth.terms(formula)
 A logical indicating whether the formula has any gamm4 terms.
 }
 \description{
-Test whether a formula contains gamm4 smooth terms
+Test whether a formula contains mgcv smooth terms
 }

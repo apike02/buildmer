@@ -12,12 +12,11 @@
 #' @export
 add.terms <- function (formula,add) {
 	dep <- as.character(formula[2])
-	terms <- terms(formula)
+	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
 	random.terms <- Filter(is.random.term,terms)
-	# Apparently, terms() removes parentheses around random terms. We need to restore those...
 	if (length(random.terms)) random.terms <- paste('(',random.terms,')')
 
 	for (term in add) {
@@ -37,7 +36,7 @@ add.terms <- function (formula,add) {
 						grouping <- term[[3]]
 						terms <- as.character(term[2])
 						form <- as.formula(paste0('~',terms))
-						terms <- terms(form)
+						terms <- terms(form,keep.order=T)
 						intercept <- attr(terms,'intercept')
 						terms <- attr(terms,'term.labels')
 						terms <- c(terms,bar.terms)
@@ -219,7 +218,8 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 calcWald <- function (table,i,sqrt=FALSE) {
 	data <- table[,i]
 	if (sqrt) data <- sqrt(data)
-	cbind(table,'Pr(>|t|)'=2*pnorm(abs(data),lower.tail=F))
+	p <- 2*pnorm(abs(data),lower.tail=F)
+	if (sqrt) cbind(table,`Pr(>|F|)`=p) else cbind(table,`Pr(>|t|)`=p)
 }
 
 #' Test a mgcv or merMod (or equivalent) object for convergence
@@ -229,13 +229,8 @@ calcWald <- function (table,i,sqrt=FALSE) {
 conv <- function (model) {
 	if (any(class(model) == 'try-error')) return(F)
 	if (any(class(model) == 'gam')) {
-		if (!is.null(model$outer.info)) {
-			if (model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
-			else {
-				warning(paste0("Unable to automatically check convergence of GAMs that were fit with optimizers other than 'newton' or 'bfgs'. Check convergence manually from the below information:\n",model$outer.info))
-				return(T)
-			}
-		} else {
+		if (!is.null(model$outer.info) && model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
+		else {
 			if (!length(model$sp)) return(T)
 			return(mgcv.conv$fully.converged)
 		}
@@ -249,17 +244,26 @@ conv <- function (model) {
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
 #' @export
 hasREML <- function (model) {
-	if (any(class(model) == 'gam')) return(model$method %in% c('REML','fREML'))
-	if (!any(class(model) %in% c('lmerMod','merModLmerTest'))) return(NA)
+	if (all(class(model) == 'list')) return(hasREML(model$mer))
+	if (!any(class(model) %in% c('lmerMod','merModLmerTest'))) {
+		if (any(class(model) == 'gam')) return(model$method %in% c('REML','fREML'))
+		return(NA)
+	}
 	if (!isLMM(model)) return(NA)
 	isREML(model)
 }
 
-#' Test whether a formula contains gamm4 smooth terms
+#' Test whether a formula contains mgcv smooth terms
 #' @param formula The formula.
 #' @return A logical indicating whether the formula has any gamm4 terms.
 #' @export
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
+
+#' Test whether a formula term is an mgcv smooth term
+#' @param term The term.
+#' @return A logical indicating whether the term was a random-effects term.
+#' @export
+is.smooth.term <- function (term) has.smooth.terms(as.formula(paste0('~',list(term))))
 
 #' Test whether a formula term contains lme4 random terms
 #' @param term The term.
@@ -289,31 +293,29 @@ remove.terms <- function (formula,remove,formulize=T) {
 	}
 
 	marginality.ok <- function (remove,have) {
-		forbidden <- c()
+		forbidden <- if (!all(have == '1')) '1' else NULL
 		for (x in have) {
-			# Unpack smooth terms: s(x,y,by=z) --> x:y:z
 			if (has.smooth.terms(as.formula(paste0('~',x)))) x <- paste(unpack.smooth.terms(x),collapse='*')
 			else x.star <- gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
 			partterms <- attr(terms(as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}
-		ok <- !remove %in% forbidden
-		if (length(have[!(ok & have %in% remove) & have != '1'])) ok <- ok & remove != '1' #do not remove the intercept if there is any other effect in this block
-		ok
+		!remove %in% forbidden
 	}
 
 	dep <- as.character(formula[2])
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
-	fixed.terms <- Filter(Negate(is.random.term),terms)
-	if (intercept) fixed.terms <- c('1',fixed.terms)
+	fixed.terms <- Filter(function (x) !is.random.term(x) & !is.smooth.term(x),terms)
 	random.terms <- Filter(is.random.term,terms)
+	smooth.terms <- Filter(is.smooth.term,terms)
+	if (intercept) fixed.terms <- c('1',fixed.terms)
 	random.list <- get.random.list(formula)
 	random.flat <- unique(unlist(random.list))
 
 	# Do not remove the fixed intercept if we have a random intercept
-	if ('1' %in% remove && !'1' %in% flat.randoms) intercept <- 0
+	if ('1' %in% remove && !'1' %in% random.flat) intercept <- 0
 	remove <- remove[remove != '1']
 
 	if (!length(remove)) remove <- '0'
@@ -329,8 +331,10 @@ remove.terms <- function (formula,remove,formulize=T) {
 	remove.fixed <- remove.fixed[marginality.ok(remove.fixed,fixed.terms)]
 	for (g in names(remove.random)) remove.random[[g]] <- remove.random[[g]][marginality.ok(remove.random[[g]],random.list[[g]])]
 
-	# Perform actual removal
+	# Perform actual removal; move smooth terms to the back
 	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
+	smooth.terms <- smooth.terms[!smooth.terms %in% remove.fixed]
+	fixed.terms <- c(fixed.terms,smooth.terms)
 	random.terms <- innerapply(random.terms,function (term) {
 		g <- as.character(term[[3]])
 		terms <- as.character(term[2])

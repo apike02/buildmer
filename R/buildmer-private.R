@@ -47,7 +47,7 @@ buildmer.fit <- function (p) {
 		p <- fit.until.conv(p)
 	}
 	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p,p$formula,final=T) else {
-		p$ma <- refit.if.needed(p$ma,reml=T)
+		p$ma <- refit.if.needed(p,p$fa,p$ma,reml=T)
 		if (!conv(p$ma)) p <- fit.until.conv(p)
 		p$formula <- p$fa
 		model <- p$ma
@@ -55,18 +55,18 @@ buildmer.fit <- function (p) {
 	p$fa <- p$fb <- p$ma <- p$mb <- NULL
 	if ('gam' %in% names(model)) {
 		model$mer@call$data <- p$data.name
-		if (!is.null(p$subset)) model$mer@call$subset <- p$subset.name
-		if (!is.null(p$control)) model$mer@call$control <- p$control.name
+		if (!is.null(model$mer@call$subset)) model$mer@call$subset <- p$subset.name
+		if (!is.null(model$mer@call$control)) model$mer@call$control <- p$control.name
 	}
 	else if (inherits(model,'lmerMod')) {
-		model@call$data <- data
-		if (!is.null(p$subset)) model@call$subset <- p$subset.name
-		if (!is.null(p$control)) model@call$control <- p$control.name
+		model@call$data <- p$data.name
+		if (!is.null(model@call$subset)) model@call$subset <- p$subset.name
+		if (!is.null(model@call$control)) model@call$control <- p$control.name
 	}
 	else {
-		model$call$data <- data
-		if (!is.null(p$subset)) model$call$subset <- p$subset.name
-		if (!is.null(p$control)) model$call$control <- p$control.name
+		model$call$data <- p$data.name
+		if (!is.null(model$call$subset)) model$call$subset <- p$subset.name
+		if (!is.null(model$call$control)) model$call$control <- p$control.name
 	}
 	ret <- mkBuildmer(model=model,p=p)
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
@@ -201,11 +201,11 @@ modcomp <- function (p) {
 			small <- a
 		}
 		df <- dffun(big) - dffun(small)
-		if (!df > 0) return(1)
+		if (!df < 0) return(1)
 		scale <- scalefun(big)
 		if (is.null(scale)) scale <- devfun(big) / dffun(big)
-		val <- (devfun(big) - devfun(small)) / scale
-		pchisq(val,df,lower.tail=F)
+		val <- abs(devfun(big) - devfun(small))/scale
+		pchisq(val,abs(df),lower.tail=F)
 	}
 
 	only.fixed.a <- is.null(lme4::findbars(p$fa))
@@ -216,12 +216,12 @@ modcomp <- function (p) {
 	else if (!same.fixed.effects)             F
 	else                                      T
 
-	a <- refit.if.needed(p$ma,reml)
+	a <- refit.if.needed(p,p$fa,p$ma,reml)
 	if (!conv(a)) {
 		if (!p$quiet) message('Converge failure during refit (model A)')
 		return(NA)
 	}
-	b <- refit.if.needed(p$mb,reml)
+	b <- refit.if.needed(p,p$fb,p$mb,reml)
 	if (!conv(b)) {
 		if (!p$quiet) message('Convergence failure during refit (model B)')
 		return(NA)
@@ -232,9 +232,9 @@ modcomp <- function (p) {
 			dffun <- function (m) {
 				n <- length(m$y)
 				dfc <- if (is.null(m$edf2)) 0 else sum(m$edf2) - sum(m$edf)
-				dfres <- n - sum(m$edf1) - dfc
+				df.res <- n - sum(m$edf1) - dfc
 			}
-			devfun <- function (m) -2*as.numeric(logLik(m))
+			devfun <- deviance
 			scalefun <- function (big) big$sig2
 			pval <- comp.manual(a,b,devfun,dffun,scalefun)
 			if (!p$quiet) message(paste0('GAM deviance comparison p-value: ',pval))
@@ -244,7 +244,7 @@ modcomp <- function (p) {
 			pval <- anv[[length(anv)]][[2]]
 		}
 	} else {
-		pval <- comp.manual(a,b,deviance,df.residual,function (big) devfun(big)/dffun(big))
+		pval <- comp.manual(a,b,deviance,df.residual,function (big) deviance(big)/df.residual(big))
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
 	pval/2
@@ -266,35 +266,41 @@ order.terms <- function (p) {
 			for (g in unique(groupings)) {
 				if (g == '') next
 				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
-				# Having extracted the level-2 terms, we can now call can.eval() on them to evaluate them normally, with one exception: if there is an intercept in there, we must force all other terms to 0. This will correctly force intercepts to go first in diagonal covariance structures, e.g. '(1|Subject) + (0+Days|Subject)'.
+				# Having extracted the level-2 terms, we can now call can.eval() on them to evaluate them normally, with one exception: if there is an intercept in there, we must force all other terms to F. This will correctly force intercepts to go first in diagonal covariance structures, e.g. '(1|Subject) + (0+Days|Subject)'.
 				if ('1' %in% terms[groupings == g]) {
 					terms[groupings == g & terms != '1'] <- F
 					terms[groupings == g & terms == '1'] <- T
 				} else terms[groupings == g] <- can.eval(terms[groupings == g])
 			}
-	
-			# 2. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting
-			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term
-			have <- lapply(terms[groupings == ''],unravel)
-			if (length(have)) { #did we have any fixed terms at all?
+
+			# 2. The intercept should always come first (short-circuits)
+			my.terms <- terms[groupings == '']
+			if ('1' %in% as.character(my.terms)) {
+				ok <- my.terms[as.character(my.terms) == '1']
+				return(unlist(ok))
+			}
+
+			# 3. Take out smooth terms if there were non-smooth terms (smooth terms should go after parametric terms)
+			smooths <- sapply(my.terms,is.smooth.term)
+			ok <- if (all(smooths)) rep(T,length(my.terms)) else !smooths
+			ok.terms <- my.terms[ok]
+			my.terms[!ok] <- F
+
+			# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
+			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
+			if (length(ok.terms)) {
+				ok.terms.components <- lapply(ok.terms,if (all(smooths)) unpack.smooth.terms else unravel)
 				check <- function (i) {
-					test <- unpack.smooth.terms(have[[i]])
-					for (x in have[-i]) { #walk all other terms
-						x <- unpack.smooth.terms(x)
+					test <- ok.terms.components[[i]]
+					for (x in ok.terms.components[-i]) { #walk all other terms' components
 						if (any(x == '1')) return(F) #intercept should always come first
 						if (all(x %in% test)) return(F)
 					}
-					if ('random' %in% names(test)) {
-						# We've detected a factor smooth term. Be sure that none of its components still have to be included as non-factor-smooths in future terms. We cannot rely on the re-ordering that would otherwise have been performed by terms()!
-						for (x in have[-i]) {
-							x <- unpack.smooth.terms(x)
-							if (!'random' %in% names(x) && any(test %in% x)) return(F)
-						}
-					}
 					T
 				}
-				terms[groupings == ''] <- lapply(1:length(have),check)
+				my.terms[ok] <- lapply(1:length(ok.terms),check)
 			}
+			terms[groupings == ''] <- my.terms
 			unlist(terms)
 		}
 
@@ -363,25 +369,25 @@ record <- function (p,term,pval) {
 	p
 }
 
-refit.if.needed <- function (m,reml) {
+refit.if.needed <- function (p,f,m,reml) {
 	if (is.na(reml)) return(m)
 	status <- hasREML(m)
 	if (is.na(status)) return(m)
-	if (status == reml) return(m) else update(m,REML=reml)
+	if (status == reml) return(m)
+	p$reml <- reml
+	fit(p,f)
 }
 
 unpack.smooth.terms <- function (x) {
-	fm <- as.formula(paste0('~',x))
-	if (!has.smooth.terms(fm)) return(as.character(x))
+	fm <- as.formula(paste0('~',list(x)))
+	if (!has.smooth.terms(fm)) return(as.character(list(x)))
 	smooth.args <- fm[[2]][2:length(fm[[2]])]
 	bs <- NULL
 	if (!all(is.null(names(smooth.args)))) {
 		bs <- as.character(smooth.args[names(smooth.args) == 'bs'])
 		smooth.args <- smooth.args[names(smooth.args) %in% c('','by')]
 	}
-	smooth.args <- unlist(lapply(smooth.args,function (x) as.character(unravel(x))))
-	names(smooth.args) <- rep(if (length(bs) && bs == 'fs') 'random' else 'fixed',length(smooth.args))
-	smooth.args
+	unlist(lapply(smooth.args,function (x) as.character(unravel(x))))
 }
 
 unravel <- function (x,sym=c(':','interaction')) {
