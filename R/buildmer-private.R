@@ -62,7 +62,7 @@ buildmer.fit <- function (p) {
 		if (!is.null(ret@model$mer@call$control)) ret@model$mer@call$control <- p$control.name
 		if (p$calc.summary) ret@summary$call <- ret@model$mer@call
 	}
-	else if (inherits(ret@model,'lmerMod')) {
+	else if (is.lmer(ret@model)) {
 		ret@model@call$data <- p$data.name
 		if (!is.null(ret@model@call$subset)) ret@model@call$subset <- p$subset.name
 		if (!is.null(ret@model@call$control)) ret@model@call$control <- p$control.name
@@ -192,6 +192,8 @@ get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 
 innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
+is.lmer <- function (m) inherits(m,'lmerMod') || inherits(m,'glmerMod') || inherits(m,'nlmerMod')
+
 modcomp <- function (p) {
 	# Function for manually calculating chi-square p-values; also used for GAMs, where anova() is unreliable
 	comp.manual <- function (a,b,devfun,dffun,scalefun) {
@@ -243,7 +245,7 @@ modcomp <- function (p) {
 			if (!p$quiet) message(paste0('GAM deviance comparison p-value: ',pval))
 		}
 		else {
-			anv <- if (inherits(a,'lmerMod')) anova(a,b,refit=F) else anova(a,b,test='Chisq')
+			anv <- if (is.lmer(a)) anova(a,b,refit=F) else anova(a,b,test='Chisq')
 			pval <- anv[[length(anv)]][[2]]
 		}
 	} else {
@@ -385,11 +387,7 @@ unpack.smooth.terms <- function (x) {
 	fm <- as.formula(paste0('~',list(x)))
 	if (!has.smooth.terms(fm)) return(as.character(list(x)))
 	smooth.args <- fm[[2]][2:length(fm[[2]])]
-	bs <- NULL
-	if (!all(is.null(names(smooth.args)))) {
-		bs <- as.character(smooth.args[names(smooth.args) == 'bs'])
-		smooth.args <- smooth.args[names(smooth.args) %in% c('','by')]
-	}
+	if (!all(is.null(names(smooth.args)))) smooth.args <- smooth.args[names(smooth.args) %in% c('','by')]
 	unlist(lapply(smooth.args,function (x) as.character(unravel(x))))
 }
 
