@@ -228,7 +228,7 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' @export
 conv <- function (model) {
 	if (inherits(model,'try-error')) return(F)
-	if (inherits(model,'gam') {
+	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info) && model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
 		else {
 			if (!length(model$sp)) return(T)
@@ -245,7 +245,7 @@ conv <- function (model) {
 #' @export
 hasREML <- function (model) {
 	if (inherits(model,'list')) return(hasREML(model$mer))
-	if (inherits(model,'merMod')) return(if isLMM(model) isREML(model) else NA)
+	if (inherits(model,'merMod')) return(if (isLMM(model)) isREML(model) else NA)
 	if (inherits(model,'gam')) return(model$method %in% c('REML','fREML'))
 	NA
 }
