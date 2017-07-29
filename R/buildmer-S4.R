@@ -19,8 +19,8 @@ anova.buildmer <- function (object,ddf=NULL,type=3) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@anova) && is.null(ddf)) return(object@anova)
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
-	if (!inherits(object@model,'lmerMod')) return(anova(object@model))
-	table <- anova(as(object@model,'lmerMod'))
+	if (!inherits(object@model,'merMod')) return(anova(object@model))
+	table <- anova(as(object@model,'merMod'))
 	if (is.null(ddf) || ddf == 'Wald') {
 		table <- calcWald(table,4,sqrt=T)
 		attr(table,'heading') <- paste0('ANOVA based on type ',as.roman(type),' SS\n(p-values based on Wald z-scores)')
@@ -38,8 +38,8 @@ summary.buildmer <- function (object,ddf=NULL) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
-	if (!inherits(object@model,'lmerMod')) return(summary(object@model))
-	table <- summary(as(object@model,'lmerMod'))
+	if (!inherits(object@model,'merMod')) return(summary(object@model))
+	table <- summary(as(object@model,'merMod'))
 	if (is.null(ddf) || ddf == 'Wald') {
 		table$coefficients <- calcWald(table$coefficients,3)
 		table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')

@@ -227,15 +227,15 @@ calcWald <- function (table,i,sqrt=FALSE) {
 #' @return Whether the model converged or not.
 #' @export
 conv <- function (model) {
-	if (any(class(model) == 'try-error')) return(F)
-	if (any(class(model) == 'gam')) {
+	if (inherits(model,'try-error')) return(F)
+	if (inherits(model,'gam') {
 		if (!is.null(model$outer.info) && model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
 		else {
 			if (!length(model$sp)) return(T)
 			return(mgcv.conv$fully.converged)
 		}
 	}
-	if (any(class(model) %in% c('lmerMod','merModLmerTest'))) return(!length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
+	if (inherits(model,'merMod')) return(!length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
 	T
 }
 
@@ -244,13 +244,10 @@ conv <- function (model) {
 #' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
 #' @export
 hasREML <- function (model) {
-	if (all(class(model) == 'list')) return(hasREML(model$mer))
-	if (!any(class(model) %in% c('lmerMod','merModLmerTest'))) {
-		if (any(class(model) == 'gam')) return(model$method %in% c('REML','fREML'))
-		return(NA)
-	}
-	if (!isLMM(model)) return(NA)
-	isREML(model)
+	if (inherits(model,'list')) return(hasREML(model$mer))
+	if (inherits(model,'merMod')) return(if isLMM(model) isREML(model) else NA)
+	if (inherits(model,'gam')) return(model$method %in% c('REML','fREML'))
+	NA
 }
 
 #' Test whether a formula contains mgcv smooth terms

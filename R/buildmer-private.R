@@ -62,7 +62,7 @@ buildmer.fit <- function (p) {
 		if (!is.null(ret@model$mer@call$control)) ret@model$mer@call$control <- p$control.name
 		if (p$calc.summary) ret@summary$call <- ret@model$mer@call
 	}
-	else if (is.lmer(ret@model)) {
+	else if (inherits(ret@model,'merMod')) {
 		ret@model@call$data <- p$data.name
 		if (!is.null(ret@model@call$subset)) ret@model@call$subset <- p$subset.name
 		if (!is.null(ret@model@call$control)) ret@model@call$control <- p$control.name
@@ -111,14 +111,14 @@ fit <- function (p,formula,final=F) {
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
 		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula)),', random=',as.character(list(random))))
 		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
-		if (!any(class(m) == 'try-error') && final) return(m)
+		if (!inherits(m,'try-error') && final) return(m)
 		return(m$mer)
 	}
 	if (is.null(lme4::findbars(formula))) {
 		message(paste0('Fitting as (g)lm: ',as.character(list(formula))))
 		m <- wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots)))
 	} else {
-		message(paste0(ifelse(p$reml,'Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
+		message(paste0(ifelse(p$reml && p$family == 'gaussian','Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
 		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 	return(m)
@@ -192,8 +192,6 @@ get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 
 innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
-is.lmer <- function (m) inherits(m,'lmerMod') || inherits(m,'glmerMod') || inherits(m,'nlmerMod')
-
 modcomp <- function (p) {
 	# Function for manually calculating chi-square p-values; also used for GAMs, where anova() is unreliable
 	comp.manual <- function (a,b,devfun,dffun,scalefun) {
@@ -245,7 +243,7 @@ modcomp <- function (p) {
 			if (!p$quiet) message(paste0('GAM deviance comparison p-value: ',pval))
 		}
 		else {
-			anv <- if (is.lmer(a)) anova(a,b,refit=F) else anova(a,b,test='Chisq')
+			anv <- if (inherits(a,'merMod')) anova(a,b,refit=F) else anova(a,b,test='Chisq')
 			pval <- anv[[length(anv)]][[2]]
 		}
 	} else {
