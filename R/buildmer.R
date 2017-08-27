@@ -235,7 +235,11 @@ conv <- function (model) {
 			return(mgcv.conv$fully.converged)
 		}
 	}
-	if (inherits(model,'merMod')) return(!length(model@optinfo$conv$lme4) || (model@optinfo$conv$opt == 0 && model@optinfo$conv$lme4$code == 0))
+	if (inherits(model,'merMod')) {
+		if (model@optinfo$conv$opt != 0) return(F)
+		if (!length(model@optinfo$conv$lme4)) return(T)
+		if (model@optinfo$conv$lme4$code != 0) return(F)
+	}
 	T
 }
 
