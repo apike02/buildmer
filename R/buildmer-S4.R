@@ -20,7 +20,15 @@ anova.buildmer <- function (object,ddf=NULL,type=3) {
 	if (!is.null(object@anova) && is.null(ddf)) return(object@anova)
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
 	if (!inherits(object@model,'merMod')) return(anova(object@model))
-	table <- anova(as(object@model,'merMod'))
+
+	# We have to take a rather ugly and indirect route to calculate denominator degrees of freedom.
+	# The simple approach would be something like:
+	#	saveWald <- ddf == 'Wald'; ddf <- 'lme4'; table <- anova(object@model,ddf=ddf); if (saveWald) { ... calculate Wald ... }; return(table)
+	# but this will fail to calculate ANOVA coefficients for GLMMs (and will throw a warning about the unknown ddf parameter if the model does not use lmerTest's anova function, but that could be avoided).
+	# Another option would be to attempt to coerce the model down to a [gn]lmerMod object, but there is no easy way to choose between these three without weaving a web of if (isLMM(...)) 'lmerMod' else if (isGLMM(...)) 'glmerMod' else if (isNLMM(...) 'nlmerMod'). This is not very portable...
+	# Therefore, we choose to force the ddf parameter to 'lme4', and if the user wanted something else, we manually call the required lmerTest function. This is portable and can easily be extended with our Wald function.
+
+	table <- if (inherits(object@model,'merModLmerTest')) anova(object@model,ddf='lme4') else anova(object@model)
 	if (is.null(ddf) || ddf == 'Wald') {
 		table <- calcWald(table,4,sqrt=T)
 		attr(table,'heading') <- paste0('ANOVA based on type ',as.roman(type),' SS\n(p-values based on Wald z-scores)')
@@ -39,7 +47,7 @@ summary.buildmer <- function (object,ddf=NULL) {
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
 	if (!inherits(object@model,'merMod')) return(summary(object@model))
-	table <- summary(as(object@model,'merMod'))
+	table <- if (inherits(object@model,'merModLmerTest')) summary(object@model,ddf='lme4') else summary(object@model)
 	if (is.null(ddf) || ddf == 'Wald') {
 		table$coefficients <- calcWald(table$coefficients,3)
 		table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')
