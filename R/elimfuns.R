@@ -1,6 +1,9 @@
 elfun.AIC <- function (AICdiff) AICdiff >= 0
 modcomp.AIC <- function (p) AIC(p$ma) - AIC(p$mb)
 
+elfun.BIC <- function (BICdiff) BICdiff >= 0
+modcomp.BIC <- function (p) BIC(p$ma) - BIC(p$mb)
+
 elfun.LRT <- function (pval) pval >= .05
 modcomp.LRT <- function (p) {
 	# Function for manually calculating chi-square p-values; also used for GAMs, where anova() is unreliable
