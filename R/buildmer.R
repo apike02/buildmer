@@ -68,6 +68,7 @@ add.terms <- function (formula,add) {
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
@@ -86,7 +87,7 @@ add.terms <- function (formula,add) {
 #' }
 #' @seealso buildmer
 #' @export
-buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -96,6 +97,7 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		direction=direction,
+		crit=crit,
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=ddf,
@@ -118,6 +120,7 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
@@ -136,7 +139,7 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' }
 #' @seealso buildmer
 #' @export
-buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -146,6 +149,7 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		direction=direction,
+		crit=crit,
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=ddf,
@@ -168,6 +172,7 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
@@ -187,7 +192,7 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -197,6 +202,7 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		direction=direction,
+		crit=crit,
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=ddf,
