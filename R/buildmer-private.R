@@ -134,7 +134,7 @@ fit.until.conv <- function (p) {
 #			p$messages <- c(p$messages,msg)
 #		} else
 		message("Base model didn't converge, reducing slope terms.")
-		cand <- get.last.random.slope(p$fa)
+		cand <- elim.random.slope(p$fa)
 		p <- record(p,cand,NA)
 		p$fa <- remove.terms(p$fa,cand,formulize=TRUE)
 		p$ma <- fit(p,p$fa)
@@ -165,27 +165,44 @@ forward <- function (p) {
 	}
 }
 
-get.last.random.slope <- function (formula) {
-	search.smooth.type <- function (vars,spec) {
-		ss <- sapply(vars[2:length(vars)],function (x) {
-			s <- mgcv::interpret.gam(as.formula(paste0('~',list(x))))
-			if (class(s[[1]]) == spec) list(x)
-		})
-		ss[!sapply(ss,is.null)]
-		as.character(ss[length(ss)])
-	}
+elim.random.slope <- function (formula) {
+	vars <- attr(terms(formula),'variables')
+	weights <- sapply(vars,function (x) {
+		# Weight the random effects by the following rules:
+		#  - Random smooths are worth 1000*length
+		#  - Random slopes are worth 1+length
+		#  - Random intercepts are worth 1
 
-	vars <- attr(formula,'variables')
-	# First try random smooths
-	ss <- search.smooth.type(vars,'fs.smooth.spec')
-	if (length(ss)) return(ss)
-	# Next try random slopes, and if they fail, try random intercepts: they are exactly as complex as bs='re' smooths, and will by design appear later in the formula than random intercepts will
-	bars <- lme4::findbars(formula)
-	if (length(bars)) return(as.character(bars[length(bars)]))
-	# Finally, try bs='re' smooths
-	ss <- search.smooth.type(vars,'re.smooth.spec')
-	if (length(ss)) return(ss)
-	stop('get.last.random.slope: error: no random effects available for removal')
+		f <- as.formula(paste0('~',list(x)))
+		s <- mgcv::interpret.gam(f)
+		if (length(s$smooth.spec)) {
+			# Weight random smooths by 1000
+			s <- s$smooth.spec[[1]]
+			if (class(s) == 'fs.smooth.spec'    ) return(1000+length(s$term))
+			if (class(s) == 'tensor.smooth.spec') {
+				scores <- sapply(s$margin,function (s) {
+					if (class(s) == 're.smooth.spec') return(1000+length(s$term))
+					length(s$term)
+				})
+				return(sum(scores))
+			}
+			# The below is pointless because smooths are penalized as random effects, so all simple smooths are at least as heavy as random effects
+			#if (class(s) == 're.smooth.spec') return(length(s$term)) #includes grouping factor, so no need for 1+
+			length(s$term)
+		} else {
+			# Weight random effects by their number of terms. Future work: use number of levels instead
+			bar.terms <- lme4::findbars(f)
+			if (is.null(bar.terms)) return(0)
+			bar.terms <- unravel(bar.terms[[1]][[2]],'+')
+			score <- length(bar.terms)
+			if (!'1' %in% bar.terms) score <- score + 1
+			score
+		}
+	})
+	if (all(weights == 0)) stop('elim.random.slope: error: no random effects available for removal')
+	winners <- which(weights == max(weights))
+	to.remove <- vars[[winners[length(winners)]]]
+	as.character(list(to.remove))
 }
 
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
