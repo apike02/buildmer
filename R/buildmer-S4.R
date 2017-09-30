@@ -8,7 +8,7 @@
 mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
 show.buildmer <- function (object) {
 	show(object@model)
-	cat('\nElimination table:\n\n')
+	cat('Elimination table:\n')
 	show(object@p$results)
 	if (length(object@p$messages)) {
 		cat('\nWarning messages:\n\n')
@@ -47,7 +47,8 @@ summary.buildmer <- function (object,ddf=NULL) {
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
 	if (!inherits(object@model,'merMod')) return(summary(object@model))
-	table <- if (inherits(object@model,'merModLmerTest')) summary(object@model,ddf='lme4') else summary(object@model)
+	#table <- if (inherits(object@model,'merModLmerTest')) summary(object@model,ddf='lme4') else summary(object@model)
+	table <- summary(object@model)
 	if (is.null(ddf) || ddf == 'Wald') {
 		table$coefficients <- calcWald(table$coefficients,3)
 		table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')

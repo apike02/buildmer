@@ -323,11 +323,13 @@ order.terms <- function (p) {
 	p
 }
 
-record <- function (p,term,val) {
-	if (!p$quiet) message(paste(ifelse(p$crit == 'LRT','p-value',p$crit),'for',term,'is',val))
-	p$results <- rbind(p$results,c(term,val))
-	p
-}
+record <- function (p,term,val) within(p,{
+	if (!quiet) message(paste(ifelse(crit == 'LRT','p-value',crit),'for',term,'is',val))
+	if (is.null(p$results)) {
+		results <- data.frame('Term'=term,'p-value'=val,stringsAsFactors=F)
+		if (crit != 'LRT') colnames(results)[2] <- crit
+	} else results <- rbind(results,c(term,val))
+})
 
 refit.if.needed <- function (p,f,m,reml) {
 	if (is.na(reml)) return(m)
