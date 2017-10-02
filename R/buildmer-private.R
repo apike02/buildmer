@@ -103,7 +103,7 @@ fit <- function (p,formula,final=F) {
 	if (!is.null(p$engine) && has.smooth.terms(formula)) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
 		message(paste0('Fitting using ',p$engine,', with ',method,': ',as.character(list(formula))))
-		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method,p$dots)))
+		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method,p$dots))))
 		return(m)	
 	}
 	if (has.smooth.terms(formula) && require('gamm4')) {
