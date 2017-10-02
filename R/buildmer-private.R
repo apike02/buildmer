@@ -101,8 +101,9 @@ elim <- function (p,t) {
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (!is.null(p$engine) && has.smooth.terms(formula)) {
-		message(paste0('Fitting using ',p$engine,', with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
-		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=ifelse(p$reml,'REML','ML')),p$dots)))
+		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
+		message(paste0('Fitting using ',p$engine,', with ',method,': ',as.character(list(formula))))
+		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method,p$dots)))
 		return(m)	
 	}
 	if (has.smooth.terms(formula) && require('gamm4')) {
