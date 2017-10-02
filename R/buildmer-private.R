@@ -168,6 +168,18 @@ forward <- function (p) {
 
 elim.random.slope <- function (formula) {
 	vars <- attr(terms(formula),'variables')
+	vars <- as.character(vars[-1])
+
+	# First, unpack bar terms: a,b,c+d+e+f|g -> a,b,c|g,d|g,...
+	vars <- sapply(vars,function (x) if (is.random.term(x)) {
+		term <- as.formula(paste0('~',x))[[2]]
+		g <- term[[3]]
+		tt <- unravel(term[[2]],'+')
+		paste(tt,'|',g)
+	} else x)
+	vars <- unlist(vars)
+
+	# Next, apply weights
 	weights <- sapply(vars,function (x) {
 		# Weight the random effects by the following rules:
 		#  - Random smooths are worth 1000*length
@@ -200,6 +212,8 @@ elim.random.slope <- function (formula) {
 			score
 		}
 	})
+
+	# Remove the heaviest random-effect term
 	if (all(weights == 0)) stop('elim.random.slope: error: no random effects available for removal')
 	winners <- which(weights == max(weights))
 	to.remove <- vars[[winners[length(winners)]]]
