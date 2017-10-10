@@ -194,9 +194,16 @@ elim.random.slope <- function (formula) {
 			# Weight random smooths by 1000
 			s <- s$smooth.spec[[1]]
 			if (class(s) == 'fs.smooth.spec'    ) return(1000+length(s$term))
+			# Assuming that shrinkage smooths should also be considered especially penalized
+			if (class(s) == 'ts.smooth.spec'    ) return(1000+length(s$term))
+			if (class(s) == 'cs.smooth.spec'    ) return(1000+length(s$term))
+			# Also look into tensor products
 			if (class(s) == 'tensor.smooth.spec') {
 				scores <- sapply(s$margin,function (s) {
 					if (class(s) == 're.smooth.spec') return(1000+length(s$term))
+					if (class(s) == 'fs.smooth.spec') return(1000+length(s$term))
+					if (class(s) == 'ts.smooth.spec') return(1000+length(s$term))
+					if (class(s) == 'cs.smooth.spec') return(1000+length(s$term))
 					length(s$term)
 				})
 				return(sum(scores))
