@@ -91,7 +91,7 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 	p <- list(
 		formula=formula,
 		data=data,
-		family=as.character(substitute(family)),
+		family=substitute(family),
 		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -143,7 +143,7 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 	p <- list(
 		formula=formula,
 		data=data,
-		family=as.character(substitute(family)),
+		family=substitute(family),
 		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -196,7 +196,7 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 	p <- list(
 		formula=formula,
 		data=data,
-		family=as.character(substitute(family)),
+		family=substitute(family),
 		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -385,7 +385,7 @@ stepwise <- function (formula,data,family=gaussian,...) {
 	p <- list(
 		formula=formula,
 		data=data,
-		family=as.character(substitute(family)),
+		family=substitute(family),
 		cluster=NULL,
 		reduce.fixed=T,
 		reduce.random=T,
