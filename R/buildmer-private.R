@@ -106,12 +106,13 @@ fit <- function (p,formula,final=F) {
 		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots)))
 		return(m)	
 	}
-	if (has.smooth.terms(formula) && require('gamm4')) {
+	if (has.smooth.terms(formula)) {
+		if (!require(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam or buildbam.')
 		# fix up model formula
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula)),', random=',as.character(list(random))))
+		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
 		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
 		if (!inherits(m,'try-error') && final) return(m)
 		return(m$mer)
