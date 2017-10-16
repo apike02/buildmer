@@ -45,7 +45,7 @@ buildmer.fit <- function (p) {
 		p$fa <- p$formula
 		p <- fit.until.conv(p)
 	}
-	if (is.null(p$ma) || has.smooth.terms(p$formula) || p$engine == 'lme') model <- fit(p,p$formula,final=T) else {
+	if (is.null(p$ma) || has.smooth.terms(p$fa) || p$engine == 'lme') model <- fit(p,p$fa,final=T) else {
 		p$ma <- refit.if.needed(p,p$fa,p$ma,reml=T)
 		if (!conv(p$ma)) p <- fit.until.conv(p)
 		p$formula <- p$fa
