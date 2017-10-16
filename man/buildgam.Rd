@@ -2,15 +2,15 @@
 % Please edit documentation in R/buildmer.R
 \name{buildgam}
 \alias{buildgam}
-\title{Use buildmer to fit big generalized additive models using gam() from mgcv}
+\title{Use buildmer to fit generalized additive models using gam() from mgcv}
 \usage{
 buildgam(formula, data, family = gaussian, reorder.terms = TRUE,
   cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = "backward", calc.anova = TRUE, calc.summary = TRUE,
-  ddf = "Wald", quiet = FALSE, ...)
+  direction = "backward", crit = "LRT", calc.anova = TRUE,
+  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
@@ -26,15 +26,15 @@ buildgam(formula, data, family = gaussian, reorder.terms = TRUE,
 
 \item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
 
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
+\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
+\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
 
-\item{ddf}{The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
+\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
 
 \item{quiet}{Whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)}
+\item{...}{Additional options to be passed to gam().}
 }
 \value{
 A buildmer object containing the following slots:
@@ -50,7 +50,7 @@ A buildmer object containing the following slots:
 }
 }
 \description{
-Use buildmer to fit big generalized additive models using gam() from mgcv
+Use buildmer to fit generalized additive models using gam() from mgcv
 }
 \seealso{
 buildmer

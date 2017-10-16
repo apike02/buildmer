@@ -6,8 +6,8 @@
 \usage{
 buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
   cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = "backward", calc.anova = TRUE, calc.summary = TRUE,
-  ddf = "Wald", quiet = FALSE, ...)
+  direction = "backward", crit = "LRT", calc.anova = TRUE,
+  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
@@ -25,6 +25,8 @@ buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
 \item{reduce.random}{Whether to reduce the random-effect structure.}
 
 \item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
+
+\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.}
 
 \item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
 

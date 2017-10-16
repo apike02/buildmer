@@ -45,7 +45,7 @@ buildmer.fit <- function (p) {
 		p$fa <- p$formula
 		p <- fit.until.conv(p)
 	}
-	if (is.null(p$ma) || has.smooth.terms(p$formula)) model <- fit(p,p$formula,final=T) else {
+	if (is.null(p$ma) || has.smooth.terms(p$formula) || p$engine == 'lme') model <- fit(p,p$formula,final=T) else {
 		p$ma <- refit.if.needed(p,p$fa,p$ma,reml=T)
 		if (!conv(p$ma)) p <- fit.until.conv(p)
 		p$formula <- p$fa
@@ -100,11 +100,12 @@ elim <- function (p,t) {
 
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
-	if (!is.null(p$engine) && has.smooth.terms(formula)) {
-		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
+	if (!is.null(p$engine)) {
+		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
 		message(paste0('Fitting using ',p$engine,', with ',method,': ',as.character(list(formula))))
-		m <- wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots)))
-		return(m)	
+		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
+		# Only fit using gam/bam if smooth terms were found - if we just eliminated the last smooth, we should fall through to the lm fitter!
+		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
 	}
 	if (has.smooth.terms(formula)) {
 		if (!require(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam or buildbam.')

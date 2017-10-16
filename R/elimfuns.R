@@ -56,7 +56,9 @@ modcomp.LRT <- function (p) {
 			if (!p$quiet) message(paste0('GAM deviance comparison p-value: ',pval))
 		}
 		else {
-			anv <- if (inherits(a,'merMod')) anova(a,b,refit=F) else anova(a,b,test='Chisq')
+			anv <- if (inherits(a,'merMod')) anova(a,b,refit=F)
+			else   if (inherits(a,'lme'))    anova(a,b)
+			else                             anova(a,b,test='Chisq')
 			pval <- anv[[length(anv)]][[2]]
 		}
 	} else {

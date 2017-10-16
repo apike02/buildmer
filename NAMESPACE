@@ -3,6 +3,8 @@
 export(add.terms)
 export(buildbam)
 export(buildgam)
+export(buildgamm4)
+export(buildlme)
 export(buildmer)
 export(conv)
 export(has.smooth.terms)

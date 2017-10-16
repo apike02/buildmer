@@ -2,21 +2,15 @@
 % Please edit documentation in R/latex.R
 \name{mer2tex}
 \alias{mer2tex}
-\title{Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)}
+\title{Convert a buildmer (or compatible) model to LaTeX code}
 \usage{
-mer2tex(summary, vowel = "", formula = F, label = "", aliases = list())
+mer2tex(summary, aliases = list())
 }
 \arguments{
-\item{summary}{The summary to convert.}
-
-\item{vowel}{The vowel you're analyzing.}
-
-\item{formula}{The formula as used in your final lmer object.}
-
-\item{label}{The LaTeX label to put below your 'Results' caption.}
+\item{summary}{The model (or its summary) to convert.}
 
 \item{aliases}{A list of aliases translating summary terms to LaTeX code.}
 }
 \description{
-Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)
+Convert a buildmer (or compatible) model to LaTeX code
 }

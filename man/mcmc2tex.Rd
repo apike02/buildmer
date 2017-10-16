@@ -4,12 +4,10 @@
 \alias{mcmc2tex}
 \title{Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)}
 \usage{
-mcmc2tex(model, label = "", aliases = list())
+mcmc2tex(model, aliases = list())
 }
 \arguments{
-\item{model}{The fitted model (not its summary!)}
-
-\item{label}{The LaTeX label to put below your 'Results' caption.}
+\item{model}{The fitted model}
 
 \item{aliases}{A list of aliases translating summary terms to LaTeX code.}
 }
