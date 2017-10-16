@@ -1,9 +1,8 @@
 #' Convert an MCMCglmm model to LaTeX code (biased towards stress analysis)
-#' @param model The fitted model (not its summary!)
-#' @param label The LaTeX label to put below your 'Results' caption.
+#' @param model The fitted model
 #' @param aliases A list of aliases translating summary terms to LaTeX code.
 #' @export
-mcmc2tex <- function (model,label='',aliases=list()) {
+mcmc2tex <- function (model,aliases=list()) {
 	if (!any(class(model) == 'MCMCglmm')) stop('Please pass the full model object rather than the summary')
 	cms <- colMeans(model$Sol)
 	names <- names(cms)
@@ -26,7 +25,7 @@ mcmc2tex <- function (model,label='',aliases=list()) {
 		data[i,6] <- stars(pvals[i])
 		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,4:6]))
 	}
-	cat('\\hline\n\\end{tabular}\n\\caption{Results}\n\\label{tbl:',label,'}\n\\end{table}',sep='')
+	cat('\\hline\n\\end{tabular}\n\\end{table}',sep='')
 
 	cat('\n\n\n')
 	for (i in 1:length(names)) cat(
@@ -35,17 +34,18 @@ mcmc2tex <- function (model,label='',aliases=list()) {
 	,sep='')
 }
 
-#' Convert a buildmer (or compatible) summary to LaTeX code (biased towards vowel analysis)
-#' @param summary The summary to convert.
-#' @param vowel The vowel you're analyzing.
-#' @param formula The formula as used in your final lmer object.
-#' @param label The LaTeX label to put below your 'Results' caption.
+#' Convert a buildmer (or compatible) model to LaTeX code
+#' @param summary The model (or its summary) to convert.
 #' @param aliases A list of aliases translating summary terms to LaTeX code.
 #' @export
-mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
+mer2tex <- function (summary,aliases=list()) {
+	if (!grepl('summary',class(summary))) summary <- summary(summary)
 	d <- summary$coefficients
-	expme <- !is.null(summary$family)
-	if (is.null(d)) { #GAMM
+	expme <- if (is.null(summary$family)) F else if (summary$family == 'binomial') T else {
+		warning('Currently only gaussian and binomial models are fully supported by mer2tex. Pretending the model is gaussian...')
+		F
+	}
+	if (is.null(d)) { #GAM
 		d <- summary$p.table
 		df <- F
 		tname <- 't'
@@ -58,23 +58,20 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 		smooths <- NULL
 	}
 	cat('\\begin{table}\n\\centerfloat\n\\begin{tabular}{llllll}\n\\hline')
-	if (formula) {
-		mcprintln <- function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
-		#mcprintln(c('\\textbf{Vowel: (\\textipa{',paperify(vowel),'})}'))
-		mcprintln(c('Dependent variable: ',paperify(as.character(form[[2]]))))
-		terms <- Filter(function (x) grepl('|',x,fixed=T),attr(terms(form),'term.labels'))
-		slopes <- list()
-		for (t in terms) {
-			grouping <- sub('.*\\| ','',t)
-			factors <- sub(' \\|.*','',t)
-			factors <- unlist(strsplit(factors,' + ',T))
-			factors <- Filter(function (x) x != '0' & x != '- 1',factors)
-			factors <- sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x))
-			slopesmsg <- c('Random effects for ',paperify(grouping),': \\textit{',paste0(factors,collapse=', '),'}')
-			mcprintln(slopesmsg)
-		}
-		cat('\\hline\n')
+	mcprintln <- function (x) cat('\\multicolumn{',ifelse(df,6,5),'}{l}{',x,'}\\\\\n',sep='')
+	mcprintln(c('Dependent variable: ',paperify(as.character(form[[2]]),aliases=aliases)))
+	terms <- Filter(function (x) grepl('|',x,fixed=T),attr(terms(form),'term.labels'))
+	slopes <- list()
+	for (t in terms) {
+		grouping <- sub('.*\\| ','',t)
+		factors <- sub(' \\|.*','',t)
+		factors <- unlist(strsplit(factors,' + ',T))
+		factors <- Filter(function (x) x != '0' & x != '- 1',factors)
+		factors <- sapply(factors,function (x) if (x == '1') 'intercept' else paperify(x,aliases=aliases))
+		slopesmsg <- c('Random effects for ',paperify(grouping,aliases=aliases),': \\textit{',paste0(factors,collapse=', '),'}')
+		mcprintln(slopesmsg)
 	}
+	cat('\\hline\n')
 	cat(paste0(sapply(if (df)            c('Factor','Estimate (SE)','df',paste0('$',tname,'$'),'$p$','Sig.')
 	                     else if (expme) c('Factor','Estimate (SE)','Odds Ratio',paste0('$',tname,'$'),'$p$','Sig.')
 			     else            c('Factor','Estimate (SE)',paste0('$',tname,'$'),'$p$','Sig.')
@@ -86,15 +83,22 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 		paste(x,collapse=' $\\times$ ')
 	})
 	data <- matrix(nrow=length(names),ncol=7)
+	text <- ''
 	for (i in 1:length(names)) {
 		data[i,1] <- names[i]					# factor
 		data[i,2] <- custround(d[i,1])				# estimate
 		data[i,3] <- custround(d[i,2],neg=F)			# SE
 		data[i,4] <- if (df) custround(d[i,3],neg=F) else d[i,3]# df / OR
-		data[i,5] <- custround(d[i,4])				# t
+		data[i,5] <- custround(d[i,4])				# t / z
 		data[i,6] <- ifelse(as.numeric(d[i,5]) < .001,'$<$.001',custround(d[i,5],neg=F,trunc=T)) # p
 		data[i,7] <- stars(d[i,5])				# stars
 		tblprintln(c(names[i],paste0(data[i,2],' (',data[i,3],')'),data[i,ifelse(df||expme,4,5):7])) #print for table
+		text <- paste(text,paste0(names[i],' (',
+			'$\\hat{\\beta}$ = ',data[i,2],', ','\\textit{SE} = ',data[i,3],', ',ifelse(df,
+				paste0('$t_{',data[i,4],'}$ = ',data[i,5]),
+				paste0('Odds Ratio = ',data[i,4],', $z$ = ',data[i,5])),', ',
+			ifelse(as.numeric(d[i,5]) < .001,'$p$ $<$ .001',paste0('$p$ = ',data[i,6])),
+			')'),sep='\n')
 	}
 	if (!is.null(smooths)) {
 		cat('\\hline\n')
@@ -107,4 +111,6 @@ mer2tex <- function (summary,vowel='',formula=F,label='',aliases=list()) {
 			cat(paste0(line,sep=' & '),'\\\\\n')
 		}
 	}
+	cat('\\hline\n\\end{tabular}\n\\end{table}\n\n')
+	cat(text,'\n')
 }
