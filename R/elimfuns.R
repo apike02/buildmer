@@ -1,7 +1,7 @@
-elfun.AIC <- function (AICdiff) AICdiff >= 0
+elfun.AIC <- function (AICdiff) AICdiff > -.001
 modcomp.AIC <- function (p) AIC(p$ma) - AIC(p$mb)
 
-elfun.BIC <- function (BICdiff) BICdiff >= 0
+elfun.BIC <- function (BICdiff) BICdiff > -.001
 modcomp.BIC <- function (p) BIC(p$ma) - BIC(p$mb)
 
 elfun.LRT <- function (pval) pval >= .05
