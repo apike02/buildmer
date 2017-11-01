@@ -247,6 +247,7 @@ order.terms <- function (p) {
 				while (length(x) > 1 && x[[1]] == '(') x <- x[[2]]
 				if (length(x) > 1 && x[[1]] == '|') x[[3]] else ''
 			})
+			groupings <- as.character(groupings)
 			for (g in unique(groupings)) {
 				if (g == '') next
 				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
@@ -303,15 +304,14 @@ order.terms <- function (p) {
 		while (length(totest)) {
 			ok <- which(can.eval(totest))
 			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
-			if (length(ok) > 1) {
-				forms <- lapply(ok,function (i) add.terms(p$formula,totest[[i]]))
-				comps <- compfun(forms)
-				if (all(comps == Inf)) {
-					if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
-					return(p)
-				}
-				i <- order(comps)[1]
-			} else 	i <- 1
+			forms <- lapply(ok,function (i) add.terms(p$formula,totest[[i]]))
+			# We can't short-circuit if length(ok)==1, because the model may not converge...
+			comps <- compfun(forms)
+			if (all(comps == Inf)) {
+				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
+				return(p)
+			}
+			i <- order(comps)[1]
 			winner <- ok[i]
 			p$formula <- add.terms(p$formula,totest[[winner]])
 			if (!p$quiet) message(paste('Updating formula:',dep,'~',p$formula[3]))
@@ -324,7 +324,7 @@ order.terms <- function (p) {
 	terms <- remove.terms(p$formula,c(),formulize=F)
 	fixed <- Filter(Negate(is.random.term),terms)
 	random <- Filter(is.random.term,terms)
-	intercept.terms <- substr(random,1,2) == '1|'
+	intercept.terms <- substr(random,1,3) == '1 |'
 	random <- c(random[intercept.terms],random[!intercept.terms])
 	dep <- as.character(p$formula[2])
 	if ('1' %in% terms) {
@@ -378,4 +378,14 @@ unravel <- function (x,sym=c(':','interaction')) {
 	if (length(x) == 2) return(as.character(list(x))) #e.g.: 'scale(x)','I(365*Days)'
 	# we've gotten as deep as we can go: what we now have is, e.g., :(a,:(b,c)) when sym='+'
 	as.character(list(x))
+}
+
+unwrap.terms <- function (terms,inner=F,intercept=F) {
+	form <- as.formula(paste0('~',terms))
+	terms <- terms(form,keep.order=T)
+	if (intercept) intercept <- attr(terms,'intercept')
+	if (inner) return(terms[[2]])
+	terms <- attr(terms,'term.labels')
+	if (intercept) terms <- c('1',terms)
+	terms
 }

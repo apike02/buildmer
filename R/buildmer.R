@@ -27,13 +27,13 @@ add.terms <- function (formula,add) {
 				next
 			}
 			for (bar in get.random.terms(term)) {
-				bar.grouping <- bar[[3]]
+				bar.grouping <- as.character(bar[3])
 				bar.terms <- bar[[2]]
 				# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
 				suitable <- if (length(random.terms)) which(innerapply(random.terms,function (term) term[[3]] == bar.grouping)) else NULL
 				if (length(suitable)) {
 					random.terms[[suitable[1]]] <- innerapply(random.terms[[suitable[1]]],function (term) {
-						grouping <- term[[3]]
+						grouping <- as.character(term[3])
 						terms <- as.character(term[2])
 						form <- as.formula(paste0('~',terms))
 						terms <- terms(form,keep.order=T)
@@ -391,6 +391,16 @@ remove.terms <- function (formula,remove,formulize=T) {
 		!remove %in% forbidden
 	}
 
+	unwrap.terms <- function (terms,inner=F,intercept=F) {
+		form <- as.formula(paste0('~',terms))
+		terms <- terms(form,keep.order=T)
+		if (intercept) intercept <- attr(terms,'intercept')
+		if (inner) return(terms[[2]])
+		terms <- attr(terms,'term.labels')
+		if (intercept) terms <- c('1',terms)
+		terms
+	}
+
 	dep <- as.character(formula[2])
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
@@ -399,13 +409,23 @@ remove.terms <- function (formula,remove,formulize=T) {
 	random.terms <- Filter(is.random.term,terms)
 	smooth.terms <- Filter(is.smooth.term,terms)
 	if (intercept) fixed.terms <- c('1',fixed.terms)
-	random.list <- get.random.list(formula)
-	random.flat <- unique(unlist(random.list))
 
-	# Do not remove the fixed intercept if we have a random intercept
-	if ('1' %in% remove && !'1' %in% random.flat) intercept <- 0
+	# Unwrap the random effects
+	random.terms <- lapply(random.terms,function (x) {
+		x <- unwrap.terms(x,inner=T)
+		g <- unwrap.terms(x[3])
+		terms <- as.character(x[2])
+		terms <- unwrap.terms(terms,intercept=T)
+		sapply(g,function (g) terms,simplify=F)
+	})
+	random.terms <- unlist(random.terms,recursive=F)
+
+	# Protect the intercept: do not remove the fixed intercept if we have a random intercept.
+	# This is handled here because the intercept is handled by a separate 'intercept' variable, rather than being in the 'remove' vector.
+	if ('1' %in% remove && !'1' %in% unlist(random.terms)) intercept <- 0
 	remove <- remove[remove != '1']
 
+	# Prepare the final list of terms for which removal was requested
 	if (!length(remove)) remove <- '0'
 	remove <- as.formula(paste0('~',paste(remove,collapse='+')))
 	remove.random <- get.random.list(remove)
@@ -413,29 +433,29 @@ remove.terms <- function (formula,remove,formulize=T) {
 	remove.fixed <- Filter(Negate(is.random.term),remove.fixed)
 
 	# Do not remove fixed effects if they have corresponding random effects
-	remove.fixed <- remove.fixed[!remove.fixed %in% random.flat]
+	remove.fixed <- remove.fixed[!remove.fixed %in% unlist(random.terms)]
 
 	# Do not remove effects participating in higher-order interactions
 	remove.fixed <- remove.fixed[marginality.ok(remove.fixed,fixed.terms)]
-	for (g in names(remove.random)) remove.random[[g]] <- remove.random[[g]][marginality.ok(remove.random[[g]],random.list[[g]])]
+	if (length(remove.random)) for (i in 1:length(remove.random)) {
+		nm <- names(remove.random)[i]
+		have <- unlist(random.terms[names(random.terms) == nm])
+		remove.random[[i]] <- remove.random[[i]][marginality.ok(remove.random[[i]],have)]
+	}
 
 	# Perform actual removal; move smooth terms to the back
 	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
 	smooth.terms <- smooth.terms[!smooth.terms %in% remove.fixed]
 	fixed.terms <- c(fixed.terms,smooth.terms)
-	random.terms <- innerapply(random.terms,function (term) {
-		g <- as.character(term[[3]])
-		terms <- as.character(term[2])
-		form <- as.formula(paste0('~',terms))
-		terms <- terms(form,keep.order=T)
-		intercept <- if ('1' %in% remove.random[[g]]) F else attr(terms,'intercept')
-		terms <- attr(terms,'term.labels')
+	random.terms <- sapply(1:length(random.terms),function (i) {
+		g <- names(random.terms)[i]
+		terms <- random.terms[[i]]
 		terms <- terms[!terms %in% remove.random[[g]]]
-		if (!length(terms) && !intercept) return(NULL)
-		if (intercept) terms <- c('1',terms) else terms[[1]] <- paste0('0 + ',terms[[1]])
+		if (!length(terms)) return(NULL)
+		if (!'1' %in% terms) terms <- c('0',terms)
 		if (formulize) terms <- paste(terms,collapse=' + ')
 		terms <- paste0(terms,' | ',g)
-		if (formulize || length(terms) == 1 || (length(terms) == 2 && !intercept)) terms <- paste0('(',terms,')')
+		if (formulize) terms <- paste0('(',terms,')')
 		terms
 	})
 	random.terms <- Filter(Negate(is.null),unlist(random.terms))
