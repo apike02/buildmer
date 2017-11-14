@@ -133,14 +133,15 @@ fit.until.conv <- function (p) {
 	while (!conv(p$ma)) {
 #		no.failures <- F
 #		if (p$stage == 'fixed') {
-#			msg = 'Convergence failures were encountered during the fixed-effects elimination step. Some random effects have been removed during fixed-effects elimination, and will be re-added when calculating the final model. If there happened to be any competition between fixed-effects and the eliminated random effect(s), the contribution of these fixed effects might have been over-estimated.\n'
+#			msg <- 'Convergence failures were encountered during the fixed-effects elimination step. Some random effects have been removed during fixed-effects elimination, and will be re-added when calculating the final model. If there happened to be any competition between fixed-effects and the eliminated random effect(s), the contribution of these fixed effects might have been over-estimated.\n'
 #			warning(msg)
 #			p$messages <- c(p$messages,msg)
 #		} else
-		message("Base model didn't converge, reducing slope terms.")
-		cand <- elim.random.slope(p$fa)
-		p <- record(p,cand,NA)
-		p$fa <- remove.terms(p$fa,cand,formulize=TRUE)
+		last <- p$order[length(p$order)]
+		if (is.null(last)) stop('The base model failed to converge, and no effect could be identified for elimination. Aborting.')
+		message("Base model didn't converge, simplifying model.")
+		p <- record(p,last,NA)
+		p$fa <- remove.terms(p$fa,last,formulize=T)
 		p$ma <- fit(p,p$fa)
 	}
 	p
@@ -167,67 +168,6 @@ forward <- function (p) {
 			elim('random')
 		}
 	}
-}
-
-elim.random.slope <- function (formula) {
-	vars <- attr(terms(formula),'variables')
-	vars <- as.character(vars[-1])
-
-	# First, unpack bar terms: a,b,c+d+e+f|g -> a,b,c|g,d|g,...
-	vars <- sapply(vars,function (x) if (is.random.term(x)) {
-		term <- as.formula(paste0('~',x))[[2]]
-		g <- term[[3]]
-		tt <- unravel(term[[2]],'+')
-		paste(tt,'|',g)
-	} else x)
-	vars <- unlist(vars)
-
-	# Next, apply weights
-	weights <- sapply(vars,function (x) {
-		# Weight the random effects by the following rules:
-		#  - Random smooths are worth 1000*length
-		#  - Random slopes are worth 1+length
-		#  - Random intercepts are worth 1
-
-		f <- as.formula(paste0('~',list(x)))
-		s <- mgcv::interpret.gam(f)
-		if (length(s$smooth.spec)) {
-			# Weight random smooths by 1000
-			s <- s$smooth.spec[[1]]
-			if (class(s) == 'fs.smooth.spec'    ) return(1000+length(s$term))
-			# Assuming that shrinkage smooths should also be considered especially penalized
-			if (class(s) == 'ts.smooth.spec'    ) return(1000+length(s$term))
-			if (class(s) == 'cs.smooth.spec'    ) return(1000+length(s$term))
-			# Also look into tensor products
-			if (class(s) == 'tensor.smooth.spec') {
-				scores <- sapply(s$margin,function (s) {
-					if (class(s) == 're.smooth.spec') return(1000+length(s$term))
-					if (class(s) == 'fs.smooth.spec') return(1000+length(s$term))
-					if (class(s) == 'ts.smooth.spec') return(1000+length(s$term))
-					if (class(s) == 'cs.smooth.spec') return(1000+length(s$term))
-					length(s$term)
-				})
-				return(sum(scores))
-			}
-			# The below is pointless because smooths are penalized as random effects, so all simple smooths are at least as heavy as random effects
-			#if (class(s) == 're.smooth.spec') return(length(s$term)) #includes grouping factor, so no need for 1+
-			length(s$term)
-		} else {
-			# Weight random effects by their number of terms. Future work: use number of levels instead
-			bar.terms <- lme4::findbars(f)
-			if (is.null(bar.terms)) return(0)
-			bar.terms <- unravel(bar.terms[[1]][[2]],'+')
-			score <- length(bar.terms)
-			if (!'1' %in% bar.terms) score <- score + 1
-			score
-		}
-	})
-
-	# Remove the heaviest random-effect term
-	if (all(weights == 0)) stop('elim.random.slope: error: no random effects available for removal')
-	winners <- which(weights == max(weights))
-	to.remove <- vars[[winners[length(winners)]]]
-	as.character(list(to.remove))
 }
 
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
@@ -315,6 +255,7 @@ order.terms <- function (p) {
 			winner <- ok[i]
 			p$formula <- add.terms(p$formula,totest[[winner]])
 			if (!p$quiet) message(paste('Updating formula:',dep,'~',p$formula[3]))
+			p$order <- c(p$order,totest[[winner]])
 			totest <- totest[-winner]
 		}
 		p
