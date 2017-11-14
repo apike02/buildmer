@@ -27,7 +27,7 @@ modcomp.LRT <- function (p) {
 	only.fixed.a <- is.null(lme4::findbars(p$fa))
 	only.fixed.b <- is.null(lme4::findbars(p$fb))
 	same.fixed.effects <- isTRUE(all.equal(lme4::nobars(p$fa),lme4::nobars(p$fb)))
-	reml <- if (only.fixed.a && only.fixed.b) NA
+	reml <- if (only.fixed.a && only.fixed.b) F #does not matter for fitting, does matter for pval/2
 	else if (only.fixed.a != only.fixed.b)    F
 	else if (!same.fixed.effects)             F
 	else                                      T
@@ -65,5 +65,6 @@ modcomp.LRT <- function (p) {
 		pval <- comp.manual(a,b,deviance,df.residual,function (big) deviance(big)/df.residual(big))
 		if (!p$quiet) message(paste0('Manual deviance comparison p-value: ',pval))
 	}
-	pval/2
+	if (reml) pval/2 else pval # Wood (2017) shows that LRTing of random effects is not completely valid, Pinheiro & Bates (2000) suggest that the appropriate correction is to divide the p-value by 2
+	                           # I do not follow Baayen (2008) in dividing by 2 also when testing fixed effects, because the chi-square test should in principle be the asymptotic equivalent of an F test; without division, the X^2 p-value closely matches the F p-value, but with division, it obviously won't.
 }
