@@ -142,6 +142,7 @@ fit.until.conv <- function (p) {
 		message("Base model didn't converge, simplifying model.")
 		p <- record(p,last,NA)
 		p$fa <- remove.terms(p$fa,last,formulize=T)
+		p$order <- p$order[-length(p$order)]
 		p$ma <- fit(p,p$fa)
 	}
 	p
