@@ -447,7 +447,7 @@ remove.terms <- function (formula,remove,formulize=T) {
 	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
 	smooth.terms <- smooth.terms[!smooth.terms %in% remove.fixed]
 	fixed.terms <- c(fixed.terms,smooth.terms)
-	random.terms <- sapply(1:length(random.terms),function (i) {
+	if (length(random.terms)) random.terms <- sapply(1:length(random.terms),function (i) {
 		g <- names(random.terms)[i]
 		terms <- random.terms[[i]]
 		terms <- terms[!terms %in% remove.random[[g]]]
@@ -462,9 +462,10 @@ remove.terms <- function (formula,remove,formulize=T) {
 	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
 	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
 	terms <- c(fixed.terms,random.terms)
-	if (!intercept && !length(terms)) return(NULL)
+	if (intercept) terms <- c('1',terms)
+	if (!length(terms)) return(NULL)
 	if (formulize) {
-		if (length(terms)) return(reformulate(terms,dep,intercept))
+		if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
 		return(as.formula(paste0(dep,'~1')))
 	}
 	terms
