@@ -513,7 +513,6 @@ remove.terms <- function (formula,remove,formulize=T) {
 	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
 	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
 	terms <- c(fixed.terms,random.terms)
-	if (intercept) terms <- c('1',terms)
 	if (!length(terms)) return(NULL)
 	if (formulize) {
 		if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
