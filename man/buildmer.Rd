@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{buildmer}
 \alias{buildmer}
-\title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance}
+\title{Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood}
 \usage{
 buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
   cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
@@ -16,7 +16,7 @@ buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
-\item{reorder.terms}{Whether to reorder the terms by their contribution to the deviance before testing them.}
+\item{reorder.terms}{Whether to reorder the terms by their contribution to the log-likelihood before testing them.}
 
 \item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.}
 
@@ -26,7 +26,7 @@ buildmer(formula, data, family = gaussian, reorder.terms = TRUE,
 
 \item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.}
+\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
 
 \item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
 
@@ -52,7 +52,7 @@ A buildmer object containing the following slots:
 }
 }
 \description{
-Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the deviance, and perform stepwise elimination using the change in deviance
+Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
 }
 \examples{
 buildmer(Reaction~Days+(Days|Subject),sleepstudy)

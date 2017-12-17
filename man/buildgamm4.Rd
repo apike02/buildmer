@@ -15,7 +15,7 @@ buildgamm4(...)
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
-\item{reorder.terms}{Whether to reorder the terms by their contribution to the deviance before testing them.}
+\item{reorder.terms}{Whether to reorder the terms by their contribution to the log-likelihood before testing them.}
 
 \item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.}
 
@@ -25,7 +25,7 @@ buildgamm4(...)
 
 \item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default) and `AIC'.}
+\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
 
 \item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
 

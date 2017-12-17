@@ -81,7 +81,33 @@ elim <- function (p,t) {
 		if (!p$quiet) message('Could not remove term (marginality)')
 		return(p)
 	}
-	p$mb <- fit(p,p$fb)
+	# Check if we need to fit with ML or REML
+	only.fixed.a <- is.null(lme4::findbars(p$fa))
+	only.fixed.b <- is.null(lme4::findbars(p$fb))
+	same.fixed.effects <- isTRUE(all.equal(lme4::nobars(p$fa),lme4::nobars(p$fb)))
+	if (same.fixed.effects && only.fixed.a != only.fixed.b) {
+		# Special case: fit using GLS
+		# TODO: why don't we fit all our lm() models as gls() anyway?
+		refit.gls <- function (p,f) {
+			p$engine <- 'gls'
+			fit(p,f,final=T) #without final=T, will fit using ML
+		}
+		p$reml <- T
+		if (only.fixed.a) p$ma <- refit.gls(p,p$fa)
+		if (only.fixed.b) p$mb <- refit.gls(p,p$fb)
+	} else {
+		p$reml <- if (only.fixed.a && only.fixed.b) F #does not matter for fitting, does matter for pval/2
+		else if (!same.fixed.effects)               F
+		else                                        T
+	}
+	ma.refit <- refit.if.needed(p,p$fa,p$ma,p$reml)
+	if (!conv(ma.refit)) {
+		if (!quiet) message(paste('Convergence failure during refit',ifelse(p$reml,'with','without'),'REML'))
+		p <- record(p,t,NA)
+		return(p)
+	}
+	p$ma <- ma.refit
+	p$mb <- fit(p,p$fb,p$reml)
 	if (!conv(p$mb)) {
 		if (!p$quiet) message('Convergence failure for the alternative model')
 		p <- record(p,t,NA)
@@ -104,6 +130,7 @@ fit <- function (p,formula,final=F) {
 		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
 		message(paste0('Fitting using ',p$engine,', with ',method,': ',as.character(list(formula))))
 		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
+		if (p$engine == 'gls') return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
 		# Only fit using gam/bam if smooth terms were found - if we just eliminated the last smooth, we should fall through to the lm fitter!
 		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
 	}
