@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{conv}
 \alias{conv}
-\title{Test an mgcv or merMod (or equivalent) object for convergence}
+\title{Test a mixed model for convergence}
 \usage{
 conv(model)
 }
@@ -13,5 +13,5 @@ conv(model)
 Whether the model converged or not.
 }
 \description{
-Test an mgcv or merMod (or equivalent) object for convergence
+Test a mixed model for convergence
 }

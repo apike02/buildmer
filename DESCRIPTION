@@ -10,7 +10,7 @@ Description: The buildmer package attempts to build, from the user's
 Depends:
     R (>= 3.2), mgcv, lme4
 Suggests:
-    lmerTest, pbkrtest, gamm4
+    lmerTest, pbkrtest, gamm4, glmmTMB
 License: 2-clause BSD
 Encoding: UTF-8
 LazyData: true

@@ -126,33 +126,42 @@ elim <- function (p,t) {
 
 fit <- function (p,formula,final=F) {
 	wrap <- if (final) identity else function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
-	if (!is.null(p$engine)) {
-		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
-		message(paste0('Fitting using ',p$engine,', with ',method,': ',as.character(list(formula))))
-		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
-		if (p$engine == 'gls') return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
-		# Only fit using gam/bam if smooth terms were found - if we just eliminated the last smooth, we should fall through to the lm fitter!
-		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
-	}
-	if (has.smooth.terms(formula)) {
-		if (!require(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam or buildbam.')
-		# fix up model formula
-		fixed <- lme4::nobars(formula)
-		bars <- lme4::findbars(formula)
-		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		message(paste0('Fitting as GAMM, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
-		m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
-		if (!inherits(m,'try-error') && final) return(m)
-		return(m$mer)
+	if (p$engine == 'glmmTMB') {
+		message(paste0('Fitting via glmmTMB: ',as.character(list(formula))))
+		if (!is.null(p$correlation)) formula <- add.terms(formula,p$correlation)
+		return(do.call('glmmTMB',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 	if (is.null(lme4::findbars(formula))) {
+		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
+		message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
+		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
+		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
+		if (p$engine == 'gls') return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
+		# Else: general case
 		message(paste0('Fitting as (g)lm: ',as.character(list(formula))))
-		m <- wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots)))
+		return(wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))))
 	} else {
-		message(paste0(ifelse(p$reml && p$family == 'gaussian','Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
-		m <- wrap(if (p$family == 'gaussian') do.call('lmer',c(list(formula=formula,data=p$data,REML=p$reml),p$dots)) else do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		# possible engines: (g)lmer, gamm4
+		if (has.smooth.terms(formula)) {
+			# gamm4
+			if (!require(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
+			# fix up model formula
+			fixed <- lme4::nobars(formula)
+			bars <- lme4::findbars(formula)
+			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
+			message(paste0('Fitting via gamm4, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
+			m <- wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=p$reml),p$dots)))
+			if (!inherits(m,'try-error') && final) return(m)
+			return(m$mer)
+		} else {
+			# (g)lmer
+			message(paste0(ifelse(p$reml && p$family == 'gaussian','Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
+			return(wrap(if (p$family == 'gaussian') do.call('lmer' ,c(list(formula=formula,data=p$data,REML=p$reml),p$dots))
+			            else                        do.call('glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots))
+			))
+		}
 	}
-	return(m)
+	stop('Unable to fit this model - did you specify an unknown engine=..., or are you trying to fit lme4-style random effects with an unsupported engine?')
 }
 
 fit.until.conv <- function (p) {
@@ -261,12 +270,13 @@ order.terms <- function (p) {
 			m <- fit(p,f)
 			if (!conv(m)) return(Inf)
 			reml <- hasREML(m)
-			if (!is.na(reml) && reml) REMLcrit(m) else deviance(m)
+			if (!is.na(reml) && reml) REMLcrit(m) else -2*logLik(m)
 		}
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
 			clusterExport(p$cluster,c('p','add.terms','fit','conv','hasREML','.onAttach'),environment())
 			clusterEvalQ(p$cluster,.onAttach(NULL,NULL))
+			if (p$engine == 'glmmTMB') clusterCall(p$cluster,function () library('glmmTMB'))
 		}
 
 		while (length(totest)) {
