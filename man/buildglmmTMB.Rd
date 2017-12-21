@@ -15,9 +15,9 @@ buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use. Only relevant for generalized models.}
 
-\item{correlation}{Contrary to normal glmmTMB usage, correlation structures such as `ar1(1|x)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(1|x)")'.}
+\item{correlation}{Contrary to normal glmmTMB usage, correlation structures such as `ar1(0+covariate|grouping)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(0+covariate|grouping)")'.}
 
 \item{reorder.terms}{Whether to reorder the terms by their contribution to the log-likelihood before testing them.}
 
@@ -47,7 +47,7 @@ A buildmer object containing the following slots:
 \itemize{
 \item results: a dataframe containing the results of the elimination process
 \item messages: any warning messages
-}. This information is also printed as part of the show() method.
+} This information is also printed as part of the show() method.
 \item summary: the model's summary, if `calc.summary=TRUE' was passed
 \item anova: the model's anova, if `calc.anova=TRUE' was passed
 }

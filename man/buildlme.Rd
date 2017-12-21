@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{buildlme}
 \alias{buildlme}
-\title{Use buildmer to perform stepwise elimination on lme models}
+\title{Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme}
 \usage{
 buildlme(formula, data, random, reorder.terms = TRUE, cl = NULL,
   reduce.fixed = TRUE, direction = "backward", crit = "LRT",
@@ -41,13 +41,13 @@ A buildmer object containing the following slots:
 \itemize{
 \item results: a dataframe containing the results of the elimination process
 \item messages: any warning messages
-}. This information is also printed as part of the show() method.
+} This information is also printed as part of the show() method.
 \item summary: the model's summary, if `calc.summary=TRUE' was passed
 \item anova: the model's anova, if `calc.anova=TRUE' was passed
 }
 }
 \description{
-Use buildmer to perform stepwise elimination on lme models
+Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme
 }
 \seealso{
 buildmer

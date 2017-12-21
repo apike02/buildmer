@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{buildgls}
 \alias{buildgls}
-\title{Use buildmer to perform stepwise elimination on gls models}
+\title{Use buildmer to fit generalized-least-squares models using gls() from nlme}
 \usage{
 buildgls(formula, data, random, reorder.terms = TRUE, cl = NULL,
   reduce.fixed = TRUE, direction = "backward", crit = "LRT",
@@ -39,13 +39,13 @@ A buildmer object containing the following slots:
 \itemize{
 \item results: a dataframe containing the results of the elimination process
 \item messages: any warning messages
-}. This information is also printed as part of the show() method.
+} This information is also printed as part of the show() method.
 \item summary: the model's summary, if `calc.summary=TRUE' was passed
 \item anova: the model's anova, if `calc.anova=TRUE' was passed
 }
 }
 \description{
-Use buildmer to perform stepwise elimination on gls models
+Use buildmer to fit generalized-least-squares models using gls() from nlme
 }
 \seealso{
 buildmer

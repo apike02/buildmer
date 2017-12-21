@@ -4,7 +4,7 @@
 	require('lmerTest')
 }
 
-#' Add terms to a formula.
+#' Add terms to a formula
 #' @param formula The formula to add terms to.
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use `(term|group)' syntax if you want to add an independent random effect (e.g. `(olderterm|group) + (term|group)'), or use `term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
 #' @return The updated formula.
@@ -80,7 +80,7 @@ add.terms <- function (formula,add) {
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -131,7 +131,7 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -161,7 +161,12 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 	buildmer.fit(p)
 }
 
-#' Use buildmer to perform stepwise elimination on gls models
+#' The logical extension of buildgam() to buildgamm() is not supported, because (i) gamm assumes you know what you're doing; (ii) the log-likelihood of a gamm object's `lme' item is not actually the log-likelihood of the final model; (iii) in my experience, gamm fits often fail to converge. If you are only using gamm for its `true' random effects, use buildgamm4(). If you are using gamm for correlation structures, use buildglmmTMB(), or buildbam() if AR(1) will do and your errors are normal. If you want more complex correlation structures, perform the stepwise elimination process by hand...
+#' @seealso buildgamm4, buildbam, buildgam
+#' @export
+buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 instead! If you need an AR(1) model, use buildbam().')
+
+#' Use buildmer to fit generalized-least-squares models using gls() from nlme
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
 #' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
@@ -180,7 +185,7 @@ buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -210,12 +215,7 @@ buildgls <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixe
 	buildmer.fit(p)
 }
 
-#' The logical extension of buildgam() to buildgamm() is not supported, because (i) gamm assumes you know what you're doing; (ii) the log-likelihood of a gamm object's `lme' item is not actually the log-likelihood of the final model; (iii) in my experience, gamm fits often fail to converge. If you are only using gamm for its `true' random effects, use buildgamm4(). If you are using gamm for correlation structures, use buildbam() to fit AR(1) models. If you want more complex correlation structures, perform the stepwise elimination process by hand...
-#' @seealso buildgamm4, buildbam, buildgam
-#' @export
-buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 instead! If you need an AR(1) model, use buildbam().')
-
-#' Use buildmer to fit generalized additive models using gam() from mgcv
+#' Use buildmer to fit generalized additive models using gamm4
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
@@ -237,7 +237,7 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -245,7 +245,61 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' @export
 buildgamm4 <- function (...) buildmer(...)
 
-#' Use buildmer to perform stepwise elimination on lme models
+#' Use buildmer to perform stepwise elimination on glmmTMB models
+#' @param formula The model formula for the maximal model you would like to fit, if possible.
+#' @param data The data to fit the models to.
+#' @param family The error distribution to use. Only relevant for generalized models.
+#' @param correlation Contrary to normal glmmTMB usage, correlation structures such as `ar1(0+covariate|grouping)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(0+covariate|grouping)")'.
+#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param reduce.fixed Whether to reduce the fixed-effect structure.
+#' @param reduce.random Whether to reduce the random-effect structure.
+#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param crit The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.
+#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
+#' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
+#' @param quiet Whether to suppress progress messages.
+#' @param ... Additional options to be passed to glmmTMB().
+#' @return A buildmer object containing the following slots:
+#' \itemize{
+#' \item model: the final model containing only the terms that survived elimination
+#' \item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+#' \itemize{
+#' \item results: a dataframe containing the results of the elimination process
+#' \item messages: any warning messages
+#' } This information is also printed as part of the show() method.
+#' \item summary: the model's summary, if `calc.summary=TRUE' was passed
+#' \item anova: the model's anova, if `calc.anova=TRUE' was passed
+#' }
+#' @seealso buildmer
+#' @export
+buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+	library(glmmTMB)
+	p <- list(
+		formula=formula,
+		data=data,
+		family=substitute(family),
+		correlation=correlation,
+		reorder.terms=reorder.terms,
+		cluster=cl,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		crit=crit,
+		calc.anova=calc.anova,
+		calc.summary=calc.summary,
+		ddf=ddf,
+		quiet=quiet,
+		engine='glmmTMB',
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		dots=list(...)
+	)
+	buildmer.fit(p)
+}
+
+#' Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
 #' @param random The random-effects specification for the model. This is not manipulated by buildlme() in any way!
@@ -265,7 +319,7 @@ buildgamm4 <- function (...) buildmer(...)
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -317,7 +371,7 @@ buildlme <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixe
 #' \itemize{
 #' \item results: a dataframe containing the results of the elimination process
 #' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
+#' } This information is also printed as part of the show() method.
 #' \item summary: the model's summary, if `calc.summary=TRUE' was passed
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
@@ -340,60 +394,6 @@ buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 		ddf=ddf,
 		quiet=quiet,
 		engine='(g)lmer',
-		data.name=substitute(data),
-		subset.name=substitute(subset),
-		control.name=substitute(control),
-		dots=list(...)
-	)
-	buildmer.fit(p)
-}
-
-#' Use buildmer to perform stepwise elimination on glmmTMB models
-#' @param formula The model formula for the maximal model you would like to fit, if possible.
-#' @param data The data to fit the models to.
-#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param correlation Contrary to normal glmmTMB usage, correlation structures such as `ar1(1|x)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(1|x)")'.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
-#' @param reduce.fixed Whether to reduce the fixed-effect structure.
-#' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
-#' @param crit The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.
-#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
-#' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
-#' @param quiet Whether to suppress progress messages.
-#' @param ... Additional options to be passed to glmmTMB().
-#' @return A buildmer object containing the following slots:
-#' \itemize{
-#' \item model: the final model containing only the terms that survived elimination
-#' \item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
-#' \itemize{
-#' \item results: a dataframe containing the results of the elimination process
-#' \item messages: any warning messages
-#' }. This information is also printed as part of the show() method.
-#' \item summary: the model's summary, if `calc.summary=TRUE' was passed
-#' \item anova: the model's anova, if `calc.anova=TRUE' was passed
-#' }
-#' @seealso buildmer
-#' @export
-buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
-	library(glmmTMB)
-	p <- list(
-		formula=formula,
-		data=data,
-		family=substitute(family),
-		correlation=correlation,
-		reorder.terms=reorder.terms,
-		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
-		direction=direction,
-		crit=crit,
-		calc.anova=calc.anova,
-		calc.summary=calc.summary,
-		ddf=ddf,
-		quiet=quiet,
-		engine='glmmTMB',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
