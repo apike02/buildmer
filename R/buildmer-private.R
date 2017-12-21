@@ -268,9 +268,7 @@ order.terms <- function (p) {
 
 		evalfun <- function (f) {
 			m <- fit(p,f)
-			if (!conv(m)) return(Inf)
-			reml <- hasREML(m)
-			if (!is.na(reml) && reml) REMLcrit(m) else -2*logLik(m)
+			if (conv(m)) -2*logLik(m) else Inf
 		}
 		if (is.null(p$cluster)) compfun <- function (ok) sapply(ok,evalfun) else {
 			compfun <- function (ok) parSapply(p$cluster,ok,evalfun)
