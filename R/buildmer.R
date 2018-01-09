@@ -560,28 +560,28 @@ remove.terms <- function (formula,remove,formulize=T) {
 	# Perform actual removal; move smooth terms to the back
 	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
 	smooth.terms <- smooth.terms[!smooth.terms %in% remove.fixed]
-	fixed.terms <- c(fixed.terms,smooth.terms)
-	if (length(random.terms)) random.terms <- sapply(1:length(random.terms),function (i) {
+	if (length(random.terms)) random.terms <- lapply(1:length(random.terms),function (i) {
 		g <- names(random.terms)[i]
 		terms <- random.terms[[i]]
 		terms <- terms[!terms %in% remove.random[[g]]]
 		if (!length(terms)) return(NULL)
+		if (!formulize) return(data.frame(index=i,grouping=g,term=terms))
 		if (!'1' %in% terms) terms <- c('0',terms)
-		if (formulize) terms <- paste(terms,collapse=' + ')
-		terms <- paste0(terms,' | ',g)
-		if (formulize) terms <- paste0('(',terms,')')
-		terms
+		paste0('(',paste0(terms,collapse=' + '),'|',g,')')
 	})
-	random.terms <- Filter(Negate(is.null),unlist(random.terms))
-	if (length(fixed.terms )) names(fixed.terms ) <- rep('fixed' ,length(fixed.terms ))
-	if (length(random.terms)) names(random.terms) <- rep('random',length(random.terms))
-	terms <- c(fixed.terms,random.terms)
-	if (!length(terms)) return(NULL)
+
+	fixed.terms <- c(fixed.terms,smooth.terms)
+	terms <- c(fixed.terms,Filter(Negate(is.null),random.terms))
 	if (formulize) {
 		if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
-		return(as.formula(paste0(dep,'~1')))
+		as.formula(paste0(dep,'~1'))
+	} else {
+		tab <- data.frame(index=numeric(),grouping=character(),terms=character(),stringsAsFactors=F)
+		if (length(fixed.terms)) tab <- rbind(tab,data.frame(index=NA,grouping=NA,term=fixed.terms,stringsAsFactors=F))
+		if (length(random.terms)) tab <- rbind(tab,do.call('rbind',random.terms))
+		tab$code <- do.call('paste',tab[1:3])
+		tab
 	}
-	terms
 }
 
 #' A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination

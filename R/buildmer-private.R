@@ -1,21 +1,24 @@
 backward <- function (p) {
 	if (!p$quiet) message('Beginning backward elimination')
 	p$fa <- remove.terms(p$formula,NULL) #makes sure that interaction terms have the proper order, so that all.equal() inside remove.terms() will work
-	terms <- remove.terms(p$fa,NULL,formulize=F)
-	if (p$reduce.random && any(names(terms) == 'random')) {
+	tab <- remove.terms(p$fa,NULL,formulize=F)
+	fxd <- is.na(tab$grouping)
+	fixed.terms <- tab[fxd,'term']
+	random.terms <- if (any(!fxd)) paste0(tab[!fxd,'term'],'|',tab[!fxd,'grouping']) else NULL
+	if (p$reduce.random && length(random.terms)) {
 		p$reml <- T
 		p <- fit.until.conv(p)
-		for (t in Filter(is.random.term,rev(terms))) {
+		for (t in rev(random.terms)) {
 			p$fb <- remove.terms(p$fa,t,formulize=T)
 			p <- elim(p,t)
 		}
 	}
-	if (p$reduce.fixed && any(names(terms) == 'fixed')) {
+	if (p$reduce.fixed && length(fixed.terms)) {
 		p$reml <- F
 		#random.saved <- lme4::findbars(fa)
 		#if (fit.until.conv(p,'fixed')) random.saved <- c()
 		p <- fit.until.conv(p)
-		for (t in Filter(Negate(is.random.term),rev(terms))) {
+		for (t in rev(fixed.terms)) {
 			if (t == '1') {
 				# Protect the intercept
 				p <- record(p,t,NA)
@@ -76,6 +79,28 @@ buildmer.fit <- function (p) {
 	ret
 }
 
+build.formula <- function (p,terms) {
+	# Given a data frame, build all terms in the order in which the data frame had been sorted!
+	form <- p$formula
+	while (nrow(terms)) {
+		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
+		if (is.na(terms[1,'index'])) {
+			cur <- terms[1,'term']
+			terms <- terms[-1,]
+		} else {
+			ix <- terms[1,'index']
+			cur <- terms[terms$index == ix,]
+			termlist <- cur$term
+			if (!'1' %in% termlist) termlist <- c('0',termlist)
+			termlist <- paste0(termlist,collapse='+')
+			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
+			terms <- terms[terms$index != ix,]
+		}
+		form <- add.terms(form,cur)
+	}
+	form
+}
+
 elim <- function (p,t) {
 	if (isTRUE(all.equal(p$fa,p$fb))) {
 		if (!p$quiet) message('Could not remove term (marginality)')
@@ -133,7 +158,7 @@ fit <- function (p,formula,final=F) {
 	}
 	if (is.null(lme4::findbars(formula))) {
 		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
-		message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
+		if (p$engine != '(g)lmer') message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
 		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
 		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
 		if (p$engine == 'gls') return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
@@ -173,9 +198,11 @@ fit.until.conv <- function (p) {
 #			warning(msg)
 #			p$messages <- c(p$messages,msg)
 #		} else
-		last <- p$order[length(p$order)]
-		if (is.null(last)) stop('The base model failed to converge, and no effect could be identified for elimination. Aborting.')
+		if (nrow(p$tab) == 0) stop('The base model failed to converge, and no effect could be identified for elimination. Aborting.')
 		message("Base model didn't converge, simplifying model.")
+		last <- p$tab[nrow(p$tab),]
+		p$tab <- p$tab[-nrow(p$tab),]
+		last <- if (is.null(last$grouping)) last$term else paste0(last$term,'|',last$grouping)
 		p <- record(p,last,NA)
 		p$fa <- remove.terms(p$fa,last,formulize=T)
 		p$order <- p$order[-length(p$order)]
@@ -212,58 +239,60 @@ get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
 
 order.terms <- function (p) {
-	reorder <- function (p,totest) {
+	reorder <- function (p,terms) {
 	# Test for marginality
-		can.eval <- function (orig.terms) {
-			terms <- lapply(orig.terms,function (x) terms(as.formula(paste0('~',x)),keep.order=T)[[2]])
-			if (length(terms) < 2) return(T) #can happen with random intercepts
-	
+		can.eval <- function (terms) {
+			# 0. Initialize
+			terms$ok <- T
 			# 1. If there are random effects, evaluate them as a group
-			# We cannot use get.random.terms here, because that will expand double verts which will cause us to receive a list of potentially multiple terms; we rather want the unexpanded term, because we just want to match the grouping factor
-			groupings <- sapply(terms,function (x) {
-				while (length(x) > 1 && x[[1]] == '(') x <- x[[2]]
-				if (length(x) > 1 && x[[1]] == '|') x[[3]] else ''
-			})
-			groupings <- as.character(groupings)
-			for (g in unique(groupings)) {
-				if (g == '') next
-				terms[groupings == g] <- sapply(terms[groupings == g],function (x) as.character(x[2]))
-				# Having extracted the level-2 terms, we can now call can.eval() on them to evaluate them normally, with one exception: if there is an intercept in there, we must force all other terms to F. This will correctly force intercepts to go first in diagonal covariance structures, e.g. '(1|Subject) + (0+Days|Subject)'.
-				if ('1' %in% terms[groupings == g]) {
-					terms[groupings == g & terms != '1'] <- F
-					terms[groupings == g & terms == '1'] <- T
-				} else terms[groupings == g] <- can.eval(terms[groupings == g])
-			}
-
-			# 2. The intercept should always come first (short-circuits)
-			my.terms <- terms[groupings == '']
-			if ('1' %in% as.character(my.terms)) {
-				ok <- my.terms[as.character(my.terms) == '1']
-				return(unlist(ok))
-			}
-
-			# 3. Take out smooth terms if there were non-smooth terms (smooth terms should go after parametric terms)
-			smooths <- sapply(my.terms,is.smooth.term)
-			ok <- if (all(smooths)) rep(T,length(my.terms)) else !smooths
-			ok.terms <- my.terms[ok]
-			my.terms[!ok] <- F
-
-			# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
-			# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
-			if (length(ok.terms)) {
-				ok.terms.components <- lapply(ok.terms,if (all(smooths)) unpack.smooth.terms else unravel)
-				check <- function (i) {
-					test <- ok.terms.components[[i]]
-					for (x in ok.terms.components[-i]) { #walk all other terms' components
-						if (any(x == '1')) return(F) #intercept should always come first
-						if (all(x %in% test)) return(F)
-					}
-					T
+			mine <- is.na(terms$grouping)
+			my <- terms[mine,]
+			terms[!mine,] <- ddply(terms[!mine,],~grouping,function (my) {
+				# 2a. The intercept should always come first, even in diagonal covariances
+				#     Thus, first split on ~grouping, short-circuit if there are any intercept terms,
+				#     and only afterwards, split on ~index as we should
+				if (any(my$term == '1')) {
+					my$ok <- my$term == '1'
+					return(my)
 				}
-				my.terms[ok] <- lapply(1:length(ok.terms),check)
+				g <- my$grouping
+				my$grouping <- NA
+				my <- ddply(my,~index,can.eval)
+				my$grouping <- g
+				my
+			})
+			if (nrow(my)) {
+				# 2b. The intercept should always come first (fixed-effects case; short-circuits)
+				if (any(my$term == '1')) {
+					my$ok <- my$term == '1'
+					return(my)
+				}
+
+				# 3. Take out smooth terms if there were non-smooth terms (smooth terms should go after parametric terms)
+				smooths <- sapply(my$terms,is.smooth.term)
+				if (!all(smooths)) my$ok[smooths] <- F
+
+				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
+				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
+				if (length(my[my$ok,'terms']) > 1) {
+					all.components <- lapply(my[my$ok,'terms'],function (x) {
+						x <- as.formula(paste0('~',x))[[2]]
+						if (all(smooths)) unpack.smooth.terms(x) else unravel(x)
+					})
+					check <- function (i) {
+						if (i %in% smooths && !all(smooths)) return(F) #take out smooth terms if there were no non-smooth terms
+						test <- all.components[[i]]
+						for (x in all.components[-i]) { #walk all other terms' components
+							if (any(x == '1')) return(F) #intercept should always come first
+							if (all(x %in% test)) return(F)
+						}
+						T
+					}
+					my[my$ok,'terms'] <- sapply(1:length(all.components),check)
+				}
+				terms[mine,] <- my
 			}
-			terms[groupings == ''] <- my.terms
-			unlist(terms)
+			terms
 		}
 
 		evalfun <- function (f) {
@@ -277,47 +306,59 @@ order.terms <- function (p) {
 			if (p$engine == 'glmmTMB') clusterCall(p$cluster,function () library('glmmTMB'))
 		}
 
-		while (length(totest)) {
-			ok <- which(can.eval(totest))
-			if (!p$quiet) message(paste('Currently evaluating:',paste(totest[ok],collapse=', ')))
-			forms <- lapply(ok,function (i) add.terms(p$formula,totest[[i]]))
-			# We can't short-circuit if length(ok)==1, because the model may not converge...
-			comps <- compfun(forms)
-			if (all(comps == Inf)) {
-				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
+		have <- cbind(terms[0,],ok=logical(),score=numeric())
+		while (T) {
+			check <- terms[!terms$code %in% have$code,]
+			if (!nrow(check)) {
+				if (!p$quiet) message('Finished ordering terms')
+				p$formula <- build.formula(p,have)
+				p$tab <- have
 				return(p)
 			}
-			i <- order(comps)[1]
-			winner <- ok[i]
-			p$formula <- add.terms(p$formula,totest[[winner]])
-			if (!p$quiet) message(paste('Updating formula:',dep,'~',p$formula[3]))
-			p$order <- c(p$order,totest[[winner]])
-			totest <- totest[-winner]
+			tab <- can.eval(check)
+			tab <- tab[tab$ok,]
+			if (!nrow(tab)) {
+				if (!p$quiet) message('Could not proceed ordering terms')
+				p$formula <- build.formula(p,have)
+				p$tab <- have
+				return(p)
+			}
+			if (!p$quiet) message(paste('Currently evaluating:',paste0(ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping)),collapse=', ')))
+			score <- aaply(1:nrow(tab),1,function (i) {
+				tab <- tab[i,]
+				tab <- rbind(have[,1:3],tab[,1:3])
+				form <- build.formula(p,tab)
+				mod <- fit(p,form)
+				if (conv(mod)) as.numeric(-2*logLik(mod)) else Inf
+			})
+			tab$score <- score
+			if (all(tab$score == Inf)) {
+				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
+				p$formula <- build.formula(p,have)
+				p$tab <- have
+				return(p)
+			}
+			tab <- tab[tab$score == min(tab$score),]
+			have <- rbind(have,tab)
+			if (!p$quiet) message(paste('Updating formula:',ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping))))
 		}
-		p
 	}
 
 	if (!p$quiet) message('Determining predictor order')
-	terms <- remove.terms(p$formula,c(),formulize=F)
-	fixed <- Filter(Negate(is.random.term),terms)
-	random <- Filter(is.random.term,terms)
-	intercept.terms <- substr(random,1,3) == '1 |'
-	random <- c(random[intercept.terms],random[!intercept.terms])
+	terms <- remove.terms(p$formula,NULL,formulize=F)
 	dep <- as.character(p$formula[2])
-	if ('1' %in% terms) {
-		intercept <- T
+	intercept <- which(is.na(terms$grouping) & terms$term == '1')
+	if (length(intercept)) {
 		formula <- paste0(dep,'~1')
-	} else {
-		intercept <- F
-		formula <- paste0(dep,'~0')
-	}
-	if (!p$reduce.fixed) formula <- paste0(c(formula,fixed),collapse='+')
+		terms <- terms[-intercept,]
+	} else formula <- paste0(dep,'~0')
 	p$formula <- as.formula(formula)
 
+	fxd <- is.na(terms$grouping)
 	p$reml <- F
-	if (p$reduce.fixed && length(fixed)) p <- reorder(p,fixed[fixed != '1'])
+	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,terms[ fxd,])
 	p$reml <- T
-	if (p$reduce.random && length(fixed)) p <- reorder(p,random)
+	if (p$reduce.random && any(!fxd)) p <- reorder(p,terms[!fxd,])
 
 	# Sanitize the order of interaction terms
 	p$formula <- remove.terms(p$formula,NULL,formulize=T)

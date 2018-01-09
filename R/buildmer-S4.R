@@ -75,18 +75,15 @@ setGeneric('diag')
 #' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
 #' @export
 setMethod(diag,'formula',function (x) {
-	# remove.terms(formula,c(),formulize=F) does NOT do all you need, because it says "c|d" (to allow it to be passed as a remove argument in remove.terms) rather than "(0+c|d)"...
 	dep <- as.character(x[2])
-	terms <- remove.terms(x,c(),formulize=F)
-	fixed.terms  <- terms[names(terms) == 'fixed' ]
-	random.terms <- terms[names(terms) == 'random']
-	random.terms <- unlist(sapply(random.terms,function (term) {
-		# lme4::findbars returns a list of terms
-		sapply(get.random.terms(term),function (t) {
-			grouping <- t[[3]]
-			t <- as.character(t[2])
-			if (t == '1') paste0('(1 | ',grouping,')') else paste0('(0 + ',t,' | ',grouping,')')
-		})
-	}))
-	as.formula(paste0(dep,'~',paste(c(fixed.terms,random.terms),collapse=' + ')))
+	terms <- remove.terms(x,NULL,formulize=F)
+	intercept <- which(is.na(terms$grouping) & terms$term == '1')
+	if (length(intercept)) {
+		formula <- paste0(dep,'~1')
+		terms <- terms[-intercept,]
+	} else formula <- paste0(dep,'~0')
+	p <- list(formula=as.formula(formula))
+	rnd <- !is.na(terms$index)
+	terms$index[rnd] <- 1:length(terms$index[rnd])
+	build.formula(p,terms)
 })
