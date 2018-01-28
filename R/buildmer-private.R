@@ -274,10 +274,10 @@ order.terms <- function (p) {
 
 				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
 				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
-				if (length(my[my$ok,'terms']) > 1) {
-					all.components <- lapply(my[my$ok,'terms'],function (x) {
+				if (length(my[my$ok,'term']) > 1) {
+					all.components <- lapply(my[my$ok,'term'],function (x) {
 						x <- as.formula(paste0('~',x))[[2]]
-						if (all(smooths)) unpack.smooth.terms(x) else unravel(x)
+						if (length(smooths) && all(smooths)) unpack.smooth.terms(x) else unravel(x)
 					})
 					check <- function (i) {
 						if (i %in% smooths && !all(smooths)) return(F) #take out smooth terms if there were no non-smooth terms
@@ -288,7 +288,7 @@ order.terms <- function (p) {
 						}
 						T
 					}
-					my[my$ok,'terms'] <- sapply(1:length(all.components),check)
+					my[my$ok,'ok'] <- sapply(1:length(all.components),check)
 				}
 				terms[mine,] <- my
 			}
