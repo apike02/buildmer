@@ -33,13 +33,6 @@ backward <- function (p) {
 
 buildmer.fit <- function (p) {
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
-	complete <- complete.cases(p$data)
-	if (!all(complete)) {
-		p$data <- p$data[complete,]
-		msg <- 'Encountered missing values; rows containing missing values have been removed from the dataset to prevent problems with the model comparisons.\n'
-		warning(msg)
-		p$messages <- msg
-	}
 	if (p$reorder.terms) p <- order.terms(p)
 	for (d in p$direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
 	if (!p$quiet) message('Calculating final model')
