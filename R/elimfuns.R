@@ -6,14 +6,7 @@ modcomp.BIC <- function (p) BIC(p$ma) - BIC(p$mb)
 
 elfun.LRT <- function (pval) pval >= .05
 modcomp.LRT <- function (p) {
-	getdf <- function (m) {
-		if (inherits(m,'gam')) {
-			n <- length(m$y)
-			dfc <- if (is.null(m$edf2)) 0 else sum(m$edf2) - sum(m$edf)
-			n - sum(m$edf1) - dfc
-		} else attr(logLik(m),'df')
-	}
-
+	getdf <- function (m) attr(logLik(m),'df')
 	chLL <- -2*(logLik(p$mb) - logLik(p$ma))
 	chdf <- getdf(p$ma) - getdf(p$mb)
 	if (chdf <= 0) return(1)
