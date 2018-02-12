@@ -40,7 +40,7 @@ buildmer.fit <- function (p) {
 	} else {
 		p$parallel <- T
 		p$parply <- function (x,fun) parSapply(p$cluster,x,fun)
-		clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms'),environment())
+		clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('modcomp.',p$crit)),environment())
 		clusterEvalQ(p$cluster,library(mgcv))
 		clusterEvalQ(p$cluster,library(lme4))
 		if (p$engine == 'glmmTMB') clusterEvalQ(p$cluster,library(glmmTMB))
@@ -313,14 +313,14 @@ order.terms <- function (p) {
 				p$tab <- have
 				return(p)
 			}
-			if (!p$quiet) message(paste('Currently evaluating:',paste0(ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping)),collapse=', ')))
+			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for:',paste0(ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping)),collapse=', ')))
 			if (p$parallel) clusterExport(p$cluster,c('tab','have'),environment())
 			tab$score <- p$parply(1:nrow(tab),function (i) {
 				tab <- tab[i,]
 				tab <- rbind(have[,1:3],tab[,1:3])
 				form <- build.formula(p,tab)
 				mod <- fit(p,form)
-				if (conv(mod)) as.numeric(-2*logLik(mod)) else Inf
+				if (conv(mod)) (match.fun(paste0('crit.',p$crit)))(mod) else Inf
 			})
 			if (all(tab$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')

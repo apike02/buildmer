@@ -1,9 +1,12 @@
+crit.AIC <- AIC
 elfun.AIC <- function (AICdiff) AICdiff > -.001
 modcomp.AIC <- function (p) AIC(p$ma) - AIC(p$mb)
 
+crit.BIC <- BIC
 elfun.BIC <- function (BICdiff) BICdiff > -.001
 modcomp.BIC <- function (p) BIC(p$ma) - BIC(p$mb)
 
+crit.LRT <- function (m) as.numeric(-2*logLik(m))
 elfun.LRT <- function (pval) pval >= .05
 modcomp.LRT <- function (p) {
 	getdf <- function (m) attr(logLik(m),'df')
