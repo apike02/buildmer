@@ -480,6 +480,17 @@ is.random.term <- function (term) length(get.random.terms(term)) > 0
 #' @seealso buildmer
 #' @export
 remove.terms <- function (formula,remove,formulize=T) {
+	decompose.random.terms <- function (terms) {
+		terms <- lapply(terms,function (x) {
+			x <- unwrap.terms(x,inner=T)
+			g <- unwrap.terms(x[3])
+			terms <- as.character(x[2])
+			terms <- unwrap.terms(terms,intercept=T)
+			sapply(g,function (g) terms,simplify=F)
+		})
+		unlist(terms,recursive=F)
+	}
+
 	get.random.list <- function (formula) {
 		bars <- lme4::findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
@@ -519,20 +530,12 @@ remove.terms <- function (formula,remove,formulize=T) {
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
-	fixed.terms <- Filter(function (x) !is.random.term(x) & !is.smooth.term(x),terms)
-	random.terms <- Filter(is.random.term,terms)
-	smooth.terms <- Filter(is.smooth.term,terms)
-	if (intercept) fixed.terms <- c('1',fixed.terms)
+	if (intercept) terms <- c('1',terms)
 
-	# Unwrap the random effects
-	random.terms <- lapply(random.terms,function (x) {
-		x <- unwrap.terms(x,inner=T)
-		g <- unwrap.terms(x[3])
-		terms <- as.character(x[2])
-		terms <- unwrap.terms(terms,intercept=T)
-		sapply(g,function (g) terms,simplify=F)
-	})
-	random.terms <- unlist(random.terms,recursive=F)
+	# Build lists to check which terms are currently present.
+	fixed.terms <- Filter(Negate(is.random.term),terms)
+	random.terms <- Filter(is.random.term,terms)
+	random.terms <- decompose.random.terms(random.terms)
 
 	# Protect the intercept: do not remove the fixed intercept if we have a random intercept.
 	# This is handled here because the intercept is handled by a separate 'intercept' variable, rather than being in the 'remove' vector.
@@ -557,28 +560,36 @@ remove.terms <- function (formula,remove,formulize=T) {
 		remove.random[[i]] <- remove.random[[i]][marginality.ok(remove.random[[i]],have)]
 	}
 
-	# Perform actual removal; move smooth terms to the back
-	fixed.terms <- fixed.terms[!fixed.terms %in% remove.fixed]
-	smooth.terms <- smooth.terms[!smooth.terms %in% remove.fixed]
-	if (length(random.terms)) random.terms <- lapply(1:length(random.terms),function (i) {
-		g <- names(random.terms)[i]
-		terms <- random.terms[[i]]
-		terms <- terms[!terms %in% remove.random[[g]]]
-		if (!length(terms)) return(NULL)
-		if (!formulize) return(data.frame(index=i,grouping=g,term=terms))
-		if (!'1' %in% terms) terms <- c('0',terms)
-		paste0('(',paste0(terms,collapse=' + '),'|',g,')')
+	# Perform actual removal
+	terms <- lapply(terms,function (term) {
+		if (is.random.term(term)) {
+			terms <- decompose.random.terms(term)
+			terms <- lapply(1:length(terms),function (i) {
+				g <- names(terms)[i]
+				terms <- terms[[i]]
+				terms <- terms[!terms %in% remove.random[[g]]]
+				if (!length(terms)) return(NULL)
+				if (!formulize) return(data.frame(index=i,grouping=g,term=terms,stringsAsFactors=F))
+				if (!'1' %in% terms) terms <- c('0',terms)
+				paste0('(',paste0(terms,collapse=' + '),'|',g,')')
+			})
+			terms <- Filter(Negate(is.null),terms)
+			if (!length(terms)) return(NULL)
+			if (!formulize) do.call(rbind,terms) else paste0(terms,collapse=' + ')
+		} else {
+			if (term %in% remove.fixed) return(NULL)
+			if (!formulize) return(data.frame(index=NA,grouping=NA,term=term,stringsAsFactors=F))
+			term
+		}
 	})
+	terms <- Filter(Negate(is.null),terms)
 
-	fixed.terms <- c(fixed.terms,smooth.terms)
-	terms <- c(fixed.terms,Filter(Negate(is.null),random.terms))
+	# Wrap up
 	if (formulize) {
 		if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
 		as.formula(paste0(dep,'~1'))
 	} else {
-		tab <- data.frame(index=numeric(),grouping=character(),terms=character(),stringsAsFactors=F)
-		if (length(fixed.terms)) tab <- rbind(tab,data.frame(index=NA,grouping=NA,term=fixed.terms,stringsAsFactors=F))
-		if (length(random.terms)) tab <- rbind(tab,do.call('rbind',random.terms))
+		tab <- do.call('rbind',terms)
 		tab$code <- do.call('paste',tab[1:3])
 		tab
 	}
