@@ -33,7 +33,7 @@ backward <- function (p) {
 
 buildmer.fit <- function (p) {
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
-
+	p$crit.fun <- match.fun(paste0('crit.',p$crit))
 	if (is.null(p$cluster)) {
 		p$parallel <- F
 		p$parply <- sapply
@@ -320,7 +320,7 @@ order.terms <- function (p) {
 				tab <- rbind(have[,1:3],tab[,1:3])
 				form <- build.formula(p,tab)
 				mod <- fit(p,form)
-				if (conv(mod)) (match.fun(paste0('crit.',p$crit)))(mod) else Inf
+				if (conv(mod)) p$crit.fun(mod) else Inf
 			})
 			if (all(tab$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
