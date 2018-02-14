@@ -165,12 +165,27 @@ fit <- function (p,formula,final=F) {
 	if (is.null(lme4::findbars(formula))) {
 		method <- if (final) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T. disregard buildmer reml option, because we don't know about smooths/random= arguments.
 		if (p$engine != '(g)lmer') message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
-		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
-		if (p$engine == 'lme') return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
-		if (p$engine == 'gls') return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
+		if (p$engine %in% c('gam','bam') && has.smooth.terms(formula)) {
+			message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
+			return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
+		}
+		if (p$engine == 'lme') {
+			message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
+			return(wrap(do.call('lme',c(list(fixed=formula,data=p$data,method=method),p$dots))))
+		}
+		if (p$engine == 'gls') {
+			message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
+			return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
+		}
 		# Else: general case
-		message(paste0('Fitting as (g)lm: ',as.character(list(formula))))
-		return(wrap(if (p$family == 'gaussian') do.call('lm',c(list(formula=formula,data=p$data),p$filtered.dots)) else do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))))
+		if (p$reml) {
+			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
+			return(wrap(do.call('gls',c(list(model=formula,data=p$data,method='REML'),p$dots))))
+		} else {
+			message(paste0('Fitting as (g)lm: ',as.character(list(formula))))
+			return(wrap(if (p$family == 'gaussian') do.call('lm' ,c(list(formula=formula,data=p$data),p$filtered.dots))
+			            else                        do.call('glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))))
+		}
 	} else {
 		# possible engines: (g)lmer, gamm4
 		if (has.smooth.terms(formula)) {
@@ -313,7 +328,7 @@ order.terms <- function (p) {
 				p$tab <- have
 				return(p)
 			}
-			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for:',paste0(ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping)),collapse=', ')))
+			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(tab$grouping),tab$term,paste(tab$term,'|',tab$grouping)),collapse=', ')))
 			if (p$parallel) clusterExport(p$cluster,c('tab','have'),environment())
 			tab$score <- p$parply(1:nrow(tab),function (i) {
 				tab <- tab[i,]
