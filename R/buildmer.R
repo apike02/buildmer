@@ -479,7 +479,7 @@ is.random.term <- function (term) length(get.random.terms(term)) > 0
 #' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
 #' @export
-remove.terms <- function (formula,remove,formulize=T) {
+remove.terms <- function (formula,remove) {
 	decompose.random.terms <- function (terms) {
 		terms <- lapply(terms,function (x) {
 			x <- unwrap.terms(x,inner=T)
@@ -569,30 +569,22 @@ remove.terms <- function (formula,remove,formulize=T) {
 				terms <- terms[[i]]
 				terms <- terms[!terms %in% remove.random[[g]]]
 				if (!length(terms)) return(NULL)
-				if (!formulize) return(data.frame(index=i,grouping=g,term=terms,stringsAsFactors=F))
 				if (!'1' %in% terms) terms <- c('0',terms)
 				paste0('(',paste0(terms,collapse=' + '),'|',g,')')
 			})
 			terms <- Filter(Negate(is.null),terms)
 			if (!length(terms)) return(NULL)
-			if (!formulize) do.call(rbind,terms) else paste0(terms,collapse=' + ')
+			paste0(terms,collapse=' + ')
 		} else {
 			if (term %in% remove.fixed) return(NULL)
-			if (!formulize) return(data.frame(index=NA,grouping=NA,term=term,stringsAsFactors=F))
 			term
 		}
 	})
 	terms <- Filter(Negate(is.null),terms)
 
 	# Wrap up
-	if (formulize) {
-		if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
-		as.formula(paste0(dep,'~1'))
-	} else {
-		tab <- do.call('rbind',terms)
-		tab$code <- do.call('paste',tab[1:3])
-		tab
-	}
+	if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
+	as.formula(paste0(dep,'~1'))
 }
 
 #' A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
