@@ -3,10 +3,10 @@ buildmer.fit <- function (p) {
 	p$crit.fun <- match.fun(paste0('crit.',p$crit))
 	if (is.null(p$cluster)) {
 		p$parallel <- F
-		p$parply <- sapply
+		p$parply <- lapply
 	} else {
 		p$parallel <- T
-		p$parply <- function (x,fun) parSapply(p$cluster,x,fun)
+		p$parply <- function (x,fun) parLapply(p$cluster,x,fun)
 		clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('modcomp.',p$crit)),environment())
 		clusterEvalQ(p$cluster,library(mgcv))
 		clusterEvalQ(p$cluster,library(lme4))
@@ -70,6 +70,7 @@ build.formula <- function (dep,terms) {
 }
 
 fit <- function (p,formula) {
+	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) cat else function(x){}
 	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (p$engine == 'glmmTMB') {
 		message(paste0('Fitting via glmmTMB: ',as.character(list(formula))))
@@ -191,13 +192,14 @@ order.terms <- function (p,forward.elimination=F) {
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) clusterExport(p$cluster,c('check','have'),environment())
-			check$score <- p$parply(1:nrow(check),function (i) {
+			scores <- p$parply(1:nrow(check),function (i) {
 				check <- check[i,]
 				check <- rbind(have[,1:3],check[,1:3])
 				form <- build.formula(dep,check)
 				mod <- fit(p,form)
 				if (conv(mod)) p$crit.fun(mod) else Inf
 			})
+			check$score <- unlist(scores)
 			if (all(check$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 				p$tab <- have

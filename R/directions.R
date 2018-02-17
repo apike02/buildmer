@@ -55,26 +55,29 @@ backward <- function (p) {
 	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
-		p$formula <- build.formula(dep,p$tab)
-		p$reml <- F
-		p <- fit.reference(p)
 		need.reml <- p$family == 'gaussian' && p$reduce.random && any(!is.na(p$tab$grouping))
-		if (need.reml) {
+		if (is.null(p$cur.ml)) {
+			p$reml <- F
+			p <- fit.reference(p)
+		}
+		if (need.reml && is.null(p$cur.reml)) {
 			p$reml <- T
 			p <- fit.reference(p)
 		}
 		if (!is.null(p$cluster)) clusterExport(cl,c('p','modcomp'),environment())
-		p$tab[,p$crit] <- p$parply(1:nrow(p$tab),function (i) {
-			if (!can.remove(p$tab,i)) return(NA)
+		results <- p$parply(1:nrow(p$tab),function (i) {
+			if (!can.remove(p$tab,i)) return(list(val=NA))
 			p$reml <- !is.na(p$tab[i,'grouping'])
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
 			m.alt <- fit(p,f.alt)
 			if (!conv(m.alt)) return(-Inf)
-			ret <- modcomp(m.cur,m.alt)
-			if (p$crit == 'LRT' && p$reml) ret/2 else ret
+			val <- modcomp(m.cur,m.alt)
+			if (p$crit == 'LRT' && p$reml) val <- val/2
+			list(val=val,model=m.alt)
 		})
-		print(p$tab)
+		p$tab[,p$crit] <- sapply(results,`[[`,1)
+		if (!p$quiet) print(p$tab)
 		remove <- elfun(p$tab[,p$crit])
 		remove <- which(!is.na(remove) & remove)
 		if (length(remove) == 0) {
@@ -85,7 +88,13 @@ backward <- function (p) {
 		# Remove the *worst offender* and continue
 		remove <- remove[p$tab[remove,p$crit] == max(p$tab[remove,p$crit])]
 		p$tab <- p$tab[-remove,]
-		p$formula <- build.formula(dep,p$tab)
-		if (!p$quiet) cat('Updating formula: ',as.character(list(p$formula)),'\n')
+		if (p$reml) {
+			p$cur.ml <- NULL
+			p$cur.reml <- results[[remove]]$model
+		} else {
+			p$cur.reml <- NULL
+			p$cur.ml <- results[[remove]]$model
+		}
+		if (!p$quiet) cat('Updating formula:',as.character(list(p$formula)),'\n')
 	}
 }
