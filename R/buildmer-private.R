@@ -70,7 +70,7 @@ build.formula <- function (dep,terms) {
 }
 
 fit <- function (p,formula) {
-	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) cat else function(x){}
+	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) base::message else function(x){}
 	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	if (p$engine == 'glmmTMB') {
 		message(paste0('Fitting via glmmTMB: ',as.character(list(formula))))
