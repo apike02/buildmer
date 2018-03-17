@@ -4,7 +4,7 @@
 \alias{remove.terms}
 \title{Remove terms from an lme4 formula}
 \usage{
-remove.terms(formula, remove, formulize = T)
+remove.terms(formula, remove)
 }
 \arguments{
 \item{formula}{The lme4 formula.}

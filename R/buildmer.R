@@ -63,11 +63,10 @@ add.terms <- function (formula,add) {
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -86,12 +85,11 @@ add.terms <- function (formula,add) {
 #' }
 #' @seealso buildmer
 #' @export
-buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -114,11 +112,10 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -137,12 +134,11 @@ buildbam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,re
 #' }
 #' @seealso buildmer
 #' @export
-buildgam <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -169,10 +165,9 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' Use buildmer to fit generalized-least-squares models using gls() from nlme
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -191,12 +186,11 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' }
 #' @seealso buildmer
 #' @export
-buildgls <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgls <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family='gaussian',
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=F,
@@ -219,11 +213,10 @@ buildgls <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixe
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -250,11 +243,10 @@ buildgamm4 <- function (...) buildmer(...)
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models.
 #' @param correlation Contrary to normal glmmTMB usage, correlation structures such as `ar1(0+covariate|grouping)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(0+covariate|grouping)")'.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -273,14 +265,13 @@ buildgamm4 <- function (...) buildmer(...)
 #' }
 #' @seealso buildmer
 #' @export
-buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	library(glmmTMB)
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
 		correlation=correlation,
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -303,10 +294,9 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,reorder.
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
 #' @param random The random-effects specification for the model. This is not manipulated by buildlme() in any way!
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
@@ -325,12 +315,11 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,reorder.
 #' }
 #' @seealso buildmer
 #' @export
-buildlme <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family='gaussian',
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=F,
@@ -349,15 +338,14 @@ buildlme <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixe
 	buildmer.fit(p)
 }
 
-#' Construct and fit as complete a model as possible, optionally reorder terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
+#' Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
-#' @param reorder.terms Whether to reorder the terms by their contribution to the log-likelihood before testing them.
-#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.
+#' @param cl An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
-#' @param direction The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
 #' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
@@ -378,12 +366,11 @@ buildlme <- function (formula,data,random,reorder.terms=TRUE,cl=NULL,reduce.fixe
 #' @examples
 #' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildmer <- function (formula,data,family=gaussian,reorder.terms=TRUE,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction='backward',crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
-		reorder.terms=reorder.terms,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -587,7 +574,7 @@ remove.terms <- function (formula,remove) {
 	as.formula(paste0(dep,'~1'))
 }
 
-#' A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
+#' A simple interface to buildmer intended to mimic SPSS stepwise methods for term ordering and backward stepwise elimination
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through. Commonly-used options are either nothing/`gaussian' (linear regression), `binomial' (logistic regression), or `poisson' (loglin regression), although many other families exist (e.g. cloglog, ...).
@@ -607,7 +594,7 @@ stepwise <- function (formula,data,family=gaussian,...) {
 		cluster=NULL,
 		reduce.fixed=T,
 		reduce.random=T,
-		direction='backward',
+		direction=c('order','backward'),
 		calc.anova=F,
 		calc.summary=T,
 		ddf='Wald',

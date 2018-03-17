@@ -5,10 +5,9 @@
 \title{Use buildmer to perform stepwise elimination on glmmTMB models}
 \usage{
 buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
-  reorder.terms = TRUE, cl = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = "backward", crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald", quiet = FALSE,
-  ...)
+  cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
+  direction = c("order", "backward"), crit = "LRT", calc.anova = TRUE,
+  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
@@ -19,15 +18,13 @@ buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
 
 \item{correlation}{Contrary to normal glmmTMB usage, correlation structures such as `ar1(0+covariate|grouping)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(0+covariate|grouping)")'.}
 
-\item{reorder.terms}{Whether to reorder the terms by their contribution to the log-likelihood before testing them.}
-
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.}
+\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
 
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 
 \item{reduce.random}{Whether to reduce the random-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
+\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.}
 

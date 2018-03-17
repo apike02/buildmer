@@ -4,22 +4,20 @@
 \alias{buildgls}
 \title{Use buildmer to fit generalized-least-squares models using gls() from nlme}
 \usage{
-buildgls(formula, data, random, reorder.terms = TRUE, cl = NULL,
-  reduce.fixed = TRUE, direction = "backward", crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
+buildgls(formula, data, random, cl = NULL, reduce.fixed = TRUE,
+  direction = c("order", "backward"), crit = "LRT", calc.anova = TRUE,
+  calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
-\item{reorder.terms}{Whether to reorder the terms by their contribution to the log-likelihood before testing them.}
-
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms during the reordering step.}
+\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
 
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; either `forward' or `backward' (default). Both or neither are also understood.}
+\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
 

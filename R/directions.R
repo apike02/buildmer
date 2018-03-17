@@ -1,34 +1,5 @@
 backward <- function (p) {
 	if (!(p$reduce.fixed || p$reduce.random)) return(p)
-	can.remove <- function (tab,i) {
-		unravel2 <- function (x) unravel(as.formula(paste0('~',x))[[2]])
-		t <- tab[i,'term']
-		g <- tab[i,'grouping']
-		fx <- is.na(tab$g)
-
-		if (t == '1') {
-			# If fixed intercept: do not remove
-			if (fx[i]) return(F)
-			# If random intercept: do not remove if there are subsequent terms
-			tab <- tab[!fx & tab$g == g,]
-			return(nrow(tab) == 1)
-		}
-
-		t <- unravel2(t)
-
-		if (fx[i]) {
-			# Do not remove fixed effects that have corresponding random effects
-			if (all(t %in% tab[!fx,'term'])) return(F)
-
-			scope <-  fx
-		} else  scope <- !fx & tab$grouping == g
-		scope[i] <- F
-
-		# Do not remove effects participating in interactions
-		if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
-
-		T
-	}
 
 	fit.references.parallel <- function (p) {
 		if (!p$quiet) message('Fitting ML and REML reference models')
@@ -113,4 +84,155 @@ backward <- function (p) {
 		}
 		if (!p$quiet) message('Updating formula:',as.character(list(p$formula)))
 	}
+}
+
+can.remove <- function (tab,i) {
+	unravel2 <- function (x) unravel(as.formula(paste0('~',x))[[2]])
+	t <- tab[i,'term']
+	g <- tab[i,'grouping']
+	fx <- is.na(tab$g)
+
+	if (t == '1') {
+		# If fixed intercept: do not remove
+		if (fx[i]) return(F)
+		# If random intercept: do not remove if there are subsequent terms
+		tab <- tab[!fx & tab$g == g,]
+		return(nrow(tab) == 1)
+	}
+
+	t <- unravel2(t)
+
+	if (fx[i]) {
+		# Do not remove fixed effects that have corresponding random effects
+		if (all(t %in% tab[!fx,'term'])) return(F)
+
+		scope <-  fx
+	} else  scope <- !fx & tab$grouping == g
+	scope[i] <- F
+
+	# Do not remove effects participating in interactions
+	if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
+
+	T
+}
+
+forward <- function (p) {
+	if (is.null(p$tab)) p <- order(p)
+	dep <- as.character(p$formula[[2]])
+	remove <- elfun(p$tab[,p$crit])
+	remove.ok <- sapply(p$tab,function (i) can.remove(p$tab,i))
+	tab <- p$tab[!(remove && remove.ok),]
+	if (!p$quiet) print(tab)
+	p$formula <- build.formula(dep,tab)
+	p$reml <- T
+	p$model <- fit(p$formula)
+	p
+}
+
+order <- function (p) {
+	reorder <- function (p,tab) {
+		# Test for marginality
+		can.eval <- function (tab) {
+			# 0. Initialize
+			tab$ok <- T
+			# 1. If there are random effects, evaluate them as a group
+			mine <- is.na(tab$grouping)
+			my <- tab[mine,]
+			tab[!mine,] <- ddply(tab[!mine,],~grouping,function (my) {
+				g <- my$grouping
+				my$grouping <- NA
+				my <- ddply(my,~index,can.eval)
+				my$grouping <- g
+				my
+			})
+
+			if (nrow(my)) {
+				# 2. The intercept should always come first
+				if (any(my$term == '1')) {
+					my$ok <- my$term == '1'
+					return(my)
+				}
+
+				# 3. Take out smooth terms if there were non-smooth terms (smooth terms should go after parametric terms because they contain a random-effects component)
+				smooths <- sapply(my$tab,is.smooth.term)
+				if (!all(smooths)) my$ok[smooths] <- F
+
+				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
+				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
+				if (length(my[my$ok,'term']) > 1) {
+					all.components <- lapply(my[my$ok,'term'],function (x) {
+						x <- as.formula(paste0('~',x))[[2]]
+						if (length(smooths) && all(smooths)) unpack.smooth.tab(x) else unravel(x)
+					})
+					check <- function (i) {
+						if (i %in% smooths && !all(smooths)) return(F) #take out smooth tab if there were no non-smooth tab
+						test <- all.components[[i]]
+						for (x in all.components[-i]) { #walk all other tab' components
+							if (any(x == '1')) return(F) #intercept should always come first
+							if (all(x %in% test)) return(F)
+						}
+						T
+					}
+					my[my$ok,'ok'] <- sapply(1:length(all.components),check)
+				}
+				tab[mine,] <- my
+			}
+			tab
+		}
+
+		have <- p$tab
+		while (T) {
+			check <- tab[!tab$code %in% have$code,]
+			if (!nrow(check)) {
+				p$tab <- have
+				return(p)
+			}
+			check <- can.eval(check)
+			check <- check[check$ok,]
+			if (!nrow(check)) {
+				if (!p$quiet) message('Could not proceed ordering terms')
+				p$tab <- have
+				return(p)
+			}
+			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
+			if (p$parallel) clusterExport(p$cluster,c('check','have'),environment())
+			scores <- p$parply(1:nrow(check),function (i) {
+				check <- check[i,]
+				check <- rbind(have[,1:3],check[,1:3])
+				form <- build.formula(dep,check)
+				mod <- fit(p,form)
+				if (conv(mod)) p$crit.fun(mod) else Inf
+			})
+			check$score <- unlist(scores)
+			if (all(check$score == Inf)) {
+				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
+				p$tab <- have
+				return(p)
+			}
+			check <- check[check$score == min(check$score),]
+			have <- rbind(have,check)
+			if (!p$quiet) message(paste0('Updating formula: ',as.character(list(build.formula(dep,have)))))
+		}
+	}
+
+	if (!p$quiet) message('Determining predictor order')
+	dep <- as.character(p$formula[2])
+	tab <- tabulate.formula(p$formula)
+	fxd <- is.na(tab$grouping)
+	if ('1' %in% tab[fxd,'term']) {
+		where <- fxd & tab$term == '1'
+		p$tab <- cbind(tab[where,],ok=T,score=NA)
+		tab <- tab[!where,]
+		fxd <- is.na(tab$grouping)
+	}
+	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
+
+	p$reml <- F
+	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[ fxd,])
+	if (p$reduce.random && any(!fxd)) {
+		p$reml <- T
+		p <- reorder(p,tab[!fxd,])
+	}
+	p$formula <- build.formula(dep,p$tab)
+	p
 }

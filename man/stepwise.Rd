@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{stepwise}
 \alias{stepwise}
-\title{A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination}
+\title{A simple interface to buildmer intended to mimic SPSS stepwise methods for term ordering and backward stepwise elimination}
 \usage{
 stepwise(formula, data, family = gaussian, ...)
 }
@@ -19,7 +19,7 @@ stepwise(formula, data, family = gaussian, ...)
 A buildmer object, which you can use summary() on to get a summary of the final model.
 }
 \description{
-A simple interface to buildmer intended to mimic SPSS stepwise methods for term reordering and backward stepwise elimination
+A simple interface to buildmer intended to mimic SPSS stepwise methods for term ordering and backward stepwise elimination
 }
 \examples{
 stepwise(Reaction~Days+(Days|Subject),sleepstudy)
