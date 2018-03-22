@@ -75,7 +75,7 @@ backward <- function (p) {
 		}
 		# Remove the worst offender(s) and continue
 		remove <- remove[p$tab[remove,p$crit] == max(p$tab[remove,p$crit])]
-		p$tab <- p$tab[!remove,]
+		p$tab <- p$tab[-remove,]
 		p$formula <- build.formula(dep,p$tab)
 		p$cur.ml <- p$cur.reml <- NULL
 		if (length(results) == 1) {
