@@ -100,17 +100,16 @@ can.remove <- function (tab,i) {
 		return(nrow(tab) == 1)
 	}
 
-	t <- unravel2(t)
-
 	if (fx[i]) {
 		# Do not remove fixed effects that have corresponding random effects
-		if (all(t %in% tab[!fx,'term'])) return(F)
+		if (t %in% tab[!fx,'term']) return(F)
 
 		scope <-  fx
 	} else  scope <- !fx & tab$grouping == g
-	scope[i] <- F
+	scope[i] <- F #do not remove the effect itself, within the required fixed-effect/grouping-factor scope
 
 	# Do not remove effects participating in interactions
+	t <- unravel2(t)
 	if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
 
 	T
