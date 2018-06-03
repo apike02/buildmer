@@ -479,7 +479,7 @@ remove.terms <- function (formula,remove) {
 	}
 
 	get.random.list <- function (formula) {
-		bars <- lme4::findbars(formula)
+		bars <- findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
 		randoms <- lapply(groups,function (g) {
 			terms <- bars[sapply(bars,function (x) x[[3]] == g)]

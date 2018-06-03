@@ -21,8 +21,8 @@ buildmer.fit <- function (p) {
 	if (p$engine == '(g)lmer' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
 		if (!p$quiet) message('Fitting final gamm4 model')
-		fixed <- lme4::nobars(p$formula)
-		bars <- lme4::findbars(p$formula)
+		fixed <- nobars(p$formula)
+		bars <- findbars(p$formula)
 		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
 		reml <- p$family == 'gaussian'
 		p$model <- do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
@@ -93,7 +93,7 @@ fit <- function (p,formula) {
 		if (!is.null(p$correlation)) formula <- add.terms(formula,p$correlation)
 		return(do.call('glmmTMB',c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
-	if (is.null(lme4::findbars(formula))) {
+	if (is.null(findbars(formula))) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
 		if (p$engine != '(g)lmer') message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
 		if (has.smooth.terms(formula)) {
@@ -122,8 +122,8 @@ fit <- function (p,formula) {
 		# possible engines: (g)lmer, gamm4
 		if (has.smooth.terms(formula)) {
 			# gamm4
-			fixed <- lme4::nobars(formula)
-			bars <- lme4::findbars(formula)
+			fixed <- nobars(formula)
+			bars <- findbars(formula)
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
 			return(divert.to.gamm4(fixed,random))
 		} else {
@@ -137,7 +137,7 @@ fit <- function (p,formula) {
 	stop('Unable to fit this model - did you specify an unknown engine=..., or are you trying to fit lme4-style random effects with an unsupported engine?')
 }
 
-get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
+get.random.terms <- function (term) findbars(as.formula(paste0('~',term)))
 
 tabulate.formula <- function (formula) {
 	decompose.random.terms <- function (terms) {
@@ -152,7 +152,7 @@ tabulate.formula <- function (formula) {
 	}
 
 	get.random.list <- function (formula) {
-		bars <- lme4::findbars(formula)
+		bars <- findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
 		randoms <- lapply(groups,function (g) {
 			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
