@@ -55,7 +55,8 @@ backward <- function (p) {
 		if (!is.null(p$cluster)) clusterExport(cl,c('p','modcomp'),environment())
 		results <- p$parply(1:nrow(p$tab),function (i) {
 			if (!can.remove(p$tab,i)) return(list(val=NA))
-			p$reml <- !is.na(p$tab[i,'grouping'])
+			need.reml <- !is.null(p$cur.reml)
+			p$reml <- need.reml && !is.na(p$tab[i,'grouping'])
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
 			m.alt <- fit(p,f.alt)

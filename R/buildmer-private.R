@@ -108,7 +108,7 @@ fit <- function (p,formula) {
 			return(wrap(do.call('gls',c(list(model=formula,data=p$data,method=method),p$dots))))
 		}
 		# Else: general case
-		if (p$reml) {
+		if (p$reml && p$family == 'gaussian') {
 			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
 			return(wrap(do.call('gls',c(list(model=formula,data=p$data,method='REML'),p$dots))))
 		} else {
