@@ -1,4 +1,5 @@
 buildmer.fit <- function (p) {
+	if (!length(p$direction)) stop("Nothing to do ('direction' argument is empty)...")
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
 	p$crit.fun <- match.fun(paste0('crit.',p$crit))
 	if (is.null(p$cluster)) {
@@ -14,11 +15,17 @@ buildmer.fit <- function (p) {
 	}
 
 	for (d in p$direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
-	if (!length(p$direction) || (p$engine == '(g)lmer' && has.smooth.terms(p$formula))) {
+	if (!length(p$direction)) {
+		if (!p$quiet) message('Fitting the model')
+	}
+	if (p$engine == '(g)lmer' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
-		if (!p$quiet) message('Calculating final model')
-		p$reml <- T
-		p$model <- fit(p,p$formula)
+		if (!p$quiet) message('Fitting final gamm4 model')
+		fixed <- lme4::nobars(p$formula)
+		bars <- lme4::findbars(p$formula)
+		random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
+		reml <- p$family == 'gaussian'
+		p$model <- do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	}
 	ret <- mkBuildmer(model=p$model,p=p)
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
@@ -71,20 +78,15 @@ build.formula <- function (dep,terms) {
 fit <- function (p,formula) {
 	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) base::message else function(x){}
 	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
-	divert.to.gamm4 <- function (fixed,random,final.fit) {
+	divert.to.gamm4 <- function (fixed,random) {
 		# This needs some explanation. Firstly: there are two ways to reach the gamm4 path:
 		#  * via the normal route: fitting a mer model with both smooth terms and lme4 random effects. This happens when findbars() is not null.
 		#  * during the term reordering phase, if a smooth term has been specified AND findbars() is null AND no gam/bam engine has been specified.
 		# These paths are so different that a special gamm4 function is the easiest solution to prevent code duplication.
-		# Secondly: the 'final.fit' parameter. To facilitate interop with the rest of the package code, we need to return the mer object instead of
-		# the gamm4 list. We thus need to fit the model an additional, final, time when we want to return the gamm4 list to the user. Note, however,
-		# that gamm4 models should never be fit with REML during the elimination stage, because slightly different smoothing pars may be found which
-		# may enter into the fixed-effects part of the smooths. Hence, coindicentally, final.fit == p$reml and needs to be performed anyways.
 		if (!require(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
-		reml <- p$reml <- p$family == 'gaussian'
+		reml <- p$reml && p$family == 'gaussian'
 		message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
-		m <- wrap(do.call('gamm4',c(list(formula=formula,random=random,family=p$family,data=p$data,REML=reml),p$dots)))
-		if (final.fit) m else m$mer
+		wrap(do.call('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))$mer)
 	}
 	if (p$engine == 'glmmTMB') {
 		message(paste0('Fitting via glmmTMB: ',as.character(list(formula))))
@@ -95,7 +97,7 @@ fit <- function (p,formula) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
 		if (p$engine != '(g)lmer') message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
 		if (has.smooth.terms(formula)) {
-			if (!p$engine %in% c('gam','bam')) return(divert.to.gamm4(formula,NULL,p$reml)) #gamm4 models during no-random-effects stage of term ordering
+			if (!p$engine %in% c('gam','bam')) return(divert.to.gamm4(formula,NULL)) #gamm4 models during no-random-effects stage of term ordering
 			message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
 			return(wrap(do.call(p$engine,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))))
 		}
@@ -123,7 +125,7 @@ fit <- function (p,formula) {
 			fixed <- lme4::nobars(formula)
 			bars <- lme4::findbars(formula)
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-			divert.to.gamm4(fixed,random,p$reml)
+			return(divert.to.gamm4(fixed,random))
 		} else {
 			# (g)lmer
 			message(paste0(ifelse(p$reml && p$family == 'gaussian','Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
