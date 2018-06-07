@@ -75,6 +75,27 @@ build.formula <- function (dep,terms) {
 	form
 }
 
+check.ddf <- function (ddf) {
+	if (is.null(ddf)) return('Wald')
+	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger')
+	i <- pmatch(ddf,valid)
+	if (is.na(i)) {
+		warn("Invalid ddf specification, possible options are 'Wald', 'lme4', 'Satterthwaite', 'Kenward-Roger'")
+		return('lme4')
+	}
+	ddf <- valid[i]
+	if (ddf %in% c('Wald','lme4')) return(ddf)
+	if (!require('lmerTest')) {
+		warn('lmerTest package is not available, could not calculate requested denominator degrees of freedom')
+		return('lme4')
+	}
+	if (ddf == 'Kenward-Roger' && !require('pbkrtest')) {
+		warn('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
+		return('lme4')
+	}
+	return(ddf)
+}
+
 fit <- function (p,formula) {
 	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) base::message else function(x){}
 	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
@@ -138,6 +159,8 @@ fit <- function (p,formula) {
 }
 
 get.random.terms <- function (term) findbars(as.formula(paste0('~',term)))
+
+guardWald <- function (ddf) if (ddf == 'Wald') 'lme4' else ddf
 
 tabulate.formula <- function (formula) {
 	decompose.random.terms <- function (terms) {
