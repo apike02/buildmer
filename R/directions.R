@@ -26,11 +26,14 @@ backward <- function (p) {
 
 	dep <- as.character(p$formula[2])
 	p$tab <- tabulate.formula(p$formula)
-	modcomp <- match.fun(paste0('modcomp.',p$crit))
+	if (is.null(p$julia)) modcomp <- match.fun(paste0('modcomp.',p$crit)) else {
+		modcomp.julia <- match.fun(paste0('modcomp.',p$crit,'.julia'))
+		modcomp <- function (...) modcomp.julia(p$julia,...)
+	}
 	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
-		need.reml <- p$family == 'gaussian' && p$reduce.random && any(!is.na(p$tab$grouping))
+		need.reml <- p$family == 'gaussian' && (is.null(p$engine) || p$engine == 'julia') && p$reduce.random && any(!is.na(p$tab$grouping))
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			if (!p$quiet) message('Fitting ML reference model')
@@ -179,6 +182,11 @@ order <- function (p) {
 			tab
 		}
 
+		if (is.null(p$julia)) critfun <- match.fun(paste0('crit.',p$crit)) else {
+			critfun.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
+			critfun <- function (...) critfun.julia(p$julia,...)
+		}
+
 		have <- p$tab
 		while (T) {
 			check <- tab[!tab$code %in% have$code,]
@@ -194,13 +202,13 @@ order <- function (p) {
 				return(p)
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have'),environment())
+			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
 			scores <- p$parply(1:nrow(check),function (i) {
 				check <- check[i,]
 				check <- rbind(have[,1:3],check[,1:3])
 				form <- build.formula(dep,check)
 				mod <- fit(p,form)
-				if (conv(mod)) p$crit.fun(mod) else Inf
+				if (conv(mod)) critfun(mod) else Inf
 			})
 			check$score <- unlist(scores)
 			if (all(check$score == Inf)) {

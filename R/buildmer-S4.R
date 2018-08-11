@@ -20,6 +20,7 @@ setMethod('show','buildmer',show.buildmer)
 anova.buildmer <- function (object,ddf=NULL,type=3) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@anova) && is.null(ddf)) return(object@anova)
+	if (inherits(object@model,'JuliaObject')) stop('ANOVA is not available for Julia fits')
 	if (any(names(object@model) == 'gam')) return(anova(object@model$gam))
 	if (!inherits(object@model,'merMod')) return(anova(object@model))
 	if (inherits(object@model,'lmerModLmerTest')) {
@@ -36,6 +37,7 @@ anova.buildmer <- function (object,ddf=NULL,type=3) {
 summary.buildmer <- function (object,ddf=NULL) {
 	if (length(object@p$messages)) warning(object@p$messages)
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
+	if (inherits(object@model,'JuliaObject')) return(object@model)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
 	if (!inherits(object@model,'merMod')) return(summary(object@model))
 	if (inherits(object@model,'lmerModLmerTest')) {

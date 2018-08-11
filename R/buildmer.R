@@ -332,6 +332,49 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 	buildmer.fit(p)
 }
 
+#' Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall
+#' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.
+#' @param data The data to fit the models to.
+#' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
+#' @param reduce.fixed Whether to reduce the fixed-effect structure.
+#' @param reduce.random Whether to reduce the random-effect structure.
+#' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
+#' @param crit The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.
+#' @param quiet Whether to suppress progress messages.
+#' @param ... Additional options to be passed to MixedModels.
+#' @return A buildmer object containing the following slots:
+#' \itemize{
+#' \item model: the final model containing only the terms that survived elimination
+#' \item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+#' \itemize{
+#' \item results: a dataframe containing the results of the elimination process
+#' \item messages: any warning messages
+#' } This information is also printed as part of the show() method.
+#' }
+#' @examples
+#' buildjulia(Reaction~Days+(Days|Subject),sleepstudy)
+#' @export
+buildjulia <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+	p <- list(
+		formula=formula,
+		data=data,
+		family=substitute(family),
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		crit=crit,
+		calc.anova=F,
+		calc.summary=F,
+		quiet=quiet,
+		engine='julia',
+		dots=list(...)
+	)
+	message('Setting up Julia...')
+	p$julia <- JuliaCall::julia_setup(verbose=T)
+	p$julia$library('MixedModels')
+	buildmer.fit(p)
+}
+
 #' Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.
 #' @param data The data to fit the models to.

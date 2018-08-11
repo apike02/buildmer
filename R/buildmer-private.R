@@ -1,7 +1,6 @@
 buildmer.fit <- function (p) {
 	if (!length(p$direction)) stop("Nothing to do ('direction' argument is empty)...")
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
-	p$crit.fun <- match.fun(paste0('crit.',p$crit))
 	if (is.null(p$cluster)) {
 		p$parallel <- F
 		p$parply <- lapply
@@ -39,7 +38,7 @@ buildmer.fit <- function (p) {
 		if (!is.null(ret@model@call$control)) ret@model@call$control <- p$control.name
 		if (p$calc.summary) ret@summary$call <- ret@model@call
 	}
-	else {
+	else if (!inherits(p$model,'JuliaObject')) {
 		ret@model$call$data <- p$data.name
 		if (!is.null(ret@model$call$subset)) ret@model$call$subset <- p$subset.name
 		if (!is.null(ret@model$call$control)) ret@model$call$control <- p$control.name
@@ -137,7 +136,13 @@ fit <- function (p,formula) {
 			            else                        do.call(glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))))
 		}
 	} else {
-		# possible engines: (g)lmer, gamm4
+		# possible engines: julia, (g)lmer, gamm4
+		if (p$engine == 'julia') {
+			fun <- p$julia$eval(if (p$family == 'gaussian') 'LinearMixedModel' else 'GeneralizedLinearMixedModel')
+			cmd <- c(list('fit',fun,formula,p$data),p$dots)
+			message(paste0('Asking Julia to run: ',as.character(list(cmd))))
+			return(do.call(p$julia$call,cmd))
+		}
 		if (has.smooth.terms(formula)) {
 			# gamm4
 			fixed <- lme4::nobars(formula)
