@@ -4,9 +4,10 @@
 \alias{buildjulia}
 \title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall}
 \usage{
-buildjulia(formula, data, family = gaussian, cl = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
-  "backward"), crit = "LRT", quiet = FALSE, ...)
+buildjulia(formula, data, family = gaussian, julia_family = NULL,
+  cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
+  direction = c("order", "backward"), crit = "LRT", quiet = FALSE,
+  ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.}
@@ -14,6 +15,8 @@ buildjulia(formula, data, family = gaussian, cl = NULL,
 \item{data}{The data to fit the models to.}
 
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+
+\item{julia_family}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if `family' is empty or `gaussian'. This should probably be the same as `family' but with an initial capital, with the notable exception of logistic regression: if the R family is `binomial', the Julia family should be `Bernoulli'.}
 
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 

@@ -93,7 +93,7 @@ check.ddf <- function (ddf) {
 }
 
 fit <- function (p,formula) {
-	message <- if (!p$quiet && 'verbose' %in% names(p$dots)) base::message else function(x){}
+	message <- if (!p$quiet) base::message else function(x){}
 	wrap <- function (expr) withCallingHandlers(try(expr),warning=function (w) invokeRestart('muffleWarning'))
 	divert.to.gamm4 <- function (fixed,random) {
 		# This needs some explanation. Firstly: there are two ways to reach the gamm4 path:
@@ -112,7 +112,6 @@ fit <- function (p,formula) {
 	}
 	if (is.null(lme4::findbars(formula))) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
-		if (p$engine != '(g)lmer') message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
 		if (has.smooth.terms(formula)) {
 			if (!p$engine %in% c('gam','bam')) return(divert.to.gamm4(formula,NULL)) #gamm4 models during no-random-effects stage of term ordering
 			message(paste0('Fitting via ',p$engine,', with ',method,': ',as.character(list(formula))))
@@ -138,10 +137,10 @@ fit <- function (p,formula) {
 	} else {
 		# possible engines: julia, (g)lmer, gamm4
 		if (p$engine == 'julia') {
-			fun <- p$julia$eval(if (p$family == 'gaussian') 'LinearMixedModel' else 'GeneralizedLinearMixedModel')
-			cmd <- c(list('fit',fun,formula,p$data),p$dots)
-			message(paste0('Asking Julia to run: ',as.character(list(cmd))))
-			return(do.call(p$julia$call,cmd))
+			message(paste0('Fitting via Julia: ',as.character(list(formula))))
+			mod <- if (p$family == 'gaussian') p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
+			       else                        p$julia$call('GeneralizedLinearMixedModel',formula,p$data,p$julia$call(p$julia_family,need_return='Julia'),need_return='Julia')
+			return(do.call(p$julia$call,c(list('fit!',mod),p$dots)))
 		}
 		if (has.smooth.terms(formula)) {
 			# gamm4

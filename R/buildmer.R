@@ -336,6 +336,7 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' @param formula The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
+#' @param julia_family For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if `family' is empty or `gaussian'. This should probably be the same as `family' but with an initial capital, with the notable exception of logistic regression: if the R family is `binomial', the Julia family should be `Bernoulli'.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
@@ -354,11 +355,12 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' @examples
 #' buildjulia(Reaction~Days+(Days|Subject),sleepstudy)
 #' @export
-buildjulia <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
+		julia_family=substitute(julia_family),
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		direction=direction,
