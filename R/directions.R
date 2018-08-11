@@ -52,7 +52,7 @@ backward <- function (p) {
 		}
 
 		if (!p$quiet) message('Testing terms')
-		if (!is.null(p$cluster)) clusterExport(cl,c('p','modcomp'),environment())
+		if (!is.null(p$cluster)) parallel::clusterExport(cl,c('p','modcomp'),environment())
 		results <- p$parply(1:nrow(p$tab),function (i) {
 			if (!can.remove(p$tab,i)) return(list(val=NA))
 			need.reml <- !is.null(p$cur.reml)
@@ -83,7 +83,7 @@ backward <- function (p) {
 			# Recycle the current model as the next reference model
 			p[[ifelse(p$reml,'cur.reml','cur.ml')]] <- results[[remove]]$model
 		}
-		if (!p$quiet) message('Updating formula:',as.character(list(p$formula)))
+		if (!p$quiet) message('Updating formula: ',as.character(list(p$formula)))
 	}
 }
 
@@ -104,7 +104,6 @@ can.remove <- function (tab,i) {
 	if (fx[i]) {
 		# Do not remove fixed effects that have corresponding random effects
 		if (t %in% tab[!fx,'term']) return(F)
-
 		scope <-  fx
 	} else  scope <- !fx & tab$grouping == g
 	scope[i] <- F #do not remove the effect itself, within the required fixed-effect/grouping-factor scope
@@ -138,10 +137,10 @@ order <- function (p) {
 			# 1. If there are random effects, evaluate them as a group
 			mine <- is.na(tab$grouping)
 			my <- tab[mine,]
-			tab[!mine,] <- ddply(tab[!mine,],~grouping,function (my) {
+			tab[!mine,] <- plyr::ddply(tab[!mine,],~grouping,function (my) {
 				g <- my$grouping
 				my$grouping <- NA
-				my <- ddply(my,~index,can.eval)
+				my <- plyr::ddply(my,~index,can.eval)
 				my$grouping <- g
 				my
 			})
@@ -195,7 +194,7 @@ order <- function (p) {
 				return(p)
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) clusterExport(p$cluster,c('check','have'),environment())
+			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have'),environment())
 			scores <- p$parply(1:nrow(check),function (i) {
 				check <- check[i,]
 				check <- rbind(have[,1:3],check[,1:3])

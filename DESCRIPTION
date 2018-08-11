@@ -8,10 +8,12 @@ Description: The buildmer package attempts to build, from the user's
     improvement of model deviance. Optional reordering of the terms by their
     contribution to the deviance (like SPSS) is also supported.
 Depends:
-    R (>= 3.2), plyr, mgcv, lme4
+    R (>= 3.2)
+Imports:
+    plyr, mgcv, lme4, methods
 Suggests:
     lmerTest, pbkrtest, gamm4, glmmTMB
-License: 2-clause BSD
+License: BSD_2_clause + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0

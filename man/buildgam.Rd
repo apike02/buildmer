@@ -4,10 +4,10 @@
 \alias{buildgam}
 \title{Use buildmer to fit generalized additive models using gam() from mgcv}
 \usage{
-buildgam(formula, data, family = gaussian, cl = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = c("order", "backward"), crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald", quiet = FALSE,
-  ...)
+buildgam(formula, data, family = gaussian, cl = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
+  ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}

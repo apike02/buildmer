@@ -5,8 +5,8 @@
 \title{Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme}
 \usage{
 buildlme(formula, data, random, cl = NULL, reduce.fixed = TRUE,
-  direction = c("order", "backward"), crit = "LRT", calc.anova = TRUE,
-  calc.summary = TRUE, quiet = FALSE, ...)
+  direction = c("order", "backward"), crit = "LRT",
+  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}

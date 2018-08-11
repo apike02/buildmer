@@ -1,9 +1,3 @@
-.onAttach <- function (libname,pkgname) {
-	require('mgcv') || stop('Please fix your installation of the mgcv package.')
-	require('lme4') || stop('Please fix your installation of the lme4 package.')
-	require('lmerTest')
-}
-
 #' Add terms to a formula
 #' @param formula The formula to add terms to.
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use `(term|group)' syntax if you want to add an independent random effect (e.g. `(olderterm|group) + (term|group)'), or use `term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
@@ -186,7 +180,7 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' }
 #' @seealso buildmer
 #' @export
-buildgls <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -266,7 +260,7 @@ buildgamm4 <- function (...) buildmer(...)
 #' @seealso buildmer
 #' @export
 buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
-	library(glmmTMB)
+	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -429,17 +423,6 @@ conv <- function (model) {
 		return(T)
 	}
 	T
-}
-
-#' Test whether a model was fit with REML
-#' @param model A fitted model object.
-#' @return TRUE or FALSE if the model was a linear mixed-effects model that was fit with REML or not, respectively; NA otherwise.
-#' @export
-hasREML <- function (model) {
-	if (inherits(model,'list')) return(hasREML(model$mer))
-	if (inherits(model,'merMod')) return(if (isLMM(model)) isREML(model) else NA)
-	if (inherits(model,'gam') || inherits(model,'lme')) return(model$method %in% c('REML','fREML'))
-	NA
 }
 
 #' Test whether a formula contains mgcv smooth terms

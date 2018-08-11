@@ -6,8 +6,9 @@
 \usage{
 buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
   cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = c("order", "backward"), crit = "LRT", calc.anova = TRUE,
-  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
+  direction = c("order", "backward"), crit = "LRT",
+  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald",
+  quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}

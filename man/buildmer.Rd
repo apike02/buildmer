@@ -4,10 +4,10 @@
 \alias{buildmer}
 \title{Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood}
 \usage{
-buildmer(formula, data, family = gaussian, cl = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = c("order", "backward"), crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald", quiet = FALSE,
-  ...)
+buildmer(formula, data, family = gaussian, cl = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
+  ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}

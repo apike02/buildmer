@@ -4,10 +4,10 @@
 \alias{buildbam}
 \title{Use buildmer to fit big generalized additive models using bam() from mgcv}
 \usage{
-buildbam(formula, data, family = gaussian, cl = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = c("order", "backward"), crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, ddf = "Wald", quiet = FALSE,
-  ...)
+buildbam(formula, data, family = gaussian, cl = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
+  ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}

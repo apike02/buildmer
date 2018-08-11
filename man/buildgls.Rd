@@ -4,9 +4,9 @@
 \alias{buildgls}
 \title{Use buildmer to fit generalized-least-squares models using gls() from nlme}
 \usage{
-buildgls(formula, data, random, cl = NULL, reduce.fixed = TRUE,
-  direction = c("order", "backward"), crit = "LRT", calc.anova = TRUE,
-  calc.summary = TRUE, quiet = FALSE, ...)
+buildgls(formula, data, cl = NULL, reduce.fixed = TRUE,
+  direction = c("order", "backward"), crit = "LRT",
+  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
