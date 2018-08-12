@@ -139,8 +139,18 @@ fit <- function (p,formula) {
 		# possible engines: julia, (g)lmer, gamm4
 		if (p$engine == 'julia') {
 			message(paste0('Fitting via Julia: ',as.character(list(formula))))
-			mod <- if (p$family == 'gaussian') p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
-			       else                        p$julia$call('GeneralizedLinearMixedModel',formula,p$data,p$julia$call(p$julia_family,need_return='Julia'),need_return='Julia')
+			if (p$family == 'gaussian') {
+				mod <- p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
+			} else {
+				fam <- p$julia$call(p$julia_family,need_return='Julia')
+				if (is.null(p$julia_link)) {
+					mod <- p$julia$call('GeneralizedLinearMixedModel',formula,p$data,fam,need_return='Julia')
+				} else {
+					link <- p$julia$call(p$julia_link,need_return='Julia')
+					mod <- p$julia$call('GeneralizedLinearMixedModel',formula,p$data,fam,link,need_return='Julia')
+				}
+			}
+			if (!is.null(p$julia_fun)) mod <- p$julia_fun(p$julia,mod)
 			return(do.call(p$julia$call,c(list('fit!',mod),p$dots)))
 		}
 		if (has.smooth.terms(formula)) {
