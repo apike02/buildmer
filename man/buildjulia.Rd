@@ -5,8 +5,9 @@
 \title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall}
 \usage{
 buildjulia(formula, data, family = gaussian, julia_family = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
-  "backward"), crit = "LRT", quiet = FALSE, ...)
+  julia_link = NULL, julia_fun = NULL, reduce.fixed = TRUE,
+  reduce.random = TRUE, direction = c("order", "backward"),
+  crit = "LRT", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.}
@@ -16,6 +17,10 @@ buildjulia(formula, data, family = gaussian, julia_family = NULL,
 \item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
 
 \item{julia_family}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if `family' is empty or `gaussian'. This should probably be the same as `family' but with an initial capital, with the notable exception of logistic regression: if the R family is `binomial', the Julia family should be `Bernoulli'.}
+
+\item{julia_link}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if `family' is empty or `gaussian'. If not provided, Julia's default link for your error distribution is used.}
+
+\item{julia_fun}{If you need to change some parameters in the Julia model object before Julia `fit!' is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the `julia' structure, which has a `call' element you can use as a function to call Julia; the second argument is the R JuliaObject corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.}
 
 \item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
 

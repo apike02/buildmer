@@ -367,6 +367,8 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' @param data The data to fit the models to.
 #' @param family The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.
 #' @param julia_family For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if `family' is empty or `gaussian'. This should probably be the same as `family' but with an initial capital, with the notable exception of logistic regression: if the R family is `binomial', the Julia family should be `Bernoulli'.
+#' @param julia_link For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if `family' is empty or `gaussian'. If not provided, Julia's default link for your error distribution is used.
+#' @param julia_fun If you need to change some parameters in the Julia model object before Julia `fit!' is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the `julia' structure, which has a `call' element you can use as a function to call Julia; the second argument is the R JuliaObject corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.
 #' @param reduce.fixed Whether to reduce the fixed-effect structure.
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
@@ -384,12 +386,14 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' }
 #' @import stats
 #' @export
-buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,julia_link=NULL,julia_fun=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=substitute(family),
 		julia_family=substitute(julia_family),
+		julia_link=substitute(julia_link),
+		julia_fun=julia_fun,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
 		direction=direction,

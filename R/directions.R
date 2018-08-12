@@ -156,17 +156,21 @@ order <- function (p) {
 					return(my)
 				}
 
-				# 3. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
+				# 3. Take out smooth terms if there were non-smooth terms. Parametric terms need to go first in case smooths need to be centered.
+				smooths <- sapply(my$tab,is.smooth.term)
+				if (!all(smooths)) my$ok[smooths] <- F
+
+				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
 				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
 				if (length(my[my$ok,'term']) > 1) {
-					smooths <- sapply(my$tab,is.smooth.term)
 					all.components <- lapply(my[my$ok,'term'],function (x) {
 						x <- as.formula(paste0('~',x))[[2]]
 						if (length(smooths) && all(smooths)) unpack.smooth.terms(x) else unravel(x)
 					})
 					check <- function (i) {
+						if (i %in% smooths && !all(smooths)) return(F) #see 3. above
 						test <- all.components[[i]]
-						for (x in all.components[-i]) { #walk all terms' components
+						for (x in all.components[-i]) { #walk all other terms' components
 							if (any(x == '1')) return(F) #intercept should always come first
 							if (all(x %in% test)) return(F)
 						}
