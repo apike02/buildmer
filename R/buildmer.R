@@ -3,8 +3,11 @@
 #' @param add A vector of terms to add. To add terms nested in random-effect groups, use `(term|group)' syntax if you want to add an independent random effect (e.g. `(olderterm|group) + (term|group)'), or use `term|group' syntax if you want to add a dependent random effect to a pre-existing term group (if no such group exists, it will be created at the end of the formula).
 #' @return The updated formula.
 #' @seealso buildmer
+#' @import stats
 #' @export
 add.terms <- function (formula,add) {
+	innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
+
 	dep <- as.character(formula[2])
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
@@ -29,7 +32,7 @@ add.terms <- function (formula,add) {
 					random.terms[[suitable[1]]] <- innerapply(random.terms[[suitable[1]]],function (term) {
 						grouping <- as.character(term[3])
 						terms <- as.character(term[2])
-						form <- as.formula(paste0('~',terms))
+						form <- stats::as.formula(paste0('~',terms))
 						terms <- terms(form,keep.order=T)
 						intercept <- attr(terms,'intercept')
 						terms <- attr(terms,'term.labels')
@@ -49,7 +52,7 @@ add.terms <- function (formula,add) {
 		} else fixed.terms <- c(fixed.terms,term)
 	}
 	terms <- c(fixed.terms,random.terms)
-	if (length(terms)) return(reformulate(terms,dep,intercept))
+	if (length(terms)) return(stats::reformulate(terms,dep,intercept))
 	as.formula(paste0(dep,'~',as.numeric(intercept)))
 }
 
@@ -78,8 +81,9 @@ add.terms <- function (formula,add) {
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
-buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -127,8 +131,9 @@ buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
-buildgam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -152,6 +157,7 @@ buildgam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 }
 
 #' The logical extension of buildgam() to buildgamm() is not supported, because (i) gamm assumes you know what you're doing; (ii) the log-likelihood of a gamm object's `lme' item is not actually the log-likelihood of the final model; (iii) in my experience, gamm fits often fail to converge. If you are only using gamm for its `true' random effects, use buildgamm4(). If you are using gamm for correlation structures, use buildglmmTMB(), or buildbam() if AR(1) will do and your errors are normal. If you want more complex correlation structures, perform the stepwise elimination process by hand...
+#' @param ... Any arguments are accepted, the function just calls `stop()' with an error message notifying the user of the above.
 #' @seealso buildgamm4, buildbam, buildgam
 #' @export
 buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 instead! If you need an AR(1) model, use buildbam().')
@@ -179,6 +185,7 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
 buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
@@ -198,7 +205,7 @@ buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order'
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		dots=list(random=random,...)
+		dots=list(random=NULL,...)
 	)
 	buildmer.fit(p)
 }
@@ -229,8 +236,30 @@ buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order'
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
-buildgamm4 <- function (...) buildmer(...)
+buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+	p <- list(
+		formula=formula,
+		data=data,
+		family=substitute(family),
+		cluster=cl,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		crit=crit,
+		calc.anova=calc.anova,
+		calc.summary=calc.summary,
+		ddf=ddf,
+		quiet=quiet,
+		engine='(g)lmer',
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		dots=list(...)
+	)
+	buildmer.fit(p)
+}
 
 #' Use buildmer to perform stepwise elimination on glmmTMB models
 #' @param formula The model formula for the maximal model you would like to fit, if possible.
@@ -258,8 +287,9 @@ buildgamm4 <- function (...) buildmer(...)
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
-buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -273,7 +303,6 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,
 		crit=crit,
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
-		ddf=ddf,
 		quiet=quiet,
 		engine='glmmTMB',
 		data.name=substitute(data),
@@ -308,6 +337,7 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @seealso buildmer
+#' @import stats
 #' @export
 buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
@@ -352,10 +382,9 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' \item messages: any warning messages
 #' } This information is also printed as part of the show() method.
 #' }
-#' @examples
-#' buildjulia(Reaction~Days+(Days|Subject),sleepstudy)
+#' @import stats
 #' @export
-buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -403,7 +432,8 @@ buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,cl=NULL,r
 #' \item anova: the model's anova, if `calc.anova=TRUE' was passed
 #' }
 #' @examples
-#' buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+#' buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
+#' @import stats
 #' @export
 buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
@@ -450,7 +480,7 @@ conv <- function (model) {
 		if (!is.null(model$outer.info) && model$optimizer[2] %in% c('newton','bfgs')) return(model$outer.info$conv == 'full convergence')
 		else {
 			if (!length(model$sp)) return(T)
-			return(mgcv.conv$fully.converged)
+			return(model$mgcv.conv$fully.converged)
 		}
 	}
 	if (inherits(model,'merMod')) {
@@ -463,7 +493,7 @@ conv <- function (model) {
 		if (!is.null(model$sdr$pdHess)) {
 			if (!model$sdr$pdHess) return(F)
 			eigval <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
-			if (is(eigval,'try-error') || (min(eigval) < .Machine$double.eps*10)) return(F)
+			if (inherits(eigval,'try-error') || (min(eigval) < .Machine$double.eps*10)) return(F)
 		}
 		return(T)
 	}
@@ -473,6 +503,7 @@ conv <- function (model) {
 #' Test whether a formula contains mgcv smooth terms
 #' @param formula The formula.
 #' @return A logical indicating whether the formula has any gamm4 terms.
+#' @import mgcv
 #' @export
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 
@@ -491,8 +522,8 @@ is.random.term <- function (term) length(get.random.terms(term)) > 0
 #' Remove terms from an lme4 formula
 #' @param formula The lme4 formula.
 #' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
-#' @param formulize Whether to return a formula (default) or a simple list of terms.
 #' @seealso buildmer
+#' @import lme4 stats
 #' @export
 remove.terms <- function (formula,remove) {
 	decompose.random.terms <- function (terms) {
@@ -507,7 +538,7 @@ remove.terms <- function (formula,remove) {
 	}
 
 	get.random.list <- function (formula) {
-		bars <- findbars(formula)
+		bars <- lme4::findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
 		randoms <- lapply(groups,function (g) {
 			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
@@ -598,8 +629,8 @@ remove.terms <- function (formula,remove) {
 	terms <- Filter(Negate(is.null),terms)
 
 	# Wrap up
-	if (length(terms)) return(as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
-	as.formula(paste0(dep,'~1'))
+	if (length(terms)) return(stats::as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
+	stats::as.formula(paste0(dep,'~1'))
 }
 
 #' A simple interface to buildmer intended to mimic SPSS stepwise methods for term ordering and backward stepwise elimination
@@ -609,7 +640,8 @@ remove.terms <- function (formula,remove) {
 #' @param ... Additional parameters that override buildmer defaults, see 'buildmer'.
 #' @return A buildmer object, which you can use summary() on to get a summary of the final model.
 #' @examples
-#' stepwise(Reaction~Days+(Days|Subject),sleepstudy)
+#' stepwise(Reaction~Days+(Days|Subject),lme4::sleepstudy)
+#' @import stats
 #' @export
 stepwise <- function (formula,data,family=gaussian,...) {
 	dots <- list(...)
@@ -623,6 +655,7 @@ stepwise <- function (formula,data,family=gaussian,...) {
 		reduce.fixed=T,
 		reduce.random=T,
 		direction=c('order','backward'),
+		crit='LRT',
 		calc.anova=F,
 		calc.summary=T,
 		ddf='Wald',

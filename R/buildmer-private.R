@@ -47,11 +47,12 @@ buildmer.fit <- function (p) {
 	ret
 }
 
+#' @import stats
 build.formula <- function (dep,terms) {
 	if (is.na(terms[1,'grouping']) && terms[1,'term'] == '1') {
-		form <- as.formula(paste(dep,'~1'))
+		form <- stats::as.formula(paste(dep,'~1'))
 		terms <- terms[-1,]
-	} else  form <- as.formula(paste(dep,'~0'))
+	} else  form <- stats::as.formula(paste(dep,'~0'))
 	while (nrow(terms)) {
 		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
 		if (is.na(terms[1,'index'])) {
@@ -76,17 +77,17 @@ check.ddf <- function (ddf) {
 	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger')
 	i <- pmatch(ddf,valid)
 	if (is.na(i)) {
-		warn("Invalid ddf specification, possible options are 'Wald', 'lme4', 'Satterthwaite', 'Kenward-Roger'")
+		warning("Invalid ddf specification, possible options are 'Wald', 'lme4', 'Satterthwaite', 'Kenward-Roger'")
 		return('lme4')
 	}
 	ddf <- valid[i]
 	if (ddf %in% c('Wald','lme4')) return(ddf)
 	if (!requireNamespace('lmerTest')) {
-		warn('lmerTest package is not available, could not calculate requested denominator degrees of freedom')
+		warning('lmerTest package is not available, could not calculate requested denominator degrees of freedom')
 		return('lme4')
 	}
 	if (ddf == 'Kenward-Roger' && !requireNamespace('pbkrtest')) {
-		warn('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
+		warning('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
 		return('lme4')
 	}
 	return(ddf)

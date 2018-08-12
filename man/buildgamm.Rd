@@ -6,6 +6,9 @@
 \usage{
 buildgamm(...)
 }
+\arguments{
+\item{...}{Any arguments are accepted, the function just calls `stop()' with an error message notifying the user of the above.}
+}
 \description{
 The logical extension of buildgam() to buildgamm() is not supported, because (i) gamm assumes you know what you're doing; (ii) the log-likelihood of a gamm object's `lme' item is not actually the log-likelihood of the final model; (iii) in my experience, gamm fits often fail to converge. If you are only using gamm for its `true' random effects, use buildgamm4(). If you are using gamm for correlation structures, use buildglmmTMB(), or buildbam() if AR(1) will do and your errors are normal. If you want more complex correlation structures, perform the stepwise elimination process by hand...
 }

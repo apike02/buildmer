@@ -10,9 +10,9 @@ Description: The buildmer package attempts to build, from the user's
 Depends:
     R (>= 3.2)
 Imports:
-    plyr, mgcv, lme4, methods
+    methods, mgcv, lme4, plyr, stats, utils
 Suggests:
-    lmerTest, pbkrtest, gamm4, glmmTMB
+    JuliaCall, gamm4, glmmTMB, lmerTest, nlme, pbkrtest
 License: BSD_2_clause + file LICENSE
 Encoding: UTF-8
 LazyData: true

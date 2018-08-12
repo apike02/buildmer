@@ -3,7 +3,7 @@ backward <- function (p) {
 
 	fit.references.parallel <- function (p) {
 		if (!p$quiet) message('Fitting ML and REML reference models')
-		if (p$parallel) clusterExport(p$cl,c('p','dep','fit','conv','build.formula','unravel'),environment())
+		if (p$parallel) parallel::clusterExport(p$cl,c('p','dep','fit','conv','build.formula','unravel'),environment())
 		while (T) {
 			res <- p$parply(c(T,F),function (x) {
 				p$reml <- x
@@ -55,7 +55,7 @@ backward <- function (p) {
 		}
 
 		if (!p$quiet) message('Testing terms')
-		if (!is.null(p$cluster)) parallel::clusterExport(cl,c('p','modcomp'),environment())
+		if (!is.null(p$cluster)) parallel::clusterExport(p$cluster,c('p','modcomp'),environment())
 		results <- p$parply(1:nrow(p$tab),function (i) {
 			if (!can.remove(p$tab,i)) return(list(val=NA))
 			need.reml <- !is.null(p$cur.reml)
@@ -119,6 +119,7 @@ can.remove <- function (tab,i) {
 }
 
 forward <- function (p) {
+	elfun <- match.fun(paste0('elfun.',p$crit))
 	if (is.null(p$tab)) p <- order(p)
 	dep <- as.character(p$formula[[2]])
 	remove <- elfun(p$tab[,p$crit])
@@ -155,21 +156,17 @@ order <- function (p) {
 					return(my)
 				}
 
-				# 3. Take out smooth terms if there were non-smooth terms (smooth terms should go after parametric terms because they contain a random-effects component)
-				smooths <- sapply(my$tab,is.smooth.term)
-				if (!all(smooths)) my$ok[smooths] <- F
-
-				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
+				# 3. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
 				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
 				if (length(my[my$ok,'term']) > 1) {
+					smooths <- sapply(my$tab,is.smooth.term)
 					all.components <- lapply(my[my$ok,'term'],function (x) {
 						x <- as.formula(paste0('~',x))[[2]]
-						if (length(smooths) && all(smooths)) unpack.smooth.tab(x) else unravel(x)
+						if (length(smooths) && all(smooths)) unpack.smooth.terms(x) else unravel(x)
 					})
 					check <- function (i) {
-						if (i %in% smooths && !all(smooths)) return(F) #take out smooth tab if there were no non-smooth tab
 						test <- all.components[[i]]
-						for (x in all.components[-i]) { #walk all other tab' components
+						for (x in all.components[-i]) { #walk all terms' components
 							if (any(x == '1')) return(F) #intercept should always come first
 							if (all(x %in% test)) return(F)
 						}

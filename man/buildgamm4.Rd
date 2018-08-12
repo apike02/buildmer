@@ -4,11 +4,12 @@
 \alias{buildgamm4}
 \title{Use buildmer to fit generalized additive models using gamm4}
 \usage{
-buildgamm4(...)
+buildgamm4(formula, data, family = gaussian, cl = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
+  ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
-\item{...}{Additional options to be passed to gam().}
-
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
 
 \item{data}{The data to fit the models to.}
@@ -32,6 +33,8 @@ buildgamm4(...)
 \item{ddf}{The method used for calculating p-values if all smooth terms were eliminated and summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
 
 \item{quiet}{Whether to suppress progress messages.}
+
+\item{...}{Additional options to be passed to gam().}
 }
 \value{
 A buildmer object containing the following slots:

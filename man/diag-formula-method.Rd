@@ -8,7 +8,7 @@
 \S4method{diag}{formula}(x)
 }
 \arguments{
-\item{formula}{A model formula.}
+\item{x}{A model formula.}
 }
 \value{
 The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).

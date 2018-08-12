@@ -53,5 +53,5 @@ A buildmer object containing the following slots:
 Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
 }
 \examples{
-buildmer(Reaction~Days+(Days|Subject),sleepstudy)
+buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 }

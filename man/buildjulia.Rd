@@ -5,9 +5,8 @@
 \title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall}
 \usage{
 buildjulia(formula, data, family = gaussian, julia_family = NULL,
-  cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = c("order", "backward"), crit = "LRT", quiet = FALSE,
-  ...)
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.}
@@ -43,7 +42,4 @@ A buildmer object containing the following slots:
 }
 \description{
 Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall
-}
-\examples{
-buildjulia(Reaction~Days+(Days|Subject),sleepstudy)
 }
