@@ -100,7 +100,7 @@ fit <- function (p,formula) {
 		#  * via the normal route: fitting a mer model with both smooth terms and lme4 random effects. This happens when lme4::findbars() is not null.
 		#  * during the term reordering phase, if a smooth term has been specified AND lme4::findbars() is null AND no gam/bam engine has been specified.
 		# These paths are so different that a special gamm4 function is the easiest solution to prevent code duplication.
-		if (!requireNamespace(gamm4)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
+		if (!requireNamespace('gamm4')) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
 		reml <- p$reml && p$family == 'gaussian'
 		message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
 		wrap(do.call(gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))$mer)
