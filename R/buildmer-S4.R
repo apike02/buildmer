@@ -68,6 +68,7 @@ setGeneric('diag')
 setMethod('diag','formula',function (x) {
 	dep <- as.character(x[2])
 	tab <- tabulate.formula(x)
-	tab$index <- 1:nrow(tab)
+	ok <- !is.na(tab$index)
+	tab$index[ok] <- 1:sum(ok)
 	build.formula(dep,tab)
 })
