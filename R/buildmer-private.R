@@ -10,10 +10,12 @@ buildmer.fit <- function (p) {
 		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('modcomp.',p$crit)),environment())
 	}
 
-	for (d in p$direction) p <- do.call(d,list(p=p)) #dispatch to forward/backward functions in the order specified by the user
-	if (!length(p$direction)) {
-		if (!p$quiet) message('Fitting the model')
-	}
+	crits <- p$crit
+	if (length(crits) == 1) crits <- rep(crit,length(p$direction))
+	if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
+	for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
+	if (!length(p$direction) && !p$quiet) message('Fitting the model')
+
 	if (p$engine == '(g)lmer' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
 		if (!p$quiet) message('Fitting final gamm4 model')
