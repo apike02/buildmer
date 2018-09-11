@@ -33,7 +33,7 @@ backward <- function (p) {
 	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
-		need.reml <- p$family == 'gaussian' && (is.null(p$engine) || p$engine == 'julia') && p$reduce.random && any(!is.na(p$tab$grouping))
+		need.reml <- p$family == 'gaussian' && p$engine %in% c('lme4','julia') && any(!is.na(p$tab$grouping))
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			if (!p$quiet) message('Fitting ML reference model')
@@ -188,6 +188,7 @@ order <- function (p) {
 			critfun <- function (...) critfun.julia(p$julia,...)
 		}
 
+		p$fast <- F
 		have <- p$tab
 		while (T) {
 			check <- tab[!tab$code %in% have$code,]
@@ -204,14 +205,27 @@ order <- function (p) {
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
-			scores <- p$parply(1:nrow(check),function (i) {
-				check <- check[i,]
-				check <- rbind(have[,1:3],check[,1:3])
-				form <- build.formula(dep,check)
-				mod <- fit(p,form)
-				if (conv(mod)) critfun(mod) else Inf
-			})
-			check$score <- unlist(scores)
+			if (p$fast) {
+				scores <- p$parply(1:nrow(check),function (i) {
+					check <- check[i,]
+					form <- build.formula('p$resid',check)
+					mod <- fit(p,form)
+					if (conv(mod)) mod else NA
+				})
+				check$score <- sapply(scores,function (m) {
+					if (is.na(m)) return(Inf)
+					1 - cor(resid(m),)
+				})
+			} else {
+				scores <- p$parply(1:nrow(check),function (i) {
+					check <- check[i,]
+					check <- rbind(have[,1:3],check[,1:3])
+					form <- build.formula(dep,check)
+					mod <- fit(p,form)
+					if (conv(mod)) critfun(mod) else Inf
+				})
+				check$score <- unlist(scores)
+			}
 			if (all(check$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 				p$tab <- have

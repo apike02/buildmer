@@ -252,7 +252,7 @@ buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,r
 		calc.summary=calc.summary,
 		ddf=ddf,
 		quiet=quiet,
-		engine='(g)lmer',
+		engine='lme4',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -423,7 +423,7 @@ buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,julia_lin
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.
 #' @param ddf The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).
 #' @param quiet Whether to suppress progress messages.
-#' @param ... Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)
+#' @param ... Additional options to be passed to lme4 or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for lme4 and not for (g)lm, and will NOT be passed on to (g)lm.)
 #' @return A buildmer object containing the following slots:
 #' \itemize{
 #' \item model: the final model containing only the terms that survived elimination
@@ -453,7 +453,7 @@ buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 		calc.summary=calc.summary,
 		ddf=ddf,
 		quiet=quiet,
-		engine='(g)lmer',
+		engine='lme4',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -664,7 +664,7 @@ stepwise <- function (formula,data,family=gaussian,...) {
 		calc.summary=T,
 		ddf='Wald',
 		quiet=F,
-		engine='(g)lmer',
+		engine='lme4',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),

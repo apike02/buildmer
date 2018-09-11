@@ -11,12 +11,12 @@ buildmer.fit <- function (p) {
 	}
 
 	crits <- p$crit
-	if (length(crits) == 1) crits <- rep(crit,length(p$direction))
+	if (length(crits) == 1) crits <- rep(crits,length(p$direction))
 	if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
 	for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
 	if (!length(p$direction) && !p$quiet) message('Fitting the model')
 
-	if (p$engine == '(g)lmer' && has.smooth.terms(p$formula)) {
+	if (p$engine == 'lme4' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
 		if (!p$quiet) message('Fitting final gamm4 model')
 		fixed <- lme4::nobars(p$formula)
@@ -138,7 +138,7 @@ fit <- function (p,formula) {
 			            else                        do.call(glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))))
 		}
 	} else {
-		# possible engines: julia, (g)lmer, gamm4
+		# possible engines: julia, lme4, gamm4
 		if (p$engine == 'julia') {
 			message(paste0('Fitting via Julia: ',as.character(list(formula))))
 			if (p$family == 'gaussian') {
@@ -162,7 +162,7 @@ fit <- function (p,formula) {
 			random <- if (length(bars)) as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
 			return(divert.to.gamm4(fixed,random))
 		} else {
-			# (g)lmer
+			# lme4
 			message(paste0(ifelse(p$reml && p$family == 'gaussian','Fitting with REML: ','Fitting with ML: '),as.character(list(formula))))
 			return(wrap(if (p$family == 'gaussian') do.call(lme4::lmer ,c(list(formula=formula,data=p$data,REML=p$reml),p$dots))
 			            else                        do.call(lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots))
