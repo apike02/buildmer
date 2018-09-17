@@ -62,12 +62,12 @@ build.formula <- function (dep,terms) {
 			terms <- terms[-1,]
 		} else {
 			ix <- terms[1,'index']
-			cur <- terms[terms$index == ix,]
+			cur <- terms[!is.na(terms$index) & terms$index == ix,]
 			termlist <- cur$term
 			if (!'1' %in% termlist) termlist <- c('0',termlist)
 			termlist <- paste0(termlist,collapse='+')
 			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
-			terms <- terms[terms$index != ix,]
+			terms <- terms[!is.na(terms$index) & terms$index != ix,]
 		}
 		form <- add.terms(form,cur)
 	}
