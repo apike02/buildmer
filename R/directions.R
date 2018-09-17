@@ -70,6 +70,13 @@ backward <- function (p) {
 		})
 		p$tab[,p$crit] <- sapply(results,`[[`,1)
 		if (!p$quiet) print(p$tab)
+		if (is.null(p$results)) {
+			p$tab$Iteration <- 1
+			p$results <- p$tab
+		} else {
+			p$tab$Iteration <- p$results$Iteration[nrow(p$results)] + 1
+			p$results <- rbind(p$results,p$tab)
+		}
 		remove <- elfun(p$tab[,p$crit])
 		remove <- which(!is.na(remove) & remove)
 		if (length(remove) == 0) {
@@ -126,6 +133,7 @@ forward <- function (p) {
 	remove.ok <- sapply(p$tab,function (i) can.remove(p$tab,i))
 	tab <- p$tab[!(remove && remove.ok),]
 	if (!p$quiet) print(tab)
+	p$results <- tab
 	p$formula <- build.formula(dep,tab)
 	p$reml <- T
 	p$model <- fit(p$formula)
