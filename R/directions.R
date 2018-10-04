@@ -152,7 +152,7 @@ order <- function (p) {
 			tab[!mine,] <- plyr::ddply(tab[!mine,],~grouping,function (my) {
 				g <- my$grouping
 				my$grouping <- NA
-				my <- plyr::ddply(my,~index,can.eval)
+				my <- can.eval(my)
 				my$grouping <- g
 				my
 			})
