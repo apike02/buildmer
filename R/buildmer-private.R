@@ -51,6 +51,18 @@ buildmer.fit <- function (p) {
 
 #' @import stats
 build.formula <- function (dep,terms) {
+	preprocess <- function (x) {
+		recurse <- function (x) {
+			if (length(x) == 1) return(as.character(x)) #reached terminal node
+			if (x[[1]] == 'block') return(paste0(x[-1],collapse='+')) #blocks must contain all terminals
+			if (x[[1]] == ':') return(paste0(recurse(x[[2]]),':',recurse(x[[3]])))
+			warning('Unknown formula token encountered')
+			as.character(x)
+		}
+		terms <- stats::as.formula(paste0('~',x))[[2]]
+		recurse(terms)
+	}
+
 	if (is.na(terms[1,'grouping']) && terms[1,'term'] == '1') {
 		form <- stats::as.formula(paste(dep,'~1'))
 		terms <- terms[-1,]
@@ -58,12 +70,12 @@ build.formula <- function (dep,terms) {
 	while (nrow(terms)) {
 		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
 		if (is.na(terms[1,'index'])) {
-			cur <- terms[1,'term']
+			cur <- preprocess(terms[1,'term'])
 			terms <- terms[-1,]
 		} else {
 			ix <- terms[1,'index']
 			cur <- terms[!is.na(terms$index) & terms$index == ix,]
-			termlist <- cur$term
+			termlist <- sapply(cur$term,preprocess)
 			if (!'1' %in% termlist) termlist <- c('0',termlist)
 			termlist <- paste0(termlist,collapse='+')
 			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
