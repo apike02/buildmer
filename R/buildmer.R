@@ -462,11 +462,42 @@ buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 	buildmer.fit(p)
 }
 
+#' Convert buildmer term list into a proper model formula
+#' @param dep The dependent variable.
+#' @param terms The term list.
+#' @return A formula.
+#' @import stats
+#' @export
+build.formula <- function (dep,terms) {
+	if (is.na(terms[1,'grouping']) && terms[1,'term'] == '1') {
+		form <- stats::as.formula(paste(dep,'~1'))
+		terms <- terms[-1,]
+	} else  form <- stats::as.formula(paste(dep,'~0'))
+	while (nrow(terms)) {
+		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
+		if (is.na(terms[1,'index'])) {
+			cur <- terms[1,'term']
+			terms <- terms[-1,]
+		} else {
+			ix <- terms[1,'index']
+			cur <- terms[!is.na(terms$index) & terms$index == ix,]
+			termlist <- cur$term
+			if (!'1' %in% termlist) termlist <- c('0',termlist)
+			termlist <- paste0(termlist,collapse='+')
+			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
+			terms <- terms[!is.na(terms$index) & terms$index != ix,]
+		}
+		form <- add.terms(form,cur)
+	}
+	form
+}
+
 #' Calculate p-values based on Wald z-scores
 #' @param table A coefficient table from a summary or anova output.
 #' @param i The number of the column in that table containing the t-values.
 #' @param sqrt Whether we're testing F values or t values (default).
 #' @return The table augmented with p-values.
+#' @export
 calcWald <- function (table,i,sqrt=FALSE) {
 	data <- table[,i]
 	if (sqrt) data <- sqrt(data)
@@ -671,4 +702,69 @@ stepwise <- function (formula,data,family=gaussian,...) {
 		dots=list(...)
 	)
 	buildmer.fit(c(p,dots.buildmer))
+}
+
+#' Parse a formula into a buildmer terms list
+#' @param formula A formula.
+#' @return A buildmer terms list, which is just a normal data frame.
+#' @export
+tabulate.formula <- function (formula) {
+	decompose.random.terms <- function (terms) {
+		terms <- lapply(terms,function (x) {
+			x <- unwrap.terms(x,inner=T)
+			g <- unwrap.terms(x[3])
+			terms <- as.character(x[2])
+			terms <- unwrap.terms(terms,intercept=T)
+			sapply(g,function (g) terms,simplify=F)
+		})
+		unlist(terms,recursive=F)
+	}
+
+	get.random.list <- function (formula) {
+		bars <- lme4::findbars(formula)
+		groups <- unique(sapply(bars,function (x) x[[3]]))
+		randoms <- lapply(groups,function (g) {
+			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
+			terms <- lapply(terms,function (x) x[[2]])
+			terms <- lapply(terms,function (x) unravel(x,'+'))
+			terms <- unique(sapply(terms,as.character))
+			unique(unlist(terms))
+		})
+		names(randoms) <- groups
+		randoms
+	}
+
+	dep <- as.character(formula[2])
+	terms <- terms(formula,keep.order=T)
+	intercept <- attr(terms,'intercept')
+	terms <- attr(terms,'term.labels')
+	if (intercept) terms <- c('1',terms)
+
+	# Build lists to check which terms are currently present.
+	fixed.terms  <- Filter(Negate(is.random.term),terms)
+	random.terms <- Filter(is.random.term,terms)
+	random.terms <- decompose.random.terms(random.terms)
+
+	terms <- lapply(1:length(terms),function (i) {
+		term <- terms[[i]]
+		if (is.random.term(term)) {
+			terms <- decompose.random.terms(term)
+			terms <- lapply(1:length(terms),function (j) {
+				g <- names(terms)[j]
+				terms <- terms[[j]]
+				if (!length(terms)) return(NULL)
+				data.frame(index=paste(i,j),grouping=g,term=terms,stringsAsFactors=F)
+			})
+			terms <- Filter(Negate(is.null),terms)
+			if (!length(terms)) return(NULL)
+			do.call(rbind,terms)
+		} else data.frame(index=NA,grouping=NA,term=term,stringsAsFactors=F)
+	})
+	terms <- Filter(Negate(is.null),terms)
+
+	# Wrap up
+	tab <- do.call(rbind,terms)
+	tab$code <- do.call(paste,tab[1:3])
+	tab$block <- 1:nrow(tab)
+	tab
 }

@@ -1,4 +1,9 @@
 buildmer.fit <- function (p) {
+	if (is.data.frame(p$formula)) {
+		p$tab <- p$formula
+		p$formula <- build.formula(p$dots$dep,p$formula)
+		p$dots$dep <- NULL
+	}
 	if (!length(p$direction)) stop("Nothing to do ('direction' argument is empty)...")
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
 	if (is.null(p$cluster)) {
@@ -47,43 +52,6 @@ buildmer.fit <- function (p) {
 		if (p$calc.summary) ret@summary$call <- ret@model$call
 	}
 	ret
-}
-
-#' @import stats
-build.formula <- function (dep,terms) {
-	preprocess <- function (x) {
-		recurse <- function (x) {
-			if (length(x) == 1) return(as.character(x)) #reached terminal node
-			if (x[[1]] == 'block') return(paste0(x[-1],collapse='+')) #blocks must contain all terminals
-			if (x[[1]] == ':') return(paste0(recurse(x[[2]]),':',recurse(x[[3]])))
-			warning('Unknown formula token encountered')
-			as.character(x)
-		}
-		terms <- stats::as.formula(paste0('~',x))[[2]]
-		recurse(terms)
-	}
-
-	if (is.na(terms[1,'grouping']) && terms[1,'term'] == '1') {
-		form <- stats::as.formula(paste(dep,'~1'))
-		terms <- terms[-1,]
-	} else  form <- stats::as.formula(paste(dep,'~0'))
-	while (nrow(terms)) {
-		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
-		if (is.na(terms[1,'index'])) {
-			cur <- preprocess(terms[1,'term'])
-			terms <- terms[-1,]
-		} else {
-			ix <- terms[1,'index']
-			cur <- terms[!is.na(terms$index) & terms$index == ix,]
-			termlist <- sapply(cur$term,preprocess)
-			if (!'1' %in% termlist) termlist <- c('0',termlist)
-			termlist <- paste0(termlist,collapse='+')
-			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
-			terms <- terms[!is.na(terms$index) & terms$index != ix,]
-		}
-		form <- add.terms(form,cur)
-	}
-	form
 }
 
 check.ddf <- function (ddf) {
@@ -187,66 +155,6 @@ fit <- function (p,formula) {
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
 
 guardWald <- function (ddf) if (ddf == 'Wald') 'lme4' else ddf
-
-tabulate.formula <- function (formula) {
-	decompose.random.terms <- function (terms) {
-		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=T)
-			g <- unwrap.terms(x[3])
-			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=T)
-			sapply(g,function (g) terms,simplify=F)
-		})
-		unlist(terms,recursive=F)
-	}
-
-	get.random.list <- function (formula) {
-		bars <- lme4::findbars(formula)
-		groups <- unique(sapply(bars,function (x) x[[3]]))
-		randoms <- lapply(groups,function (g) {
-			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
-			terms <- lapply(terms,function (x) x[[2]])
-			terms <- lapply(terms,function (x) unravel(x,'+'))
-			terms <- unique(sapply(terms,as.character))
-			unique(unlist(terms))
-		})
-		names(randoms) <- groups
-		randoms
-	}
-
-	dep <- as.character(formula[2])
-	terms <- terms(formula,keep.order=T)
-	intercept <- attr(terms,'intercept')
-	terms <- attr(terms,'term.labels')
-	if (intercept) terms <- c('1',terms)
-
-	# Build lists to check which terms are currently present.
-	fixed.terms  <- Filter(Negate(is.random.term),terms)
-	random.terms <- Filter(is.random.term,terms)
-	random.terms <- decompose.random.terms(random.terms)
-
-	terms <- lapply(1:length(terms),function (i) {
-		term <- terms[[i]]
-		if (is.random.term(term)) {
-			terms <- decompose.random.terms(term)
-			terms <- lapply(1:length(terms),function (j) {
-				g <- names(terms)[j]
-				terms <- terms[[j]]
-				if (!length(terms)) return(NULL)
-				data.frame(index=paste(i,j),grouping=g,term=terms,stringsAsFactors=F)
-			})
-			terms <- Filter(Negate(is.null),terms)
-			if (!length(terms)) return(NULL)
-			do.call(rbind,terms)
-		} else data.frame(index=NA,grouping=NA,term=term,stringsAsFactors=F)
-	})
-	terms <- Filter(Negate(is.null),terms)
-
-	# Wrap up
-	tab <- do.call(rbind,terms)
-	tab$code <- do.call(paste,tab[1:3])
-	tab
-}
 
 unpack.smooth.terms <- function (x) {
 	fm <- as.formula(paste0('~',list(x)))

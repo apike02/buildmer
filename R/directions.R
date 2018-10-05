@@ -25,7 +25,7 @@ backward <- function (p) {
 	}
 
 	dep <- as.character(p$formula[2])
-	p$tab <- tabulate.formula(p$formula)
+	if (is.null(p$tab))   p$tab <- tabulate.formula(p$formula)
 	if (is.null(p$julia)) modcomp <- match.fun(paste0('modcomp.',p$crit)) else {
 		modcomp.julia <- match.fun(paste0('modcomp.',p$crit,'.julia'))
 		modcomp <- function (...) modcomp.julia(p$julia,...)
@@ -56,19 +56,22 @@ backward <- function (p) {
 
 		if (!p$quiet) message('Testing terms')
 		if (!is.null(p$cluster)) parallel::clusterExport(p$cluster,c('p','modcomp'),environment())
-		results <- p$parply(1:nrow(p$tab),function (i) {
-			if (!can.remove(p$tab,i)) return(list(val=NA))
+		results <- p$parply(unique(p$tab$block),function (b) {
+			i <- which(p$tab$block == b)
+			if (!can.remove(p$tab,i)) return(list(val=rep(NA,length(i))))
 			need.reml <- !is.null(p$cur.reml)
-			p$reml <- need.reml && !is.na(p$tab[i,'grouping'])
+			p$reml <- need.reml && !any(is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
 			m.alt <- fit(p,f.alt)
-			if (!conv(m.alt)) return(list(val=-Inf))
+			if (!conv(m.alt)) return(list(val=rep(-Inf,length(i))))
 			val <- modcomp(m.cur,m.alt)
-			if (p$crit == 'LRT' && p$reml) val <- val/2
+			if (p$crit == 'LRT') val <- val/2
+			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
-		p$tab[,p$crit] <- sapply(results,`[[`,1)
+		browser()
+		p$tab[,p$crit] <- unlist(sapply(results,`[[`,1))
 		if (!p$quiet) print(p$tab)
 		if (is.null(p$results)) {
 			p$tab$Iteration <- 1
@@ -97,30 +100,34 @@ backward <- function (p) {
 	}
 }
 
+#' @import plyr
 can.remove <- function (tab,i) {
 	unravel2 <- function (x) unravel(as.formula(paste0('~',x))[[2]])
 	t <- tab[i,'term']
 	g <- tab[i,'grouping']
-	fx <- is.na(tab$g)
+	fx <- which(is.na(tab$g))
 
-	if (t == '1') {
+	if ('1' %in% t) {
 		# If fixed intercept: do not remove
-		if (fx[i]) return(F)
+		if (i %in% fx) return(F)
 		# If random intercept: do not remove if there are subsequent terms
-		tab <- tab[!fx & tab$g == g,]
-		return(nrow(tab) == 1)
+		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
 	}
 
-	if (fx[i]) {
+	if (any(fx[i])) {
 		# Do not remove fixed effects that have corresponding random effects
-		if (t %in% tab[!fx,'term']) return(F)
-		scope <-  fx
-	} else  scope <- !fx & tab$grouping == g
-	scope[i] <- F #do not remove the effect itself, within the required fixed-effect/grouping-factor scope
+		if (any(t %in% tab$term[-fx])) return(F)
+	}
 
-	# Do not remove effects participating in interactions
-	t <- unravel2(t)
-	if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
+	for (x in g) {
+		# Do not remove effects participating in interactions
+		scope <- if (is.na(x)) fx else which(tab$grouping == x)
+		scope <- scope[!scope %in% i]
+		for (t in tab[i,'term']) {
+			t <- unravel2(t)
+			if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
+		}
+	}
 
 	T
 }
@@ -188,6 +195,10 @@ order <- function (p) {
 				}
 				tab[mine,] <- my
 			}
+
+			# 5. If any term belonging to a single block could not be selected, disqualify the whole block
+			tab <- ddply(tab,~block,within,{ if (!all(ok)) ok <- F })
+
 			tab
 		}
 
@@ -214,23 +225,26 @@ order <- function (p) {
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
 			if (p$fast) {
-				scores <- p$parply(1:nrow(check),function (i) {
-					check <- check[i,]
+				scores <- p$parply(unique(check$block),function (b) {
+					check <- check[check$block == b,]
+					nb <- nrow(check)
 					form <- build.formula('p$resid',check)
 					mod <- fit(p,form)
-					if (conv(mod)) mod else NA
+					res <- if (conv(mod)) mod else NA
+					rep(res,nrow(check))
 				})
 				check$score <- sapply(scores,function (m) {
 					if (is.na(m)) return(Inf)
-					1 - cor(resid(m),)
+					1 - cor(resid(m),p$dep)
 				})
 			} else {
-				scores <- p$parply(1:nrow(check),function (i) {
-					check <- check[i,]
-					check <- rbind(have[,1:3],check[,1:3])
-					form <- build.formula(dep,check)
+				scores <- p$parply(unique(check$block),function (b) {
+					check <- check[check$block == b,]
+					tab <- rbind(have[,1:3],check[,1:3])
+					form <- build.formula(dep,tab)
 					mod <- fit(p,form)
-					if (conv(mod)) critfun(mod) else Inf
+					res <- if (conv(mod)) critfun(mod) else Inf
+					rep(res,nrow(check))
 				})
 				check$score <- unlist(scores)
 			}
@@ -247,7 +261,7 @@ order <- function (p) {
 
 	if (!p$quiet) message('Determining predictor order')
 	dep <- as.character(p$formula[2])
-	tab <- tabulate.formula(p$formula)
+	tab <- p$tab
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) {
 		where <- fxd & tab$term == '1'

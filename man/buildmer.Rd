@@ -34,7 +34,7 @@ buildmer(formula, data, family = gaussian, cl = NULL,
 
 \item{quiet}{Whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to (g)lmer or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for (g)lmer and not for (g)lm, and will NOT be passed on to (g)lm.)}
+\item{...}{Additional options to be passed to lme4 or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for lme4 and not for (g)lm, and will NOT be passed on to (g)lm.)}
 }
 \value{
 A buildmer object containing the following slots:
