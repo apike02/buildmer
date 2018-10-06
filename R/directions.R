@@ -70,7 +70,6 @@ backward <- function (p) {
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
-		browser()
 		p$tab[,p$crit] <- unlist(sapply(results,`[[`,1))
 		if (!p$quiet) print(p$tab)
 		if (is.null(p$results)) {
