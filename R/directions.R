@@ -113,7 +113,7 @@ can.remove <- function (tab,i) {
 		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
 	}
 
-	if (any(fx[i])) {
+	if (i %in% fx) {
 		# Do not remove fixed effects that have corresponding random effects
 		if (any(t %in% tab$term[-fx])) return(F)
 	}
