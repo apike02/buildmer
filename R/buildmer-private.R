@@ -3,7 +3,7 @@ buildmer.fit <- function (p) {
 		p$tab <- p$formula
 		p$formula <- build.formula(p$dots$dep,p$formula)
 		p$dots$dep <- NULL
-	}
+	} else  p$tab <- tabulate.formula(p$formula)
 	if (!length(p$direction)) stop("Nothing to do ('direction' argument is empty)...")
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
 	if (is.null(p$cluster)) {
