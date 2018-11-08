@@ -99,24 +99,22 @@ backward <- function (p) {
 	}
 }
 
-#' @import plyr
 can.remove <- function (tab,i) {
 	unravel2 <- function (x) unravel(as.formula(paste0('~',x))[[2]])
 	t <- tab[i,'term']
 	g <- tab[i,'grouping']
 	fx <- which(is.na(tab$g))
+	tfx <- tab[intersect(i,fx),'term']
 
 	if ('1' %in% t) {
-		# If fixed intercept: do not remove
-		if (i %in% fx) return(F)
+		# If fixed intercept: never remove it
+		return(F)
 		# If random intercept: do not remove if there are subsequent terms
 		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
 	}
 
-	if (i %in% fx) {
-		# Do not remove fixed effects that have corresponding random effects
-		if (any(t %in% tab$term[-fx])) return(F)
-	}
+	# Do not remove fixed effects that have corresponding random effects
+	if (any(tfx %in% tab$term[-fx])) return(F)
 
 	for (x in g) {
 		# Do not remove effects participating in interactions
