@@ -12,7 +12,7 @@ The package supports the fitting of a wide variety of models, if the relevant pa
  * *buildglmmTMB*: `glmmTMB` (package `glmmTMB`)
  * *buildjulia*: uses `RCall` to drive a Julia installation to fit models using Julia package `MixedModels`
 
-No support is available (or planned) for fitting generalized additive mixed models via `mgcv`'s `gamm` function; use `gamm4`s eponymous function instead.
+No support is available (or planned) for fitting generalized additive mixed models via `mgcv`'s `gamm` function; use `gamm4`'s eponymous function instead.
 
 Automatic elimination of fixed, random, and/or smooth terms, is possible and enabled by default using the backward (default) or forward stepwise method. Bi-directional elimination is also possible, by passing e.g. `direction=c('forward','backward','forward')`, although I would not want to recommend doing this.
 
