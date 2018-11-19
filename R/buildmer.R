@@ -521,6 +521,7 @@ conv <- function (model) {
 	if (inherits(model,'merMod')) {
 		if (model@optinfo$conv$opt != 0) return(F)
 		if (!length(model@optinfo$conv$lme4)) return(T)
+		if (is.null(model@optinfo$conv$lme4$code)) return(F) #happens when fit is singular
 		if (model@optinfo$conv$lme4$code != 0) return(F)
 	}
 	if (inherits(model,'glmmTMB')) {
