@@ -108,7 +108,7 @@ can.remove <- function (tab,i) {
 
 	if ('1' %in% t) {
 		# If fixed intercept: never remove it
-		return(F)
+		if (is.na(g)) return(F)
 		# If random intercept: do not remove if there are subsequent terms
 		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
 	}
