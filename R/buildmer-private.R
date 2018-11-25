@@ -89,9 +89,9 @@ fit <- function (p,formula) {
 		wrap(do.call(gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))$mer)
 	}
 	if (p$engine == 'glmmTMB') {
-		message(paste0('Fitting via glmmTMB: ',as.character(list(formula))))
+		message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
 		if (!is.null(p$correlation)) formula <- add.terms(formula,p$correlation)
-		return(do.call(glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		return(wrap(do.call(glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))))
 	}
 	if (is.null(lme4::findbars(formula))) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T

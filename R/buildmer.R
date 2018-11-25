@@ -271,7 +271,6 @@ buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,r
 #' @param reduce.random Whether to reduce the random-effect structure.
 #' @param direction The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
 #' @param crit The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.
-#' @param calc.anova Whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Whether to suppress progress messages.
 #' @param ... Additional options to be passed to glmmTMB().
@@ -289,7 +288,7 @@ buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,r
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -301,7 +300,7 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,
 		reduce.random=reduce.random,
 		direction=direction,
 		crit=crit,
-		calc.anova=calc.anova,
+		calc.anova=F,
 		calc.summary=calc.summary,
 		quiet=quiet,
 		engine='glmmTMB',

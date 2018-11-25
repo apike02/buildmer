@@ -33,7 +33,7 @@ backward <- function (p) {
 	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
-		need.reml <- p$family == 'gaussian' && p$engine %in% c('lme4','julia') && any(!is.na(p$tab$grouping))
+		need.reml <- !all(is.na(p$tab$grouping)) && (p$engine == 'glmmTMB' || (p$engine %in% c('lme4','julia') && p$family == 'gaussian'))
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			if (!p$quiet) message('Fitting ML reference model')

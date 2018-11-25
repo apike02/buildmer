@@ -7,7 +7,7 @@
 buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
   cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
   direction = c("order", "backward"), crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
+  calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
@@ -27,8 +27,6 @@ buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
 \item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.}
-
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
 
 \item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
 
