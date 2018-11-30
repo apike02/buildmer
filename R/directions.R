@@ -194,7 +194,7 @@ order <- function (p) {
 			}
 
 			# 5. If any term belonging to a single block could not be selected, disqualify the whole block
-			tab <- ddply(tab,~block,within,{ if (!all(ok)) ok <- F })
+			tab <- plyr::ddply(tab,~block,within,{ if (!all(ok)) ok <- F })
 
 			tab
 		}
