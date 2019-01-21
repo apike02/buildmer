@@ -19,7 +19,6 @@ buildmer.fit <- function (p) {
 	if (length(crits) == 1) crits <- rep(crits,length(p$direction))
 	if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
 	for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
-	if (!length(p$direction) && !p$quiet) message('Fitting the model')
 
 	if (p$engine == 'lme4' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
@@ -30,6 +29,11 @@ buildmer.fit <- function (p) {
 		reml <- p$family == 'gaussian'
 		p$model <- do.call(gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	}
+	if (is.null(p$model) && !p$quiet) {
+		message('Fitting the final model')
+		p$model <- fit(p,p$formula)
+	}
+
 	ret <- mkBuildmer(model=p$model,p=p)
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
