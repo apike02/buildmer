@@ -97,6 +97,10 @@ fit <- function (p,formula) {
 		if (!is.null(p$correlation)) formula <- add.terms(formula,p$correlation)
 		return(wrap(do.call(glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))))
 	}
+	if (p$engine == 'multinom') {
+		message(paste0('Fitting via multinom: ',as.character(list(formula))))
+		return(wrap(do.call(nnet::multinom,c(list(formula=formula,data=p$data),p$dots))))
+	}
 	if (is.null(lme4::findbars(formula))) {
 		method <- if (p$reml) ifelse(p$engine == 'bam','fREML','REML') else 'ML' #bam requires fREML to be able to use discrete=T
 		if (has.smooth.terms(formula)) {
