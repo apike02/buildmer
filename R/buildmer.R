@@ -545,8 +545,8 @@ build.formula <- function (dep,terms) {
 calcWald <- function (table,i,sqrt=FALSE) {
 	data <- table[,i]
 	if (sqrt) data <- sqrt(data)
-	p <- 2*pnorm(abs(data),lower.tail=F)
-	if (sqrt) cbind(table,`Pr(>|F|)`=p) else cbind(table,`Pr(>|t|)`=p)
+	p <- pnorm(abs(data),lower.tail=F)
+	if (sqrt) cbind(table,`Pr(>F)`=p) else cbind(table,`Pr(>|t|)`=p*2)
 }
 
 #' Test a mixed model for convergence
