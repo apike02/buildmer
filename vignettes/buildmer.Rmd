@@ -1,0 +1,109 @@
+---
+title: "Using `buildmer' to automatically find & compare maximal (mixed) models"
+author: "Cesko Voeten"
+date: "14 March 2019"
+bibliography: bibliography.bib
+csl: apa.csl
+output: pdf_document
+header-includes:
+   - \usepackage{tipa}
+vignette: >
+  %\VignetteIndexEntry{Using `buildmer' to automatically find & compare maximal (mixed) models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+@keepitmaximal suggest that for valid statistical inference, a regression model must control for all possible confounding factors, specifically those coming from random effects such as subjects and items. @parsimonious suggest that this proposed strategy leads to overfitting and that an appropriately-parsimonious model must be chosen, preferably based on theory but possibly also using stepwise elimination [@stepwise]. Both strategies require a maximal model to be identified (for @keepitmaximal, this is the final model; for @stepwise, this is the basis for backward stepwise elimination), but for many psycholinguistic experiments, the _truly_ maximal model will fail to converge and a reasonable subset model needs to be chosen.
+
+The `buildmer` package aims to automate the procedures identifying the maximal model that can still converge & performing backward stepwise elimination based on a variety of criteria (change in log-likelihood, AIC, BIC). The package does not contain any model-fitting code, but functions as an administrative loop around other packages by simply building up a maximal formula object and passing it along. Currently, the package supports models that can be fitted by `(g)lm`, `(g)lmer` (package `lme4`), `gls`, `lme` (package `nlme`), `gam`, `bam` (package `mgcv`), `gamm4` (package `gamm4`), `glmmTMB` (package `glmmTMB`), `multinom` (package `nnet`), and it can use `JuliaCall` to drive Douglas Bates' `MixedModels` package for Julia.
+
+# A vowel study
+To illustrate what `buildmer` can do for you, the package comes with a particularly pathological dataset called `vowels`. It looks like this:
+
+```{r}
+library(buildmer)
+head(vowels)
+```
+
+This is a pilot study that I conducted when I was just starting my PhD, and attempted to analyze in possibly the worst way possible. The research question was whether vowel diphthongization in the Dutch vowels /\textipa{e:,\o:,o:,Ei,\oe y}/ was affected by syllable structure, such that an /l/ within the same syllable would block diphthongization but an /l/ in the onset of the next syllable would permit it. In plain English, the question was whether these five vowels in Dutch were pronounced like the vowel in English 'fear', with the tongue held constant for the duration of the vowel, or like the vowel in English 'fade', which starts out the same as the one in 'fear' but then moves the tongue upward towards the position of the vowel in English 'fit'. The position of the tongue can be measured in a simple word-list reading experiment by measuring the so-called 'first formant', labeled `f1` in this dataset, where lower F1 = higher tongue. Thus, the research question is if the F1 either changes or remains stable for the duration of each vowel depending on whether the following consonant is an 'l' in the same syllable (coded as `lCda` in column `following`) or in the next syllable (coded as `lOns`). Additionally, I wanted to control for the factors `neighborhood` (a measure of entropy: 'if only one sound is changed anywhere in this word, how many new words could be generated?'), `information` (another measure of entropy derived from the famous Shannon information measure), and `stress` (a dummy encoding whether the vowel was stressed or unstressed).
+
+An entirely reasonable way to analyze these data, and the approach I ultimately pursued later in my PhD, would be to take samples from each vowel at 75\% realization and at 25\% realization, subtract these two, and use this 'delta score' as dependent variable: if this score is non-zero, the vowel changes over time, if it is approximately zero, the vowel was stable. In this dataset, however, I instead took as many samples as were present in the part of the wavefile corresponding to these vowels, and wanted to fit a linear regression line through all of these samples as a function of the sample number. This number, scaled from 0 to 1 per token, is listed in column `timepoint`. To make the model even more challenging to fit, only six participants were tested in this pilot study, making it very difficult to find a stable optimum when including a full random-slope structure.
+
+In `lme4` syntax, the fully maximal model would be given by the following formula:
+
+```{r}
+f <- f1 ~ vowel*timepoint*following * neighborhood*information*stress + 
+	 (vowel*timepoint*following * neighborhood+information+stress | participant) +
+	 (timepoint | word)
+```
+
+It should go without saying that this is a completely unreasonable model that will never converge. I eventually managed to use `buildmer` to fit a 'relatively maximal' model similar to this one, but this required hundreds of thousands of function evaluations to run, and it is highly uncertain whether the optimum found by the model-fitting procedure was a true global optimum or simply a numerical accident. For this vignette, we'll keep things relatively simple and not play with the evaluation limit.
+
+# Finding the maximal _feasible_ model & doing stepwise elimination from it
+
+To illustrate `buildmer`'s modular capabilities, we'll fit this model in two steps. We start by identifying the maximal model that is still capable of converging. We do this by running `buildmer`, with the `direction` argument set to `'order'`:
+
+```{r,eval=F},
+m <- buildmer(f,data=vowels,direction='order')
+```
+
+The `order` step is useful if the maximal model includes random effects: `buildmer` will start out with an empty model and keeps adding terms to this model until convergence can no longer be achieved. The `order` step adds terms in order of their contribution to a certain elimination criterion, such that the most important random slopes will be included first. The default elimination criterion is the change in log-likelihood (terms which provide higher likelihoods are considered more important), but AIC and BIC are also supported, by passing `crit='AIC'` or `crit='BIC'`. The default `direction` is `c('order','backward')`, i.e.\ proceeding directly to backward stepwise elimination, but for illustration purposes we separate those steps here. After a lot of model fits (of which the output is not shown here), the model converges onto the following maximal model:
+
+```{r,include=F}
+#hack for consistency with actual output without actually fitting the model every time I change something in the vignette
+form <- function () f1 ~ neighborhood + information + following + neighborhood:following + information:following + stress + following:stress + timepoint + information:timepoint + neighborhood:timepoint + stress:timepoint + following:timepoint + neighborhood:following:timepoint + following:stress:timepoint + information:following:timepoint + vowel + neighborhood:vowel + information:vowel + following:vowel + information:following:vowel + neighborhood:following:vowel + stress:vowel + following:stress:vowel + timepoint:vowel + 
+    information:timepoint:vowel + neighborhood:timepoint:vowel + following:timepoint:vowel + neighborhood:following:timepoint:vowel + information:following:timepoint:vowel + stress:timepoint:vowel + following:stress:timepoint:vowel + (1 + timepoint | word) + (1 + stress | participant)
+m <- buildmer:::mkBuildmer(model=list(formula=form()))
+```
+```{r}
+(f <- formula(m@model))
+```
+
+This random-effects structure is not adequate for inferential purposes, and when bumping up the number of iterations and using the `bobyqa` optimizer I have managed to get much further with these data (see `?vowels`), but for illustration purposes it will do. Having identified this maximal _feasible_ model, i.e.\ the maximal model that is actually capable of converging, we now proceed to the next step: stepwise eliination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This used the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test.
+
+```{r,eval=F}
+m <- buildmer(f,data=vowels,direction='backward')
+```
+
+To keep this vignette short, the output of this command is not shown, but the final model after stepwise elimination is:
+
+```{r,include=F}
+f2 <- f1 ~ neighborhood + information + following + neighborhood:following + 
+    information:following + stress + following:stress + timepoint + 
+    information:timepoint + neighborhood:timepoint + stress:timepoint + 
+    following:timepoint + neighborhood:following:timepoint + 
+    following:stress:timepoint + information:following:timepoint + 
+    vowel + information:vowel + following:vowel + stress:vowel + 
+    timepoint:vowel + (1 + timepoint | word)
+m <- buildmer(f2,vowels,direction=NULL)
+```
+```{r}
+(f <- formula(m@model))
+```
+
+By default, `buildmer` automatically calculates summary and ANOVA statistics based on Wald $z$-scores (summary) or Wald $\chi^2$ tests (ANOVA). For answering our research question, we look at the summary:
+
+```{r}
+summary(m)
+```
+
+The highly-significant effect for `followinglOns:timepoint` shows that if the following /l/ is in the onset of the next syllable, there is a much larger change in F1 compared to the reference condition of having the following /l/ in the coda of the same syllable.
+
+# Diagonal random-effects covariances
+One hidden feature that is present in `buildmer` but that has not yet been discussed is the ability to group terms together in blocks for ordering and stepwise-elimination purposes. This was left out from the documentation because it is very opaque to use, but in this vignette a brief illustration is possible. While the first argument to `buildmer` functions is normally a formula, it is also possible to pass a data frame as generated by `tabulate.formula`:
+
+```{r}
+tabulate.formula(f)
+```
+
+This is an internal `buildmer` data structure, but it is rather self-explanatory in how it is used. It is possible to modify the `block` column to force terms to be evaluated as a single group, rather than separately, by giving these terms the same `block` value. These values are not used in any other way than this purpose of selecting terms to be grouped together; they therefore do not even have to be numerics.
+
+This data structure can be used to fit models with diagonal random-effects structures. To do this, use `tabulate.formula` on a formula with a full random-effects structure. Then, assign the `index` column consecutive numbers so that each term will be assigned a separate `lme4` bar group, and give terms that really belong together the same `block` code. This latter part is necessary because `lme4` does not support diagonal covariance structures for _factor_ variables, but does support them when these factors have been converted to separate _numeric_ columns; these should still be considered as wholes, though, and hence be assigned the same `block`. Function `lmer_alt` from package `afex` can generate these numerical columns automatically on the basis of double-bar syntax; these columns can then be accessed via the object's `frame` slot.
+
+This information is deliberately buried here in the vignette because it is difficult to use correctly without knowing what is going on under the hood and (hence) difficult for me to document properly. Caveat emptor.
+
+# Other options
+Because `buildmer` does not do any model fitting by itself but is only an administrative formula processor around pre-existing modeling fuctions, it was straightforward to extend it beyond its original purpose of mixed-effects models. The logical extension of `buildmer` to GAMMs is fully supported (with the exception of `gamm` models; see `buildgamm()` for options). Relevant functions are available as `buildgam`, `buildbam`, and `buildgamm4`. `glmmTMB` models are also supported, although their syntax for covariance structures (e.g. `diag(timepoint | participant)`) is not; these models are still useful for their ability to handle autocorrelation, zero-inflation, and to use REML for GLMMs. At the request of Willemijn Heeren, `buildmer` was also extended to handle multinomial-logistic-regression models fitted by function `multinom` from package `nnet`. It is also possible to use `buildjulia` to drive Douglas Bates's `MixedModels` package for Julia.
+
+# References

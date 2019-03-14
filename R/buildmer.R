@@ -239,6 +239,7 @@ buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order'
 #' @import stats
 #' @export
 buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -337,6 +338,7 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,
 #' @import stats
 #' @export
 buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,julia_link=NULL,julia_fun=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -485,6 +487,7 @@ buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 #' @import stats
 #' @export
 buildmultinom <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('nnet')) stop('Please install package nnet')
 	p <- list(
 		formula=formula,
 		data=data,

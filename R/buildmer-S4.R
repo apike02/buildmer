@@ -22,7 +22,6 @@ setMethod('show','buildmer',show.buildmer)
 #' @S3method anova buildmer
 anova.buildmer <- function (object,...) {
 	if (length(object@p$messages)) warning(object@p$messages)
-	# For warning re S3 method consistency:
 	dots <- list(...)
 	ddf <- dots$ddf
 	type <- dots$type
@@ -50,24 +49,29 @@ anova.buildmer <- function (object,...) {
 	ddf <- check.ddf(ddf)
 	if (!inherits(object@model,'lmerMod') && !ddf %in% c('Wald','lme4')) {
 		warning('Requested denominator degrees of freedom only available for *linear* mixed models; returning Wald ddf instead')
-		ddf <- Wald
+		ddf <- 'Wald'
 	}
-	if (ddf %in% c('Wald','lme4')) table <- anova(object@model) else {
-		if (!inherits(object@model,'lmerModLmerTest')) object@model <- lmerTest::as_lmerModLmerTest(object@model)
+
+	if (ddf %in% c('Wald','lme4')) {
+		table <- if (inherits(object@model,'lmerModLmerTest')) anova(object@model,ddf='lme4',type=type) else anova(object@model)
+		if (ddf == 'Wald') {
+			table <- calcWald(table,4,sqrt=T)
+			if (is.null(type)) type <- 3
+			attr(table,'heading') <- paste('ANOVA based on type',utils::as.roman(type),'SS\n(p-values based on the Wald chi-square approximation)')
+		}
+	} else {
+		if (!inherits(object@model,'lmerModLmerTest')) lmerTest::as_lmerModLmerTest(object@model)
 		table <- anova(object@model,ddf=ddf,type=type)
-	}
-	if (ddf == 'Wald') {
-		table <- calcWald(table,4,sqrt=T)
-		if (is.null(type)) type <- 3
-		attr(table,'heading') <- paste('ANOVA based on type',utils::as.roman(type),'SS\n(p-values based on the Wald chi-square approximation)')
 	}
 	return(table)
 }
 
 #' @S3method summary buildmer
-summary.buildmer <- function (object,ddf=NULL) {
-	if (!is.null(ddf) && !inherits(object@model,'merMod') && !object@p$in.buildmer) warning("Ignoring 'ddf' specification as this is not an lme4 linear mixed model")
+summary.buildmer <- function (object,...) {
 	if (length(object@p$messages)) warning(object@p$messages)
+	dots <- list(...)
+	ddf <- dots$ddf
+	if (!is.null(ddf) && !inherits(object@model,'merMod') && !object@p$in.buildmer) warning("Ignoring 'ddf' specification as this is not an lme4 linear mixed model")
 	if (!is.null(object@summary) && is.null(ddf)) return(object@summary)
 	if (inherits(object@model,'JuliaObject')) return(object@model)
 	if (any(names(object@model) == 'gam')) return(summary(object@model$gam))
@@ -76,15 +80,18 @@ summary.buildmer <- function (object,ddf=NULL) {
 	ddf <- check.ddf(ddf)
 	if (!inherits(object@model,'lmerMod') && !ddf %in% c('Wald','lme4')) {
 		warning('Requested denominator degrees of freedom only available for *linear* mixed models; returning Wald ddf instead')
-		ddf <- Wald
+		ddf <- 'Wald'
 	}
-	if (ddf %in% c('Wald','lme4')) table <- summary(object@model) else {
-		if (!inherits(object@model,'lmerModLmerTest')) object@model <- lmerTest::as_lmerModLmerTest(object@model)
+
+	if (ddf %in% c('Wald','lme4')) {
+		table <- if (inherits(object@model,'lmerModLmerTest')) summary(object@model,ddf='lme4') else summary(object@model)
+		if (ddf == 'Wald') {
+			table$coefficients <- calcWald(table$coefficients,3)
+			table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')
+		}
+	} else {
+		if (!inherits(object@model,'lmerModLmerTest')) lmerTest::as_lmerModLmerTest(object@model)
 		table <- summary(object@model,ddf=ddf)
-	}
-	if (ddf == 'Wald') {
-		table$coefficients <- calcWald(table$coefficients,3)
-		table$methTitle <- paste0(table$methTitle,'\n(p-values based on Wald z-scores)')
 	}
 	return(table)
 }

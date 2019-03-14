@@ -1,19 +1,20 @@
 Package: buildmer
 Title: Stepwise Elimination and Term Reordering for Mixed-Effects Regression
-Version: 0.1
+Version: 1.0
 Authors@R: person("Cesko", "Voeten", email = "c.c.voeten@hum.leidenuniv.nl", role = c("aut", "cre"))
-Description: The buildmer package attempts to build, from the user's
-    specifications, the largest possible regression model that will still converge,
-    and then eliminates all terms from it that do not significantly contribute to an
-    improvement of model deviance. Optional reordering of the terms by their
-    contribution to the deviance (like SPSS) is also supported.
+Description: Finds the largest possible regression model that will still converge
+    for various types of regression analyses (including mixed models and GAMMs)
+    and then optionally performs stepwise elimination.
 Depends:
     R (>= 3.2)
 Imports:
     methods, mgcv, lme4, plyr, stats, utils
 Suggests:
-    JuliaCall, gamm4, glmmTMB, lmerTest, nlme, nnet, pbkrtest
-License: BSD_2_clause + file LICENSE
+    JuliaCall, gamm4, glmmTMB, knitr, lmerTest, nlme, nnet, pbkrtest
+License: FreeBSD
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
+BugReports: https://github.com/cvoeten/buildmer/issues
+VignetteBuilder: knitr
+NeedsCompilation: no

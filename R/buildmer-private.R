@@ -29,7 +29,6 @@ buildmer.fit <- function (p) {
 		p$formula <- build.formula(p$dots$dep,p$formula)
 		p$dots$dep <- NULL
 	} else  p$tab <- tabulate.formula(p$formula)
-	if (!length(p$direction)) stop("Nothing to do ('direction' argument is empty)...")
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
 	if (is.null(p$cluster)) {
 		p$parallel <- F
@@ -40,10 +39,11 @@ buildmer.fit <- function (p) {
 		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('modcomp.',p$crit)),environment())
 	}
 
+	p$reml <- T
 	crits <- p$crit
 	if (length(crits) == 1) crits <- rep(crits,length(p$direction))
 	if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
-	for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
+	if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
 
 	if (p$engine == 'lme4' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
