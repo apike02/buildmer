@@ -84,7 +84,6 @@ add.terms <- function (formula,add) {
 #' @import stats
 #' @export
 buildbam <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('mgcv')) stop('Please install package mgcv')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -135,7 +134,6 @@ buildbam <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRU
 #' @import stats
 #' @export
 buildgam <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('mgcv')) stop('Please install package mgcv')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -445,7 +443,6 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,reduce.fixed=TRUE,directi
 #' @import stats
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
-	if (!requireNamespace('lme4')) stop('Please install package lme4')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -733,7 +730,6 @@ remove.terms <- function (formula,remove) {
 #' @import stats
 #' @export
 stepwise <- function (formula,data=NULL,family=gaussian,...) {
-	if (!requireNamespace('lme4')) stop('Please install package lme4')
 	dots <- list(...)
 	dots.buildmer <- dots[names(dots) %in% names(buildmer)]
 	dots <- dots[!names(dots) %in% names(buildmer)]
