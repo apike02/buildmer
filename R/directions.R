@@ -75,7 +75,7 @@ backward <- function (p) {
 		if (!p$quiet) {
 			progrep <- p$tab
 			if (p$crit == 'LRT') progrep$LRT <- exp(results)
-			print(p$tab)
+			print(progrep)
 		}
 		if (is.null(p$results)) {
 			p$tab$Iteration <- 1
