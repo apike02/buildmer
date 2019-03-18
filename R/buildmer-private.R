@@ -35,7 +35,7 @@ buildmer.fit <- function (p) {
 	} else {
 		p$parallel <- T
 		p$parply <- function (x,fun) parallel::parLapply(p$cluster,x,fun)
-		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('crit',p$crit)),environment())
+		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('crit.',p$crit)),environment())
 	}
 
 	p$reml <- T
