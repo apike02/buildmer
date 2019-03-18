@@ -1,30 +1,39 @@
-crit.AIC <- AIC
 elfun.AIC <- function (AICdiff) AICdiff > -.001
-modcomp.AIC <- function (a,b) crit.AIC(a) - crit.AIC(b)
-
-crit.BIC <- BIC
 elfun.BIC <- function (BICdiff) BICdiff > -.001
-modcomp.BIC <- function (a,b) crit.BIC(a) - crit.BIC(b)
+elfun.LRT <- function (logp) exp(logp) >= .05
 
-crit.LRT <- function (m) as.numeric(logLik(m))
-elfun.LRT <- function (pval) pval >= .05
-modcomp.LRT <- function (a,b) {
-	getdf <- function (m) attr(logLik(m),'df')
-	chLL <- -2*(crit.LRT(b) - crit.LRT(a))
-	chdf <- getdf(a) - getdf(b)
-	if (chdf <= 0) return(1)
-	pchisq(chLL,chdf,lower.tail=F)
+crit.AIC <- function (ref,alt) if (is.null(ref)) AIC(alt) else AIC(alt) - AIC(ref)
+crit.BIC <- function (ref,alt) if (is.null(ref)) BIC(alt) else BIC(alt) - BIC(ref)
+crit.LRT <- function (ref,alt) {
+	get2LL <- function (m) as.numeric(-2*logLik(m))
+	getdf  <- function (m) attr(logLik(m),'df')
+	if (is.null(ref)) {
+		chLL <- get2LL(alt)
+		chdf <- getdf(alt)
+	} else {
+		chLL <- get2LL(ref) - get2LL(alt)
+		chdf <- getdf(alt) - getdf(ref)
+	}
+	if (chdf <= 0) return(0)
+	pchisq(chLL,chdf,lower.tail=F,log.p=T)
 }
 
-crit.AIC.julia <- function (julia,m) if (inherits(m,'JuliaObject')) julia$call('StatsBase.aic',m) else crit.AIC(m)
-modcomp.AIC.julia <- function (julia,a,b) crit.AIC.julia(a) - crit.AIC.julia(b)
-crit.BIC.julia <- function (julia,m) if (inherits(m,'JuliaObject')) julia$call('StatsBase.bic',m) else crit.BIC(m)
-modcomp.BIC.julia <- function (julia,a,b) crit.BIC.julia(a) - crit.BIC.julia(b)
-crit.LRT.julia <- function (julia,m) if (inherits(m,'JuliaObject')) julia$call('loglikelihood',m) else crit.LRT(m)
-modcomp.LRT.julia <- function (julia,a,b) {
-	getdf <- function (m) julia$call('dof',m)
-	chLL <- -2*(crit.LRT.julia(julia,b) - crit.LRT.julia(julia,a))
-	chdf <- getdf(a) - getdf(b)
-	if (chdf <= 0) return(1)
-	pchisq(chLL,chdf,lower.tail=F)
+AIC.julia <- function (julia,m) if (inherits(m,'JuliaObject')) julia$call('StatsBase.aic',m) else AIC(m)
+BIC.julia <- function (julia,m) if (inherits(m,'JuliaObject')) julia$call('StatsBase.bic',m) else BIC(m)
+crit.AIC.julia <- function (julia,ref,alt) if (is.null(ref)) AIC.julia(julia,alt) else AIC.julia(julia,alt) - AIC.julia(julia,ref)
+crit.BIC.julia <- function (julia,ref,alt) if (is.null(ref)) BIC.julia(julia,alt) else BIC.julia(julia,alt) - BIC.julia(julia,ref)
+crit.LRT.julia <- function (julia,ref,alt) {
+	getll <- function (m) if (inherits(m,'JuliaObject')) julia$call('loglikelihood',m) else as.numeric(logLik(m))
+	getdf <- function (m) if (inherits(m,'JuliaObject')) julia$call('dof',m) else attr(logLik(m),'df')
+	get2LL <- function (m) as.numeric(-2*logLik(m))
+	getdf  <- function (m) attr(logLik(m),'df')
+	if (is.null(ref)) {
+		chLL <- get2LL(alt)
+		chdf <- getdf(alt)
+	} else {
+		chLL <- get2LL(alt) - get2LL(ref)
+		chdf <- getdf(alt) - getdf(ref)
+	}
+	if (chdf <= 0) return(0)
+	pchisq(chLL,chdf,lower.tail=F,log.p=T)
 }

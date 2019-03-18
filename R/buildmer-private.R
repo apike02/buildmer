@@ -35,7 +35,7 @@ buildmer.fit <- function (p) {
 	} else {
 		p$parallel <- T
 		p$parply <- function (x,fun) parallel::parLapply(p$cluster,x,fun)
-		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('modcomp.',p$crit)),environment())
+		parallel::clusterExport(p$cluster,c('build.formula','p','fit','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms',paste0('crit',p$crit)),environment())
 	}
 
 	p$reml <- T
@@ -43,6 +43,7 @@ buildmer.fit <- function (p) {
 	if (length(crits) == 1) crits <- rep(crits,length(p$direction))
 	if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
 	if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[i] })))
+	if (p$crit == 'LRT' && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
 
 	if (p$engine == 'lme4' && has.smooth.terms(p$formula)) {
 		# gamm4 models need a final refit because p$model will only be model$mer...
@@ -174,6 +175,9 @@ fit <- function (p,formula) {
 }
 
 get.random.terms <- function (term) lme4::findbars(as.formula(paste0('~',term)))
+
+need.reml <- function (p) p$engine %in% c('gls','lme','gam','bam','glmmTMB') || #can have additional arguments we don't know about or are GAMMs
+	(!all(is.na(p$tab$grouping)) && p$family == 'gaussian' && p$engine %in% c('lme4','julia')) #lme4-style random effects
 
 unpack.smooth.terms <- function (x) {
 	fm <- as.formula(paste0('~',list(x)))

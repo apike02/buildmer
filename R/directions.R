@@ -26,14 +26,14 @@ backward <- function (p) {
 
 	dep <- as.character(p$formula[2])
 	if (is.null(p$tab))   p$tab <- tabulate.formula(p$formula)
-	if (is.null(p$julia)) modcomp <- match.fun(paste0('modcomp.',p$crit)) else {
-		modcomp.julia <- match.fun(paste0('modcomp.',p$crit,'.julia'))
-		modcomp <- function (...) modcomp.julia(p$julia,...)
+	if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
+		crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
+		crit <- function (...) crit.julia(p$julia,...)
 	}
 	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
-		need.reml <- !all(is.na(p$tab$grouping)) && (p$engine == 'glmmTMB' || (p$engine %in% c('lme4','julia') && p$family == 'gaussian'))
+		need.reml <- need.reml(p)
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			if (!p$quiet) message('Fitting ML reference model')
@@ -55,7 +55,7 @@ backward <- function (p) {
 		}
 
 		if (!p$quiet) message('Testing terms')
-		if (!is.null(p$cluster)) parallel::clusterExport(p$cluster,c('p','modcomp'),environment())
+		if (!is.null(p$cluster)) parallel::clusterExport(p$cluster,c('p','crit'),environment())
 		results <- p$parply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
 			if (!can.remove(p$tab,i)) return(list(val=rep(NA,length(i))))
@@ -65,13 +65,18 @@ backward <- function (p) {
 			f.alt <- build.formula(dep,p$tab[-i,])
 			m.alt <- fit(p,f.alt)
 			if (!conv(m.alt)) return(list(val=rep(-Inf,length(i))))
-			val <- modcomp(m.cur,m.alt)
-			if (p$crit == 'LRT') val <- val/2
+			val <- crit(m.alt,m.cur)
+			if (p$crit == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
-		p$tab[,p$crit] <- unlist(sapply(results,`[[`,1))
-		if (!p$quiet) print(p$tab)
+		results <- unlist(sapply(results,`[[`,1))
+		p$tab[,p$crit] <- results
+		if (!p$quiet) {
+			progrep <- p$tab
+			if (p$crit == 'LRT') progrep$LRT <- exp(results)
+			print(p$tab)
+		}
 		if (is.null(p$results)) {
 			p$tab$Iteration <- 1
 			p$results <- p$tab
@@ -79,7 +84,7 @@ backward <- function (p) {
 			p$tab$Iteration <- p$results$Iteration[nrow(p$results)] + 1
 			p$results <- rbind(p$results,p$tab)
 		}
-		remove <- elfun(p$tab[,p$crit])
+		remove <- elfun(results)
 		remove <- which(!is.na(remove) & remove)
 		if (length(remove) == 0) {
 			if (!p$quiet) message('All terms are significant')
@@ -133,14 +138,20 @@ forward <- function (p) {
 	elfun <- match.fun(paste0('elfun.',p$crit))
 	if (is.null(p$tab)) p <- order(p)
 	dep <- as.character(p$formula[[2]])
-	remove <- elfun(p$tab[,p$crit])
-	remove.ok <- sapply(p$tab,function (i) can.remove(p$tab,i))
-	tab <- p$tab[!(remove && remove.ok),]
-	if (!p$quiet) print(tab)
-	p$results <- tab
-	p$formula <- build.formula(dep,tab)
-	p$reml <- T
-	p$model <- fit(p$formula)
+	scores <- p$tab$score
+	remove <- elfun(p$tab$score)
+	remove.ok <- sapply(1:nrow(p$tab),function (i) can.remove(p$tab,i))
+	p$tab[,p$crit] <- p$tab$score
+	if (!p$quiet) {
+		progrep <- p$tab
+		if (p$crit == 'LRT') progrep$LRT <- exp(progrep$LRT)
+		print(progrep)
+	}
+	p$results <- p$tab
+	p$tab <- p$tab[!(remove & remove.ok),]
+	p$formula <- build.formula(dep,p$tab)
+	p$reml <- need.reml(p)
+	p$model <- fit(p,p$formula)
 	p
 }
 
@@ -205,10 +216,12 @@ order <- function (p) {
 		}
 
 		have <- p$tab
+		cur <- NULL
 		while (T) {
 			check <- tab[!tab$code %in% have$code,]
 			if (!nrow(check)) {
 				p$tab <- have
+				p$model <- cur
 				return(p)
 			}
 			check <- can.eval(check)
@@ -216,26 +229,39 @@ order <- function (p) {
 			if (!nrow(check)) {
 				if (!p$quiet) message('Could not proceed ordering terms')
 				p$tab <- have
+				p$model <- cur
 				return(p)
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
-				scores <- p$parply(unique(check$block),function (b) {
-					check <- check[check$block == b,]
-					tab <- rbind(have[,1:3],check[,1:3])
-					form <- build.formula(dep,tab)
-					mod <- fit(p,form)
-					res <- if (conv(mod)) critfun(mod) else Inf
-					rep(res,nrow(check))
-				})
-				check$score <- unlist(scores)
+			mods <- p$parply(unique(check$block),function (b) {
+				check <- check[check$block == b,]
+				tab <- rbind(have[,1:3],check[,1:3])
+				form <- build.formula(dep,tab)
+				fit(p,form)
+			})
+			check$score <- sapply(mods,function (mod) if (conv(mod)) critfun(cur,mod) else Inf)
+			if (p$crit == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			if (all(check$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 				p$tab <- have
+				p$model <- cur
 				return(p)
 			}
-			check <- check[check$score == min(check$score),]
+			winner <- which(check$score == min(check$score))
+			check <- check[winner,]
 			have <- rbind(have,check)
+			if (length(winner) == 1) cur <- mods[[winner]] else {
+				# In principle, there should be only one winner. If there are multiple candidates which happen to add _exactly_ the same amount of information to the model, this is
+				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
+				# needs an extra fit to obtain the new 'current' model.
+				form <- build.formula(dep,have)
+				cur <- fit(p,form)
+				if (!conv(cur)) {
+					if (!p$quiet) message('The reference model for the next step failed to converge - giving up ordering attempt.')
+					return(p)
+				}
+			}
 			if (!p$quiet) message(paste0('Updating formula: ',as.character(list(build.formula(dep,have)))))
 		}
 	}
