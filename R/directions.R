@@ -204,7 +204,6 @@ order <- function (p) {
 			critfun <- function (...) critfun.julia(p$julia,...)
 		}
 
-		p$fast <- F
 		have <- p$tab
 		while (T) {
 			check <- tab[!tab$code %in% have$code,]
@@ -221,20 +220,6 @@ order <- function (p) {
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
-			if (p$fast) {
-				scores <- p$parply(unique(check$block),function (b) {
-					check <- check[check$block == b,]
-					nb <- nrow(check)
-					form <- build.formula('p$resid',check)
-					mod <- fit(p,form)
-					res <- if (conv(mod)) mod else NA
-					rep(res,nrow(check))
-				})
-				check$score <- sapply(scores,function (m) {
-					if (is.na(m)) return(Inf)
-					1 - cor(resid(m),p$dep)
-				})
-			} else {
 				scores <- p$parply(unique(check$block),function (b) {
 					check <- check[check$block == b,]
 					tab <- rbind(have[,1:3],check[,1:3])
@@ -244,7 +229,6 @@ order <- function (p) {
 					rep(res,nrow(check))
 				})
 				check$score <- unlist(scores)
-			}
 			if (all(check$score == Inf)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 				p$tab <- have
@@ -257,6 +241,7 @@ order <- function (p) {
 	}
 
 	if (!p$quiet) message('Determining predictor order')
+	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
 	dep <- as.character(p$formula[2])
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)
@@ -269,7 +254,7 @@ order <- function (p) {
 	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
 
 	p$reml <- F
-	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[ fxd,])
+	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[fxd,])
 	if (p$reduce.random && any(!fxd)) {
 		p$reml <- T
 		p <- reorder(p,tab[!fxd,])

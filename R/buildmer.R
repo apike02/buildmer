@@ -83,7 +83,8 @@ add.terms <- function (formula,add) {
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildbam <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('mgcv')) stop('Please install package mgcv')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -133,7 +134,8 @@ buildbam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildgam <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgam <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('mgcv')) stop('Please install package mgcv')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -187,7 +189,8 @@ buildgamm <- function (...) stop('buildgamm is not implemented, try buildgamm4 i
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgls <- function (formula,data=NULL,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('nlme')) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -238,7 +241,7 @@ buildgls <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order'
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgamm4 <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
@@ -289,7 +292,7 @@ buildgamm4 <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,r
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data=NULL,family=gaussian,correlation=NULL,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -337,7 +340,7 @@ buildglmmTMB <- function (formula,data,family=gaussian,correlation=NULL,cl=NULL,
 #' }
 #' @import stats
 #' @export
-buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,julia_link=NULL,julia_fun=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
+buildjulia <- function (formula,data=NULL,family=gaussian,julia_family=NULL,julia_link=NULL,julia_fun=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',quiet=FALSE,...) {
 	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
@@ -388,7 +391,8 @@ buildjulia <- function (formula,data,family=gaussian,julia_family=NULL,julia_lin
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildlme <- function (formula,data=NULL,random,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('nlme')) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -440,7 +444,8 @@ buildlme <- function (formula,data,random,cl=NULL,reduce.fixed=TRUE,direction=c(
 #' buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 #' @import stats
 #' @export
-buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data=NULL,family=gaussian,cl=NULL,reduce.fixed=TRUE,reduce.random=TRUE,direction=c('order','backward'),crit='LRT',calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+	if (!requireNamespace('lme4')) stop('Please install package lme4')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -486,7 +491,7 @@ buildmer <- function (formula,data,family=gaussian,cl=NULL,reduce.fixed=TRUE,red
 #' @seealso buildmer
 #' @import stats
 #' @export
-buildmultinom <- function (formula,data,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
+buildmultinom <- function (formula,data=NULL,cl=NULL,reduce.fixed=TRUE,direction=c('order','backward'),crit='LRT',calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('nnet')) stop('Please install package nnet')
 	p <- list(
 		formula=formula,
@@ -727,7 +732,8 @@ remove.terms <- function (formula,remove) {
 #' stepwise(Reaction~Days+(Days|Subject),lme4::sleepstudy)
 #' @import stats
 #' @export
-stepwise <- function (formula,data,family=gaussian,...) {
+stepwise <- function (formula,data=NULL,family=gaussian,...) {
+	if (!requireNamespace('lme4')) stop('Please install package lme4')
 	dots <- list(...)
 	dots.buildmer <- dots[names(dots) %in% names(buildmer)]
 	dots <- dots[!names(dots) %in% names(buildmer)]

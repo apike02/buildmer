@@ -25,10 +25,9 @@
 
 buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
-		p$tab <- p$formula
 		p$formula <- build.formula(p$dots$dep,p$formula)
 		p$dots$dep <- NULL
-	} else  p$tab <- tabulate.formula(p$formula)
+	}
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(lm),formals(glm)))]
 	if (is.null(p$cluster)) {
 		p$parallel <- F
