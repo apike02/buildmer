@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{build.formula}
 \alias{build.formula}
-\title{Convert buildmer term list into a proper model formula}
+\title{Convert a buildmer term list into a proper model formula}
 \usage{
 build.formula(dep, terms)
 }
@@ -15,5 +15,16 @@ build.formula(dep, terms)
 A formula.
 }
 \description{
-Convert buildmer term list into a proper model formula
+Convert a buildmer term list into a proper model formula
+}
+\examples{
+library(buildmer)
+form1 <- Reaction ~ Days + (Days|Subject)
+terms <- tabulate.formula(form1)
+form2 <- build.formula(dep='Reaction',terms)
+
+# check that the two formulas give the same results
+library(lme4)
+check <- function (f) resid(lmer(f,sleepstudy))
+all.equal(check(form1),check(form2))
 }

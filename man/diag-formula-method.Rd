@@ -16,3 +16,28 @@ The formula with all random-effect correlations forced to zero, per Pinheiro & B
 \description{
 Diagonalize the random-effect covariance structure, possibly assisting convergence
 }
+\examples{
+# 1. Create explicit columns for factor variables
+library(buildmer)
+vowels <- cbind(vowels,model.matrix(~vowel,vowels))
+# 2. Create formula with diagonal covariance structure
+form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following + 
+	     ((vowel1+vowel2+vowel3+vowel4)*timepoint*following | participant) +
+	     (timepoint | word))
+# 3. Convert formula to buildmer terms list
+terms <- tabulate.formula(form)
+# 4. Assign the different vowelN columns to identical blocks
+terms[ 2: 5,'block'] <- 'same1'
+terms[ 7:10,'block'] <- 'same2'
+terms[12:15,'block'] <- 'same3'
+terms[17:20,'block'] <- 'same4'
+terms[22:25,'block'] <- 'same5'
+terms[27:30,'block'] <- 'same6'
+terms[32:35,'block'] <- 'same7'
+terms[37:40,'block'] <- 'same8'
+# 5. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
+# the dependent variable
+\donttest{
+m <- buildmer(terms,data=vowels,dep='f1')
+}
+}

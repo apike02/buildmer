@@ -2,56 +2,67 @@
 % Please edit documentation in R/buildmer.R
 \name{buildgamm4}
 \alias{buildgamm4}
-\title{Use buildmer to fit generalized additive models using gamm4}
+\title{Use buildmer to fit generalized additive models using package \code{gamm4}}
 \usage{
-buildgamm4(formula, data, family = gaussian, cl = NULL,
+buildgamm4(formula, data = NULL, family = "gaussian", cl = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
   "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
   ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use.}
 
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
-\item{reduce.random}{Whether to reduce the random-effect structure.}
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
+\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{ddf}{The method used for calculating p-values if all smooth terms were eliminated and summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
+\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
 
-\item{quiet}{Whether to suppress progress messages.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to gam().}
+\item{...}{Additional options to be passed to \code{gamm4()}.}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
-\item summary: the model's summary, if `calc.summary=TRUE' was passed
-\item anova: the model's anova, if `calc.anova=TRUE' was passed
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
+\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
 }
 }
 \description{
-Use buildmer to fit generalized additive models using gamm4
+Use buildmer to fit generalized additive models using package \code{gamm4}
+}
+\examples{
+\dontshow{
+library(buildmer)
+m <- buildgamm4(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+}
+\donttest{
+library(buildmer)
+m <- buildgamm4(f1 ~ s(timepoint,by=following) +
+                     s(participant,timepoint,by=following,bs='fs'),data=vowels)
+}
 }
 \seealso{
-buildmer
+[buildmer()]
 }

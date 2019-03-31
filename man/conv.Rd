@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildmer.R
 \name{conv}
 \alias{conv}
-\title{Test a mixed model for convergence}
+\title{Test a model for convergence}
 \usage{
 conv(model)
 }
@@ -10,8 +10,17 @@ conv(model)
 \item{model}{The model object to test.}
 }
 \value{
-Whether the model converged or not.
+Logical indicating whether the model converged.
 }
 \description{
-Test a mixed model for convergence
+Test a model for convergence
+}
+\examples{
+library(buildmer)
+library(lme4)
+good1 <- lm(Reaction ~ Days,sleepstudy)
+good2 <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy)
+bad <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy,control=lmerControl(
+            optimizer='bobyqa',optCtrl=list(maxfun=1)))
+sapply(c(good1,good2,bad),conv)
 }

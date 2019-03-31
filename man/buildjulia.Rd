@@ -2,49 +2,61 @@
 % Please edit documentation in R/buildmer.R
 \name{buildjulia}
 \alias{buildjulia}
-\title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall}
+\title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via JuliaCall}
 \usage{
-buildjulia(formula, data, family = gaussian, julia_family = NULL,
-  julia_link = NULL, julia_fun = NULL, reduce.fixed = TRUE,
-  reduce.random = TRUE, direction = c("order", "backward"),
-  crit = "LRT", quiet = FALSE, ...)
+buildjulia(formula, data = NULL, family = "gaussian",
+  julia_family = NULL, julia_link = NULL, julia_fun = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
+  "backward"), crit = "LRT", quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects.}
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use.}
 
-\item{julia_family}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if `family' is empty or `gaussian'. This should probably be the same as `family' but with an initial capital, with the notable exception of logistic regression: if the R family is `binomial', the Julia family should be `Bernoulli'.}
+\item{julia_family}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if \code{family} is empty or \code{gaussian}. This should probably be the same as \code{family} but with an initial capital, with the notable exception of logistic regression: if the R family is \code{binomial}, the Julia family should be \code{'Bernoulli'}.}
 
-\item{julia_link}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if `family' is empty or `gaussian'. If not provided, Julia's default link for your error distribution is used.}
+\item{julia_link}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if \code{family} is empty or \code{gaussian}. If not provided, Julia's default link for your error distribution is used.}
 
-\item{julia_fun}{If you need to change some parameters in the Julia model object before Julia `fit!' is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the `julia' structure, which has a `call' element you can use as a function to call Julia; the second argument is the R JuliaObject corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.}
+\item{julia_fun}{If you need to change some parameters in the Julia model object before Julia \code{fit!} is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the \code{julia} structure, which is a list containing a \code{call} element you can use as a function to call Julia; the second argument is the R \code{JuliaObject} corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
-\item{reduce.random}{Whether to reduce the random-effect structure.}
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{quiet}{Whether to suppress progress messages.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to MixedModels.}
+\item{...}{Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}.}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
+\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
 }
 }
 \description{
-Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via RCall
+Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via JuliaCall
+}
+\examples{
+\donttest{
+library(buildmer)
+m <- buildjulia(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
+                (timepoint|word),data=vowels)
+}
+}
+\seealso{
+[buildmer()]
 }

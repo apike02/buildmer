@@ -5,18 +5,29 @@
 \alias{buildmer-class}
 \alias{mkBuildmer}
 \title{The buildmer class}
-\arguments{
-\item{model}{The final model containing only the terms that survived elimination.}
-
-\item{p}{Parameters used during the fitting process.}
-
-\item{anova}{The model's ANOVA, if the model was built with `anova=TRUE'.}
-
-\item{summary}{The model's summary, if the model was built with `summary=TRUE'.}
-}
 \description{
-The buildmer class
+This is a simple convenience class that allows `anova()' and `summary()' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
+}
+\section{Slots}{
+
+\describe{
+\item{\code{model}}{The final model containing only the terms that survived elimination.}
+
+\item{\code{p}}{Parameters used during the fitting process.}
+
+\item{\code{anova}}{The model's ANOVA, if the model was built with `anova=TRUE'.}
+
+\item{\code{summary}}{The model's summary, if the model was built with `summary=TRUE'.}
+}}
+
+\examples{
+# Manually create a bare-bones buildmer object:
+model <- lm(Sepal.Length ~ Petal.Length,iris)
+p <- list(in.buildmer=FALSE)
+library(buildmer)
+bm <- mkBuildmer(model=model,p=p,anova=NULL,summary=NULL)
+summary(bm)
 }
 \seealso{
-buildmer
+[buildmer()]
 }

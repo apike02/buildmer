@@ -15,3 +15,8 @@ A buildmer terms list, which is just a normal data frame.
 \description{
 Parse a formula into a buildmer terms list
 }
+\examples{
+form <- diag(f1 ~ vowel*timepoint*following + ((vowel1+vowel2+vowel3+vowel4)*timepoint*
+                  following|participant) + (timepoint|word))
+tabulate.formula(form)
+}

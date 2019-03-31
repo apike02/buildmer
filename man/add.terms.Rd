@@ -17,6 +17,9 @@ The updated formula.
 \description{
 Add terms to a formula
 }
-\seealso{
-buildmer
+\examples{
+library(buildmer)
+form <- Reaction ~ Days + (1|Subject)
+add.terms(form,'Days|Subject')
+add.terms(form,'(0+Days|Subject)')
 }

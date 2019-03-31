@@ -4,52 +4,55 @@
 \alias{buildglmmTMB}
 \title{Use buildmer to perform stepwise elimination on glmmTMB models}
 \usage{
-buildglmmTMB(formula, data, family = gaussian, correlation = NULL,
-  cl = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
-  direction = c("order", "backward"), crit = "LRT",
-  calc.summary = TRUE, quiet = FALSE, ...)
+buildglmmTMB(formula, data = NULL, family = "gaussian",
+  correlation = NULL, cl = NULL, reduce.fixed = TRUE,
+  reduce.random = TRUE, direction = c("order", "backward"),
+  crit = "LRT", calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models.}
+\item{family}{The error distribution to use.}
 
-\item{correlation}{Contrary to normal glmmTMB usage, correlation structures such as `ar1(0+covariate|grouping)' need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is `buildglmmTMB(formula,data,family,correlation="ar1(0+covariate|grouping)")'.}
+\item{correlation}{Contrary to normal glmmTMB usage, correlation structures such as \code{ar1(0+x|g)} need to be specified in a separate argument in plain text to prevent them from being eliminated (and to work around a problem in lme4:::findbars()). The correct usage is \code{buildglmmTMB(formula,data,family,correlation='ar1(0+x|g)')}.}
 
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
-\item{reduce.random}{Whether to reduce the random-effect structure.}
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT', `AIC', and `BIC'.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{quiet}{Whether to suppress progress messages.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to glmmTMB().}
+\item{...}{Additional options to be passed to \code{glmmTMB()}.}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
-\item summary: the model's summary, if `calc.summary=TRUE' was passed
-\item anova: the model's anova, if `calc.anova=TRUE' was passed
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
 }
 }
 \description{
 Use buildmer to perform stepwise elimination on glmmTMB models
 }
+\examples{
+library(buildmer)
+m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+}
 \seealso{
-buildmer
+[buildmer()]
 }

@@ -64,8 +64,7 @@ backward <- function (p) {
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
 			m.alt <- fit(p,f.alt)
-			if (!conv(m.alt)) return(list(val=rep(-Inf,length(i))))
-			val <- crit(m.alt,m.cur)
+			val <- if (conv(m.alt)) crit(m.alt,m.cur) else NaN
 			if (p$crit == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
@@ -85,7 +84,7 @@ backward <- function (p) {
 			p$results <- rbind(p$results,p$tab)
 		}
 		remove <- elfun(results)
-		remove <- which(!is.na(remove) & remove)
+		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
 		if (length(remove) == 0) {
 			if (!p$quiet) message('All terms are significant')
 			p$model <- if (need.reml) p$cur.reml else p$cur.ml
@@ -105,7 +104,7 @@ backward <- function (p) {
 }
 
 can.remove <- function (tab,i) {
-	unravel2 <- function (x) unravel(as.formula(paste0('~',x))[[2]])
+	unravel2 <- function (x) unravel(stats::as.formula(paste0('~',x))[[2]])
 	t <- tab[i,'term']
 	g <- tab[i,'grouping']
 	fx <- which(is.na(tab$g))
@@ -135,8 +134,8 @@ can.remove <- function (tab,i) {
 }
 
 forward <- function (p) {
+	if (p$ordered != p$crit) p <- order(p)
 	elfun <- match.fun(paste0('elfun.',p$crit))
-	if (is.null(p$tab)) p <- order(p)
 	dep <- as.character(p$formula[[2]])
 	scores <- p$tab$score
 	remove <- elfun(p$tab$score)
@@ -180,14 +179,14 @@ order <- function (p) {
 				}
 
 				# 3. Take out smooth terms if there were non-smooth terms. Parametric terms need to go first in case smooths need to be centered.
-				smooths <- sapply(my$tab,is.smooth.term)
+				smooths <- sapply(my$term,is.smooth.term)
 				if (!all(smooths)) my$ok[smooths] <- F
 
 				# 4. Evaluate marginality. We cannot take the terms already in the formula into account, because that will break things like nesting.
 				# Thus, we have to define marginality as ok if there is no lower-order term whose components are a proper subset of the current term.
 				if (length(my[my$ok,'term']) > 1) {
 					all.components <- lapply(my[my$ok,'term'],function (x) {
-						x <- as.formula(paste0('~',x))[[2]]
+						x <- stats::as.formula(paste0('~',x))[[2]]
 						if (length(smooths) && all(smooths)) unpack.smooth.terms(x) else unravel(x)
 					})
 					check <- function (i) {
@@ -215,6 +214,7 @@ order <- function (p) {
 			critfun <- function (...) critfun.julia(p$julia,...)
 		}
 
+		p$ordered <- p$crit
 		have <- p$tab
 		cur <- NULL
 		while (T) {
@@ -238,20 +238,23 @@ order <- function (p) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,1:3],check[,1:3])
 				form <- build.formula(dep,tab)
-				fit(p,form)
+				mod <- list(fit(p,form))
+				rep(mod,nrow(check))
 			})
-			check$score <- sapply(mods,function (mod) if (conv(mod)) critfun(cur,mod) else Inf)
+			mods <- unlist(mods,recursive=F)
+			check$score <- sapply(mods,function (mod) if (conv(mod)) critfun(cur,mod) else NaN)
 			if (p$crit == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
-			if (all(check$score == Inf)) {
+			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
+			if (!length(ok)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
 				p$tab <- have
 				p$model <- cur
 				return(p)
 			}
-			winner <- which(check$score == min(check$score))
+			winner <- which(check$score == min(ok))
 			check <- check[winner,]
 			have <- rbind(have,check)
-			if (length(winner) == 1) cur <- mods[[winner]] else {
+			if (length(unique(check[winner,'block'] == 1))) cur <- mods[[winner[1]]] else {
 				# In principle, there should be only one winner. If there are multiple candidates which happen to add _exactly_ the same amount of information to the model, this is
 				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
 				# needs an extra fit to obtain the new 'current' model.
@@ -267,7 +270,7 @@ order <- function (p) {
 	}
 
 	if (!p$quiet) message('Determining predictor order')
-	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
+	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula) else p$tab$ok <- p$tab$score <- NULL
 	dep <- as.character(p$formula[2])
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)

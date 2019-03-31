@@ -4,47 +4,51 @@
 \alias{buildgls}
 \title{Use buildmer to fit generalized-least-squares models using gls() from nlme}
 \usage{
-buildgls(formula, data, cl = NULL, reduce.fixed = TRUE,
-  direction = c("order", "backward"), crit = "LRT",
-  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
+buildgls(formula, data = NULL, cl = NULL, direction = c("order",
+  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
+  quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
 
 \item{data}{The data to fit the models to.}
 
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
+\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{quiet}{Whether to suppress progress messages.}
-
-\item{...}{Additional options to be passed to lme().}
+\item{...}{Additional options to be passed to \code{gls()}.}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
-\item summary: the model's summary, if `calc.summary=TRUE' was passed
-\item anova: the model's anova, if `calc.anova=TRUE' was passed
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
+\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
 }
 }
 \description{
 Use buildmer to fit generalized-least-squares models using gls() from nlme
 }
+\examples{
+library(buildmer)
+library(nlme)
+vowels$event <- with(vowels,interaction(participant,word))
+m <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
+}
 \seealso{
-buildmer
+[buildmer()]
 }

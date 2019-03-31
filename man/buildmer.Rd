@@ -2,56 +2,111 @@
 % Please edit documentation in R/buildmer.R
 \name{buildmer}
 \alias{buildmer}
-\title{Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood}
+\title{Construct and fit as complete a model as possible and perform stepwise elimination}
 \usage{
-buildmer(formula, data, family = gaussian, cl = NULL,
+buildmer(formula, data = NULL, family = "gaussian", cl = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
   "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
   ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports lme4 random effects and gamm4 smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use. If the family is empty or \code{gaussian}, the models will be fit using \code{lm(er)}, otherwise they will be fit using \code{glm(er)} with the specified error distribution passed through.}
 
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
-\item{reduce.random}{Whether to reduce the random-effect structure.}
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation, in which case generating the ANOVA table (via lmerTest) will be very slow, and preparing the ANOVA in advance can be advantageous.}
+\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination. This is useful if you want to calculate degrees of freedom by Kenward-Roger approximation (default), in which case generating the summary (via lmerTest) will be very slow, and preparing the summary in advance can be advantageous.}
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{ddf}{The method used for calculating p-values if summary=TRUE. Options are `Wald' (default), `Satterthwaite' (if lmerTest is available), `Kenward-Roger' (if lmerTest and pbkrtest are available), and `lme4' (no p-values).}
+\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
 
-\item{quiet}{Whether to suppress progress messages.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to lme4 or gamm4. (They will also be passed to (g)lm in so far as they're applicable, so you can use arguments like `subset=...' and expect things to work. The single exception is the `control' argument, which is assumed to be meant only for lme4 and not for (g)lm, and will NOT be passed on to (g)lm.)}
+\item{...}{Additional options to be passed to lme4 or gamm4. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}.)}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
-\item summary: the model's summary, if `calc.summary=TRUE' was passed
-\item anova: the model's anova, if `calc.anova=TRUE' was passed
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
+\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
 }
 }
 \description{
-Construct and fit as complete a model as possible, optionally order terms by their contribution to the log-likelihood, and perform stepwise elimination using the change in log-likelihood
+With the default options, buildmer() will do two things:
+\enumerate{
+\item Determine the order of the effects in your model, based on their contribution to the log-likelihood. This identifies the `maximal model', which is the model containing either all effects specified by the user, or subset of those effects that still allow the model to converge, ordered such that the most information-rich effects have made it in.
+\item Perform backward stepwise elimination based on the change in log-likelihood.
+}
+The final model is returned in the \code{model} slot of the returned \code{buildmer} object.
+All functions in the \code{buildmer} package are aware of the distinction between (f)REML and ML, and know to divide chi-square \emph{p}-values by 2 when comparing models differing only in random slopes (see Pinheiro & Bates 2000).
+The steps executed above can be changed using the \code{direction} argument, allowing for arbitrary chains of, for instance, forward-backward-forward stepwise elimination (although using more than one elimination method on the same data is not recommended). The criterion for determining the importance of terms in the ordering stage and the elimination of terms in the elimination stage can also be changed, using the \emph{crit} argument.
 }
 \examples{
-buildmer(Reaction~Days+(Days|Subject),lme4::sleepstudy)
+library(buildmer)
+m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+
+\donttest{
+# Only finding the maximal model, with importance of effects measured by AIC, parallelizing the
+# model evaluations using two cores, using the bobyqa optimizer and asking for verbose output
+library(parallel)
+cl <- makeCluster(2,outfile='')
+control <- lme4::lmerControl(optimizer='bobyqa')
+clusterExport(cl,'control') #this is not done automatically for '...' arguments!
+m <- buildmer(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
+              (timepoint|word),data=vowels,cl=cl,direction='order',crit='AIC',calc.anova=FALSE,
+              calc.summary=FALSE,control=control,verbose=2)
+# The maximal model is: f1 ~  vowel + timepoint + vowel:timepoint + following +
+# timepoint:following +vowel:following + vowel:timepoint:following + (1 + timepoint +
+# following + timepoint:following | participant) + (1 + timepoint | word)
+# Now do backward stepwise elimination (result: f1 ~ vowel + timepoint + vowel:timepoint +
+# following + timepoint:following + (1 + timepoint + following + timepoint:following |
+# participant) + (1 + timepoint | word))
+buildmer(formula(m@model),data=vowels,direction='backward',crit='AIC',control=control)
+# Or forward (result: retains the full model)
+buildmer(formula(m@model),data=vowels,direction='forward',crit='AIC',control=control)
+# Print summary with p-values based on Satterthwaite denominator degrees of freedom
+summary(m,ddf='Satterthwaite')
+
+# Example for fitting a model without correlations in the random part
+# (even for factor variables!)
+# 1. Create explicit columns for factor variables
+library(buildmer)
+vowels <- cbind(vowels,model.matrix(~vowel,vowels))
+# 2. Create formula with diagonal covariance structure
+form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following + 
+	     ((vowel1+vowel2+vowel3+vowel4)*timepoint*following | participant) +
+	     (timepoint | word))
+# 3. Convert formula to buildmer terms list
+terms <- tabulate.formula(form)
+# 4. Assign the different vowelN columns to identical blocks
+terms[ 2: 5,'block'] <- 'same1'
+terms[ 7:10,'block'] <- 'same2'
+terms[12:15,'block'] <- 'same3'
+terms[17:20,'block'] <- 'same4'
+terms[22:25,'block'] <- 'same5'
+terms[27:30,'block'] <- 'same6'
+terms[32:35,'block'] <- 'same7'
+terms[37:40,'block'] <- 'same8'
+# 5. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
+# the dependent variable
+m <- buildmer(terms,data=vowels,dep='f1')
+}
 }

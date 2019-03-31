@@ -9,11 +9,18 @@ remove.terms(formula, remove)
 \arguments{
 \item{formula}{The lme4 formula.}
 
-\item{remove}{A vector of terms to remove. To remove terms nested inside random-effect groups, use `term|group' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.}
+\item{remove}{A vector of terms to remove. To remove terms nested inside random-effect groups, use `(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.}
 }
 \description{
 Remove terms from an lme4 formula
 }
-\seealso{
-buildmer
+\examples{
+library(buildmer)
+remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
+# illustration of the marginality checking mechanism:
+remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)') #refuses to remove the term
+remove.terms(Reaction ~ Days + (Days|Subject),c('(Days|Subject)','(1|Subject)')) #also
+           #refuses to remove the term, because marginality is checked before removal!
+step1 <- remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
+step2 <- remove.terms(step1,'(1|Subject)') #works
 }

@@ -2,54 +2,60 @@
 % Please edit documentation in R/buildmer.R
 \name{buildgam}
 \alias{buildgam}
-\title{Use buildmer to fit generalized additive models using gam() from mgcv}
+\title{Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}}
 \usage{
-buildgam(formula, data, family = gaussian, cl = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
-  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
-  quiet = FALSE, ...)
+buildgam(formula, data = NULL, family = "gaussian", cl = NULL,
+  direction = c("order", "backward"), crit = "LRT",
+  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
 
 \item{data}{The data to fit the models to.}
 
-\item{family}{The error distribution to use. Only relevant for generalized models; if the family is empty or `gaussian', the models will be fit using lm(er), otherwise they will be fit using glm(er) with the specified error distribution passed through.}
+\item{family}{The error distribution to use.}
 
-\item{cl}{An optional cluster object as returned by parallel::makeCluster() to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Whether to reduce the fixed-effect structure.}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{reduce.random}{Whether to reduce the random-effect structure.}
+\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.}
 
-\item{direction}{The direction for stepwise elimination; possible options are `order' (order terms by their contribution to the model), `backward' (backward elimination), `forward' (forward elimination, implies `order'). The default is the combination `c('order','backward')', to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
-\item{crit}{The criterion used to test terms for elimination. Possible options are `LRT' (default), `AIC', and `BIC'.}
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{calc.anova}{Whether to also calculate the ANOVA table for the final model after term elimination.}
+\item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{calc.summary}{Whether to also calculate the summary table for the final model after term elimination.}
-
-\item{quiet}{Whether to suppress progress messages.}
-
-\item{...}{Additional options to be passed to gam().}
+\item{...}{Additional options to be passed to \code{gam()}.}
 }
 \value{
-A buildmer object containing the following slots:
+A \code{buildmer} object containing the following slots:
 \itemize{
-\item model: the final model containing only the terms that survived elimination
-\item p: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
+\item \code{model}: the final model containing only the terms that survived elimination
+\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
 \itemize{
-\item results: a dataframe containing the results of the elimination process
-\item messages: any warning messages
-} This information is also printed as part of the show() method.
-\item summary: the model's summary, if `calc.summary=TRUE' was passed
-\item anova: the model's anova, if `calc.anova=TRUE' was passed
+\item \code{results}: a dataframe containing the results of the elimination process
+\item \code{messages}: any warning messages
+} This information is also printed as part of the \code{show()} method.
+\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
+\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
 }
 }
 \description{
-Use buildmer to fit generalized additive models using gam() from mgcv
+Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}
+}
+\examples{
+\dontshow{
+library(buildmer)
+m <- buildgam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+}
+\donttest{
+library(buildmer)
+m <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by='following',bs='re') +
+                   s(participant,timepoint,by=following,bs='fs'),data=vowels)
+}
 }
 \seealso{
-buildmer
+[buildmer()]
 }
