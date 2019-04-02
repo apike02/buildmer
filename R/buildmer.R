@@ -65,7 +65,7 @@ add.terms <- function (formula,add) {
 #' @param family The error distribution to use.
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
@@ -122,7 +122,7 @@ buildbam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('o
 #' @param family The error distribution to use.
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
@@ -181,7 +181,7 @@ buildgam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('o
 #' @param reduce.fixed Logical indicating whether to reduce the fixed-effect structure.
 #' @param reduce.random Logical indicating whether to reduce the random-effect structure.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).
@@ -243,7 +243,7 @@ buildgamm4 <- function (formula,data=NULL,family='gaussian',cl=NULL,reduce.fixed
 #' @param reduce.fixed Logical indicating whether to reduce the fixed-effect structure.
 #' @param reduce.random Logical indicating whether to reduce the random-effect structure.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
 #' @param ... Additional options to be passed to \code{glmmTMB()}.
@@ -291,7 +291,7 @@ buildglmmTMB <- function (formula,data=NULL,family='gaussian',correlation=NULL,c
 #' @param data The data to fit the models to.
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
@@ -348,7 +348,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @param reduce.fixed Logical indicating whether to reduce the fixed-effect structure.
 #' @param reduce.random Logical indicating whether to reduce the random-effect structure.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param quiet Logical indicating whether to suppress progress messages.
 #' @param ... Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}.
 #' @return A \code{buildmer} object containing the following slots:
@@ -401,7 +401,7 @@ buildjulia <- function (formula,data=NULL,family='gaussian',julia_family=NULL,ju
 #' @param random The random-effects specification for the model. This is not manipulated by buildlme() in any way!
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
@@ -463,7 +463,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' @param reduce.fixed Logical indicating whether to reduce the fixed-effect structure.
 #' @param reduce.random Logical indicating whether to reduce the random-effect structure.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).
@@ -559,7 +559,7 @@ buildmer <- function (formula,data=NULL,family='gaussian',cl=NULL,reduce.fixed=T
 #' @param data The data to fit the models to.
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (default), \code{'AIC'}, and \code{'BIC'}.
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param quiet Logical indicating whether to suppress progress messages.
 #' @param ... Additional options to be passed to \code{multinom()}.
