@@ -75,11 +75,17 @@ buildmer.fit <- function (p) {
 	ret
 }
 
-calcWald <- function (table,i,sqrt=FALSE) {
-	data <- table[,i]
-	if (sqrt) data <- sqrt(data)
-	p <- stats::pnorm(abs(data),lower.tail=F)
-	if (sqrt) cbind(table,`Pr(>F)`=p) else cbind(table,`Pr(>|t|)`=p*2)
+calcWald <- function (table,col.ef,col.df=0) {
+	ef <- table[,col.ef]
+	if (col.df) {
+		df <- table[,col.df]
+		p <- matrix(stats::pchisq(ef,df,lower.tail=F))
+		colnames(p) <- 'Pr(>F)'
+	} else {
+		p <- matrix(stats::pnorm(abs(ef),lower.tail=F)*2)
+		colnames(p) <- 'Pr(>|t|)'
+	}
+	cbind(table,p)
 }
 
 check.ddf <- function (ddf) {

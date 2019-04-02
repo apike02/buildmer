@@ -63,7 +63,7 @@ anova.buildmer <- function (object,...) {
 	if (ddf %in% c('Wald','lme4')) {
 		table <- if (inherits(object@model,'lmerModLmerTest')) stats::anova(object@model,ddf='lme4',type=type) else stats::anova(object@model)
 		if (ddf == 'Wald') {
-			table <- calcWald(table,4,sqrt=T)
+			table <- calcWald(table,4,col.df=1)
 			attr(table,'heading') <- paste('ANOVA based on type',utils::as.roman(type),'SS\n(p-values based on the Wald chi-square approximation)')
 		}
 	} else {
