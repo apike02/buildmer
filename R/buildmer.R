@@ -103,7 +103,72 @@ buildbam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('o
 	buildmer.fit(p)
 }
 
+#' Use buildmer to perform stepwise elimination using a custom fitting function
+#' @template formula
+#' @template common
+#' @template reduce
+#' @param fit A function taking a single argument named \code{formula} and returning a fitted model. The function must return an error (`\code{stop()}') if the model does not converge.
+#' @param elfun A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE}).
+#' @param ... Additional options to be passed to the fitting function, such as perhaps a \code{data} argument.
+#' @examples
+#' ## Use buildmer to do stepwise linear discriminant analysis
+#' library(buildmer)
+#' migrant[,-1] <- scale(migrant[,-1])
+#' flipfit <- function (formula) {
+#'     # The predictors must be entered as dependent variables in a MANOVA
+#'     # (i.e. the predictors must be flipped with the dependent variable)
+#'     Y <- model.matrix(formula,migrant)
+#'     m <- lm(Y ~ 0+migrant$changed)
+#'     # the model may error out when asking for the MANOVA
+#'     test <- try(anova(m))
+#'     if (inherits(test,'try-error')) test else m
 #' }
+#' crit.F <- function (ma,mb) { # use whole-model F
+#'     pvals <- anova(mb)$'Pr(>F)' # not valid for backward!
+#'     pvals[length(pvals)-1]
+#' }
+#' crit.Wilks <- function (ma,mb) {
+#'     if (is.null(ma)) return(crit.F(ma,mb)) #not completely correct, but close as F approximates X2
+#'     Lambda <- anova(mb,test='Wilks')$Wilks[1]
+#'     p <- length(coef(mb))
+#'     n <- 1
+#'     m <- nrow(migrant)
+#'     Bartlett <- ((p-n+1)/2-m)*log(Lambda)
+#'     pchisq(Bartlett,n*p,lower.tail=F)
+#' }
+#' 
+#' # First, order the terms based on Wilks' Lambda
+#' m <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
+#' sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
+#' # Now, use the six most important terms (arbitrary choice) in the LDA
+#' library(MASS)
+#' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
+#' @template seealso
+#' @export
+buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=stop("'crit' not specified"),keep=NULL,reduce.fixed=T,reduce.random=T,fit=stop("'fit' not specified"),elfun=stop("'elfun' not specified"),quiet=FALSE,...) {
+	p <- list(
+		formula=formula,
+		cluster=cl,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		crit='custom',
+		keep=keep,
+		calc.anova=F,
+		calc.summary=F,
+		ddf=NULL,
+		quiet=quiet,
+		engine='custom',
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		fit.custom=fit,
+		crit.custom=crit,
+		elfun.custom=elfun,
+		dots=list(...)
+	)
+	buildmer.fit(p)
+}
 #' Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}
 #' @template formula
 #' @template data

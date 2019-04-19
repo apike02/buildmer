@@ -25,12 +25,17 @@ backward <- function (p) {
 	}
 
 	dep <- as.character(p$formula[2])
-	if (is.null(p$tab))   p$tab <- tabulate.formula(p$formula)
-	if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
-		crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
-		crit <- function (...) crit.julia(p$julia,...)
+	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
+	if (p$crit == 'custom') {
+		crit <- p$crit.custom
+		elfun <- p$elfun.custom
+	} else {
+		if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
+			crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
+			crit <- function (...) crit.julia(p$julia,...)
+		}
+		elfun <- match.fun(paste0('elfun.',p$crit))
 	}
-	elfun <- match.fun(paste0('elfun.',p$crit))
 
 	while (T) {
 		need.reml <- need.reml(p)
@@ -212,9 +217,14 @@ order <- function (p) {
 			tab
 		}
 
-		if (is.null(p$julia)) critfun <- match.fun(paste0('crit.',p$crit)) else {
-			critfun.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
-			critfun <- function (...) critfun.julia(p$julia,...)
+		if (p$crit == 'custom') {
+			crit <- p$crit.custom
+		} else {
+			if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
+				crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
+				crit <- function (...) crit.julia(p$julia,...)
+			}
+			elfun <- match.fun(paste0('elfun.',p$crit))
 		}
 
 		p$ordered <- p$crit
@@ -236,7 +246,7 @@ order <- function (p) {
 				return(p)
 			}
 			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','critfun'),environment())
+			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','crit'),environment())
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,1:3],check[,1:3])
@@ -245,7 +255,7 @@ order <- function (p) {
 				rep(mod,nrow(check))
 			})
 			mods <- unlist(mods,recursive=F)
-			check$score <- sapply(mods,function (mod) if (conv(mod)) critfun(cur,mod) else NaN)
+			check$score <- sapply(mods,function (mod) if (conv(mod)) crit(cur,mod) else NaN)
 			if (p$crit == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {

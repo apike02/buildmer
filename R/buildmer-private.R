@@ -2,7 +2,7 @@
 .do.call <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- withCallingHandlers(try(do.call(fun,args)),warning=function (w) invokeRestart('muffleWarning'))
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error') || p$engine == 'custom') return(model)
 	if ('gam' %in% names(model)) {
 		model$mer@call[[1]] <- name
 		model$mer@call$data <- p$data
