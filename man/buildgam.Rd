@@ -5,11 +5,11 @@
 \title{Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}}
 \usage{
 buildgam(formula, data = NULL, family = "gaussian", cl = NULL,
-  direction = c("order", "backward"), crit = "LRT",
+  direction = c("order", "backward"), crit = "LRT", keep = NULL,
   calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
@@ -27,20 +27,7 @@ buildgam(formula, data = NULL, family = "gaussian", cl = NULL,
 
 \item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to \code{gam()}.}
-}
-\value{
-A \code{buildmer} object containing the following slots:
-\itemize{
-\item \code{model}: the final model containing only the terms that survived elimination
-\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
-\itemize{
-\item \code{results}: a dataframe containing the results of the elimination process
-\item \code{messages}: any warning messages
-} This information is also printed as part of the \code{show()} method.
-\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
-\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
-}
+\item{...}{Additional options to be passed to \code{bam()}.}
 }
 \description{
 Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}
@@ -57,5 +44,5 @@ m <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by='following',bs='
 }
 }
 \seealso{
-[buildmer()]
+\code{\link[=buildmer]{buildmer()}}
 }

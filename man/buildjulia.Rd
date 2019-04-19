@@ -6,11 +6,11 @@
 \usage{
 buildjulia(formula, data = NULL, family = "gaussian",
   julia_family = NULL, julia_link = NULL, julia_fun = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
-  "backward"), crit = "LRT", quiet = FALSE, ...)
+  cl = NULL, direction = c("order", "backward"), crit = "LRT",
+  reduce.fixed = TRUE, reduce.random = TRUE, quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
@@ -22,30 +22,19 @@ buildjulia(formula, data = NULL, family = "gaussian",
 
 \item{julia_fun}{If you need to change some parameters in the Julia model object before Julia \code{fit!} is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the \code{julia} structure, which is a list containing a \code{call} element you can use as a function to call Julia; the second argument is the R \code{JuliaObject} corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.}
 
-\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
-
-\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
 
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
+
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
+
 \item{quiet}{Logical indicating whether to suppress progress messages.}
 
 \item{...}{Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}.}
-}
-\value{
-A \code{buildmer} object containing the following slots:
-\itemize{
-\item \code{model}: the final model containing only the terms that survived elimination
-\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
-\itemize{
-\item \code{results}: a dataframe containing the results of the elimination process
-\item \code{messages}: any warning messages
-} This information is also printed as part of the \code{show()} method.
-\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
-\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
-}
 }
 \description{
 Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via JuliaCall
@@ -58,5 +47,5 @@ m <- buildjulia(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|part
 }
 }
 \seealso{
-[buildmer()]
+\code{\link[=buildmer]{buildmer()}}
 }

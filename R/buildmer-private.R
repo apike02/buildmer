@@ -121,9 +121,13 @@ fit <- function (p,formula) {
 		message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
 		.do.call(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))$mer
 	}
+	if (!is.null(p$keep)) formula <- add.terms(formula,p$keep)
+	if (p$engine == 'custom') {
+		message(paste0('Fitting: ',as.character(list(formula))))
+		return(.do.call(p,p$fit.custom,c(list(formula=formula),p$dots)))
+	}
 	if (p$engine == 'glmmTMB') {
 		message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
-		if (!is.null(p$correlation)) formula <- add.terms(formula,p$correlation)
 		return(.do.call(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots)))
 	}
 	if (p$engine == 'multinom') {

@@ -5,12 +5,12 @@
 \title{Use buildmer to fit generalized additive models using package \code{gamm4}}
 \usage{
 buildgamm4(formula, data = NULL, family = "gaussian", cl = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, direction = c("order",
-  "backward"), crit = "LRT", calc.anova = TRUE, calc.summary = TRUE,
-  ddf = "Wald", quiet = FALSE, ...)
+  direction = c("order", "backward"), crit = "LRT", keep = NULL,
+  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
+  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 
@@ -18,36 +18,23 @@ buildgamm4(formula, data = NULL, family = "gaussian", cl = NULL,
 
 \item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
-\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
-
-\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
-
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+
+\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
+
+\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
 \item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
 \item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
-\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
+\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
 
 \item{quiet}{Logical indicating whether to suppress progress messages.}
 
 \item{...}{Additional options to be passed to \code{gamm4()}.}
-}
-\value{
-A \code{buildmer} object containing the following slots:
-\itemize{
-\item \code{model}: the final model containing only the terms that survived elimination
-\item \code{p}: the parameter list used in the various buildmer modules. Things of interest this list includes are, among others:
-\itemize{
-\item \code{results}: a dataframe containing the results of the elimination process
-\item \code{messages}: any warning messages
-} This information is also printed as part of the \code{show()} method.
-\item \code{summary}: the model's summary, if \code{calc.summary=TRUE} was passed
-\item \code{anova}: the model's ANOVA table, if \code{calc.anova=TRUE} was passed
-}
 }
 \description{
 Use buildmer to fit generalized additive models using package \code{gamm4}
@@ -64,5 +51,5 @@ m <- buildgamm4(f1 ~ s(timepoint,by=following) +
 }
 }
 \seealso{
-[buildmer()]
+\code{\link[=buildmer]{buildmer()}}
 }
