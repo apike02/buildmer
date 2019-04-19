@@ -8,7 +8,7 @@ buildmultinom(formula, data = NULL, cl = NULL, direction = c("order",
   "backward"), crit = "LRT", calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.}
+\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
 
 \item{data}{The data to fit the models to.}
 

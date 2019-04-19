@@ -71,17 +71,17 @@ backward <- function (p) {
 		})
 		results <- unlist(sapply(results,`[[`,1))
 		p$tab[,p$crit] <- results
-		if (!p$quiet) {
-			progrep <- p$tab
-			if (p$crit == 'LRT') progrep$LRT <- exp(results)
-			print(progrep)
-		}
 		if (is.null(p$results)) {
 			p$tab$Iteration <- 1
 			p$results <- p$tab
 		} else {
 			p$tab$Iteration <- p$results$Iteration[nrow(p$results)] + 1
 			p$results <- rbind(p$results,p$tab)
+		}
+		if (!p$quiet) {
+			progrep <- p$tab
+			if (p$crit == 'LRT') progrep$LRT <- exp(results)
+			print(progrep[,-'ok'])
 		}
 		remove <- elfun(results)
 		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
@@ -135,17 +135,20 @@ can.remove <- function (tab,i) {
 
 forward <- function (p) {
 	if (p$ordered != p$crit) p <- order(p)
-	elfun <- match.fun(paste0('elfun.',p$crit))
-	dep <- as.character(p$formula[[2]])
-	scores <- p$tab$score
-	remove <- elfun(p$tab$score)
-	remove.ok <- sapply(1:nrow(p$tab),function (i) can.remove(p$tab,i))
-	p$tab[,p$crit] <- p$tab$score
 	if (!p$quiet) {
 		progrep <- p$tab
 		if (p$crit == 'LRT') progrep$LRT <- exp(progrep$LRT)
-		print(progrep)
+		print(progrep[,-'ok'])
 	}
+	elfun <- if (p$crit == 'custom') p$elfun.custom else match.fun(paste0('elfun.',p$crit))
+	dep <- as.character(p$formula[[2]])
+	remove <- elfun(p$tab$score)
+	# Retain all terms up to the last significant one, even if they were not significant themselves
+	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elfun
+	keep <- which(!remove)
+	remove[1:length(keep)] <- F
+	remove.ok <- sapply(1:nrow(p$tab),function (i) can.remove(p$tab,i))
+	p$tab[,p$crit] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
 	p$formula <- build.formula(dep,p$tab)

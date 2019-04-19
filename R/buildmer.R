@@ -555,7 +555,7 @@ buildmer <- function (formula,data=NULL,family='gaussian',cl=NULL,reduce.fixed=T
 }
 
 #' Use buildmer to perform stepwise elimination for \code{multinom()} models from package \code{nnet}
-#' @param formula The model formula for the maximal model you would like to fit, if possible. Supports \code{lme4} random effects and \code{gamm4} smooth terms.
+#' @param formula The model formula for the maximal model you would like to fit, if possible.
 #' @param data The data to fit the models to.
 #' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
