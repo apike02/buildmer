@@ -3,11 +3,11 @@ getdf  <- function (m) attr(stats::logLik(m),'df')
 get2LL.julia <- function (julia,m) if (inherits(m,'JuliaObject')) -2*julia$call('loglikelihood',m) else get2LL(m)
 getdf.julia  <- function (julia,m) if (inherits(m,'JuliaObject'))    julia$call('dof',m)           else getdf(m)
 
-elfun.AIC <- function (diff) diff > -.001
-elfun.BIC <- function (diff) diff > -.001
-elfun.LRT <- function (logp) exp(logp) >= .05
-elfun.2LL <- function (diff) diff > -.001
-elfun.LL <- elfun.2LL
+elim.AIC <- function (diff) diff > -.001
+elim.BIC <- function (diff) diff > -.001
+elim.LRT <- function (logp) exp(logp) >= .05
+elim.2LL <- function (diff) diff > -.001
+elim.LL <- elim.2LL
 
 crit.AIC <- function (ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
@@ -31,11 +31,11 @@ crit.AIC.julia <- function (julia,ref,alt) if (is.null(ref)) AIC.julia(julia,alt
 crit.BIC.julia <- function (julia,ref,alt) if (is.null(ref)) BIC.julia(julia,alt) else BIC.julia(julia,alt) - BIC.julia(julia,ref)
 crit.LRT.julia <- function (julia,ref,alt) {
 	if (is.null(ref)) {
-		chLL <- get2LL(alt)
-		chdf <- getdf(alt)
+		chLL <- get2LL.julia(julia,alt)
+		chdf <- getdf.julia(julia,alt)
 	} else {
-		chLL <- get2LL(alt) - get2LL(ref)
-		chdf <- getdf(alt) - getdf(ref)
+		chLL <- get2LL.julia(julia,ref) - get2LL.julia(julia,alt)
+		chdf <- getdf.julia(julia,alt) - getdf.julia(julia,ref)
 	}
 	if (chdf <= 0) return(0)
 	stats::pchisq(chLL,chdf,lower.tail=F,log.p=T)

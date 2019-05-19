@@ -4,9 +4,9 @@
 \alias{buildjulia}
 \title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via JuliaCall}
 \usage{
-buildjulia(formula, data = NULL, family = "gaussian",
+buildjulia(formula, data = NULL, family = "gaussian", include = NULL,
   julia_family = NULL, julia_link = NULL, julia_fun = NULL,
-  cl = NULL, direction = c("order", "backward"), crit = "LRT",
+  direction = c("order", "backward"), crit = "LRT",
   reduce.fixed = TRUE, reduce.random = TRUE, quiet = FALSE, ...)
 }
 \arguments{
@@ -16,13 +16,13 @@ buildjulia(formula, data = NULL, family = "gaussian",
 
 \item{family}{The error distribution to use.}
 
+\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
+
 \item{julia_family}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if \code{family} is empty or \code{gaussian}. This should probably be the same as \code{family} but with an initial capital, with the notable exception of logistic regression: if the R family is \code{binomial}, the Julia family should be \code{'Bernoulli'}.}
 
 \item{julia_link}{For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if \code{family} is empty or \code{gaussian}. If not provided, Julia's default link for your error distribution is used.}
 
 \item{julia_fun}{If you need to change some parameters in the Julia model object before Julia \code{fit!} is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the \code{julia} structure, which is a list containing a \code{call} element you can use as a function to call Julia; the second argument is the R \code{JuliaObject} corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.}
-
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 

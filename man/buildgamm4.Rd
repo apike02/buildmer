@@ -5,7 +5,7 @@
 \title{Use buildmer to fit generalized additive models using package \code{gamm4}}
 \usage{
 buildgamm4(formula, data = NULL, family = "gaussian", cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", keep = NULL,
+  direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
   calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
@@ -21,6 +21,8 @@ buildgamm4(formula, data = NULL, family = "gaussian", cl = NULL,
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+
+\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
 
 \item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 

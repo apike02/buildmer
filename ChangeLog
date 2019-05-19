@@ -1,0 +1,15 @@
+'**' denotes big changes
+'*' denotes minor changes
+
+1.1
+
+** Large rewrite of internal code organization. You can now specify arbitrary
+   fitting functions, criteria, and elimination functions.
+* Add 'include' argument to force terms to always be in the formula (fixes
+  github bug #1)
+* New function 'buildcustom'
+* Added raw log-likelihood as a criterion: 'LL'
+* Fix bug in calculating anova table with lmerTest ddf options
+* Make calcWald respect numerator df in anova table
+* Remove incorrect gradient check for mgcv models in conv(), instead check for
+  'full convergence' string

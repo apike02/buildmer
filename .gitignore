@@ -3,3 +3,5 @@
 .RData
 *.swp
 *.tar.gz
+doc
+Meta

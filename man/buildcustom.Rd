@@ -5,9 +5,10 @@
 \title{Use buildmer to perform stepwise elimination using a custom fitting function}
 \usage{
 buildcustom(formula, cl = NULL, direction = c("order", "backward"),
-  crit = stop("'crit' not specified"), keep = NULL, reduce.fixed = T,
-  reduce.random = T, fit = stop("'fit' not specified"),
-  elfun = stop("'elfun' not specified"), quiet = FALSE, ...)
+  crit = function(ref, alt) stop("'crit' not specified"),
+  include = NULL, reduce.fixed = T, reduce.random = T,
+  fit = function(p, formula) stop("'fit' not specified"),
+  elim = function(x) stop("'elim' not specified"), quiet = FALSE, ...)
 }
 \arguments{
 \item{formula}{The model formula for the maximal model you would like to fit, if possible.}
@@ -16,15 +17,17 @@ buildcustom(formula, cl = NULL, direction = c("order", "backward"),
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+\item{crit}{A function taking two arguments and outputting a single score, denoting the difference between the models. This can also be a character string or vector of any of \code{'LRT'} (likelihood-ratio test), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+
+\item{include}{A one-sided formula whose terms will always be included in the model formula. Useful for e.g.\ passing correlation structures in \code{glmmTMB} models.}
 
 \item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
 \item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
 
-\item{fit}{A function taking a single argument named \code{formula} and returning a fitted model. The function must return an error (`\code{stop()}') if the model does not converge.}
+\item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list {p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge.}
 
-\item{elfun}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE}).}
+\item{elim}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE}).}
 
 \item{quiet}{Logical indicating whether to suppress progress messages.}
 
@@ -37,7 +40,7 @@ Use buildmer to perform stepwise elimination using a custom fitting function
 ## Use buildmer to do stepwise linear discriminant analysis
 library(buildmer)
 migrant[,-1] <- scale(migrant[,-1])
-flipfit <- function (formula) {
+flipfit <- function (p,formula) {
     # The predictors must be entered as dependent variables in a MANOVA
     # (i.e. the predictors must be flipped with the dependent variable)
     Y <- model.matrix(formula,migrant)
@@ -57,7 +60,7 @@ crit.Wilks <- function (ma,mb) {
     n <- 1
     m <- nrow(migrant)
     Bartlett <- ((p-n+1)/2-m)*log(Lambda)
-    pchisq(Bartlett,n*p,lower.tail=F)
+    pchisq(Bartlett,n*p,lower.tail=FALSE)
 }
 
 # First, order the terms based on Wilks' Lambda

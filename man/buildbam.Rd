@@ -5,7 +5,7 @@
 \title{Use buildmer to fit big generalized additive models using \code{bam()} from package \code{mgcv}}
 \usage{
 buildbam(formula, data = NULL, family = "gaussian", cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", keep = NULL,
+  direction = c("order", "backward"), crit = "LRT", include = NULL,
   calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
 \arguments{
@@ -21,13 +21,15 @@ buildbam(formula, data = NULL, family = "gaussian", cl = NULL,
 
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
 
+\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
+
 \item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
 
 \item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
 
 \item{quiet}{Logical indicating whether to suppress progress messages.}
 
-\item{...}{Additional options to be passed to \code{gam()}.}
+\item{...}{Additional options to be passed to \code{bam()}.}
 }
 \description{
 Use buildmer to fit big generalized additive models using \code{bam()} from package \code{mgcv}
@@ -39,7 +41,7 @@ m <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
 }
 \donttest{
 library(buildmer)
-m <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by='following',bs='re') +
+m <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
 }
 }

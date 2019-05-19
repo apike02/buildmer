@@ -2,12 +2,12 @@ backward <- function (p) {
 	if (!(p$reduce.fixed || p$reduce.random)) return(p)
 
 	fit.references.parallel <- function (p) {
+		if (p$parallel) parallel::clusterExport(p$cl,'p',environment())
 		if (!p$quiet) message('Fitting ML and REML reference models')
-		if (p$parallel) parallel::clusterExport(p$cl,c('p','dep','fit','conv','build.formula','unravel'),environment())
 		while (T) {
 			res <- p$parply(c(T,F),function (x) {
 				p$reml <- x
-				fit(p,p$formula)
+				p$fit(p,p$formula)
 			})
 			if (all(sapply(res,conv))) {
 				p$cur.reml <- res[[1]]
@@ -26,24 +26,17 @@ backward <- function (p) {
 
 	dep <- as.character(p$formula[2])
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
-	if (p$crit == 'custom') {
-		crit <- p$crit.custom
-		elfun <- p$elfun.custom
-	} else {
-		if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
-			crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
-			crit <- function (...) crit.julia(p$julia,...)
-		}
-		elfun <- match.fun(paste0('elfun.',p$crit))
-	}
-
+	if (p$parallel) parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
 	while (T) {
-		need.reml <- need.reml(p)
+		need.reml <- any(sapply(unique(p$tab$block),function (b) {
+			i <- which(p$tab$block == b)
+			any(!is.na(p$tab[i,'grouping']))
+		}))
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			if (!p$quiet) message('Fitting ML reference model')
 			p$reml <- F
-			p$cur.ml <- fit(p,p$formula)
+			p$cur.ml <- p$fit(p,p$formula)
 			if (!conv(p$cur.ml)) {
 				p <- reduce.noconv(p)
 				p <- fit.references.parallel(p)
@@ -52,7 +45,7 @@ backward <- function (p) {
 		if (need.reml && is.null(p$cur.reml)) {
 			if (!p$quiet) message('Fitting REML reference model')
 			p$reml <- T
-			p$cur.reml <- fit(p,p$formula)
+			p$cur.reml <- p$fit(p,p$formula)
 			if (!conv(p$cur.reml)) {
 				p <- reduce.noconv(p)
 				p <- fit.references.parallel(p)
@@ -60,22 +53,20 @@ backward <- function (p) {
 		}
 
 		if (!p$quiet) message('Testing terms')
-		if (!is.null(p$cluster)) parallel::clusterExport(p$cluster,c('p','crit'),environment())
 		results <- p$parply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i)) return(list(val=rep(NA,length(i))))
-			need.reml <- !is.null(p$cur.reml)
-			p$reml <- need.reml && !any(is.na(p$tab[i,'grouping']))
+			if (!can.remove(p$tab,i) || any(p$tab[i,'term'] %in% p$include)) return(list(val=rep(NA,length(i))))
+			p$reml <- all(!is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
-			m.alt <- fit(p,f.alt)
-			val <- if (conv(m.alt)) crit(m.alt,m.cur) else NaN
-			if (p$crit == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
+			m.alt <- p$fit(p,f.alt)
+			val <- if (conv(m.alt)) p$crit(m.alt,m.cur) else NaN
+			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
 		results <- unlist(sapply(results,`[[`,1))
-		p$tab[,p$crit] <- results
+		p$tab[,p$crit.name] <- results
 		if (is.null(p$results)) {
 			p$tab$Iteration <- 1
 			p$results <- p$tab
@@ -85,18 +76,20 @@ backward <- function (p) {
 		}
 		if (!p$quiet) {
 			progrep <- p$tab
-			if (p$crit == 'LRT') progrep$LRT <- exp(results)
-			print(progrep[,-'ok'])
+			progrep$index <- progrep$code <- progrep$ok <- NULL
+			if (p$crit.name == 'LRT') progrep$LRT <- exp(results)
+			print(progrep)
 		}
-		remove <- elfun(results)
+		remove <- p$elim(results)
 		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
 		if (length(remove) == 0) {
 			if (!p$quiet) message('All terms are significant')
 			p$model <- if (need.reml) p$cur.reml else p$cur.ml
 			return(p)
 		}
-		# Remove the worst offender(s) and continue
-		remove <- remove[p$tab[remove,p$crit] == max(p$tab[remove,p$crit])]
+
+		# 4. Remove the worst offender(s) and continue
+		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
 		p$formula <- build.formula(dep,p$tab)
 		p$cur.ml <- p$cur.reml <- NULL
@@ -117,7 +110,7 @@ can.remove <- function (tab,i) {
 
 	if ('1' %in% t) {
 		# If fixed intercept: never remove it
-		if (is.na(g)) return(F)
+		if (any(is.na(g))) return(F)
 		# If random intercept: do not remove if there are subsequent terms
 		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
 	}
@@ -139,26 +132,26 @@ can.remove <- function (tab,i) {
 }
 
 forward <- function (p) {
-	if (p$ordered != p$crit) p <- order(p)
+	if (p$ordered != p$crit.name) p <- order(p) else if (p$ordered == 'custom') warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
 	if (!p$quiet) {
 		progrep <- p$tab
-		if (p$crit == 'LRT') progrep$LRT <- exp(progrep$LRT)
-		print(progrep[,-'ok'])
+		progrep$index <- progrep$code <- progrep$ok <- NULL
+		if (p$crit.name == 'LRT') progrep$LRT <- exp(progrep$LRT)
+		print(progrep)
 	}
-	elfun <- if (p$crit == 'custom') p$elfun.custom else match.fun(paste0('elfun.',p$crit))
 	dep <- as.character(p$formula[[2]])
-	remove <- elfun(p$tab$score)
+	remove <- p$elim(p$tab$score)
 	# Retain all terms up to the last significant one, even if they were not significant themselves
-	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elfun
+	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
 	keep <- which(!remove)
 	remove[1:length(keep)] <- F
 	remove.ok <- sapply(1:nrow(p$tab),function (i) can.remove(p$tab,i))
-	p$tab[,p$crit] <- p$tab$score
+	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
 	p$formula <- build.formula(dep,p$tab)
-	p$reml <- need.reml(p)
-	p$model <- fit(p,p$formula)
+	p$reml <- T
+	p$model <- p$fit(p,p$formula)
 	p
 }
 
@@ -217,17 +210,7 @@ order <- function (p) {
 			tab
 		}
 
-		if (p$crit == 'custom') {
-			crit <- p$crit.custom
-		} else {
-			if (is.null(p$julia)) crit <- match.fun(paste0('crit.',p$crit)) else {
-				crit.julia <- match.fun(paste0('crit.',p$crit,'.julia'))
-				crit <- function (...) crit.julia(p$julia,...)
-			}
-			elfun <- match.fun(paste0('elfun.',p$crit))
-		}
-
-		p$ordered <- p$crit
+		p$ordered <- p$crit.name
 		have <- p$tab
 		cur <- NULL
 		while (T) {
@@ -245,18 +228,18 @@ order <- function (p) {
 				p$model <- cur
 				return(p)
 			}
-			if (!p$quiet) message(paste0('Currently evaluating ',p$crit,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','crit'),environment())
+			if (!p$quiet) message(paste0('Currently evaluating ',p$crit.name,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
+			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','p'),environment())
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,1:3],check[,1:3])
 				form <- build.formula(dep,tab)
-				mod <- list(fit(p,form))
+				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
 			mods <- unlist(mods,recursive=F)
-			check$score <- sapply(mods,function (mod) if (conv(mod)) crit(cur,mod) else NaN)
-			if (p$crit == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
+			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(cur,mod) else NaN)
+			if (p$crit.name == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
 				if (!p$quiet) message('None of the models converged - giving up ordering attempt.')
@@ -272,7 +255,7 @@ order <- function (p) {
 				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
 				# needs an extra fit to obtain the new 'current' model.
 				form <- build.formula(dep,have)
-				cur <- fit(p,form)
+				cur <- p$fit(p,form)
 				if (!conv(cur)) {
 					if (!p$quiet) message('The reference model for the next step failed to converge - giving up ordering attempt.')
 					return(p)
@@ -294,6 +277,7 @@ order <- function (p) {
 		fxd <- is.na(tab$grouping)
 	}
 	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
+	if (!is.null(p$include)) p$tab <- rbind(p$tab,data.frame(index=NA,grouping=NA,term=p$include,code=p$include,block=1,ok=T,score=NA))
 
 	p$reml <- F
 	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[fxd,])

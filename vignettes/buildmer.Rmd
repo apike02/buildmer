@@ -1,6 +1,6 @@
 ---
 title: "Using `buildmer' to automatically find & compare maximal (mixed) models"
-author: "Cesko Voeten"
+author: "Cesko C. Voeten"
 date: "19 April 2019"
 bibliography: bibliography.bib
 csl: apa.csl
@@ -8,13 +8,13 @@ output: pdf_document
 header-includes:
    - \usepackage{tipa}
 vignette: >
-  %\VignetteIndexEntry{Using `buildmer' to automatically find & compare maximal (mixed) models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Using `buildmer' to automatically find & compare maximal (mixed) models}
 ---
 
 # Introduction
-[@keepitmaximal] suggest that for valid statistical inference, a regression model must control for all possible confounding factors, specifically those coming from random effects such as subjects and items. [@parsimonious] suggest that this proposed strategy leads to overfitting and that an appropriately-parsimonious model must be chosen, preferably based on theory but possibly also using stepwise elimination ([@stepwise]). Both strategies require a maximal model to be identified (for [@keepitmaximal], this is the final model; for [@stepwise], this is the basis for backward stepwise elimination), but for many psycholinguistic experiments, the _truly_ maximal model will fail to converge and a reasonable subset model needs to be chosen.
+@keepitmaximal suggest that for valid statistical inference, a regression model must control for all possible confounding factors, specifically those coming from random effects such as subjects and items. @parsimonious suggest that this proposed strategy leads to overfitting and that an appropriately-parsimonious model must be chosen, preferably based on theory but possibly also using stepwise elimination [@stepwise]. Both strategies require a maximal model to be identified (for @keepitmaximal, this is the final model; for @stepwise, this is the basis for backward stepwise elimination), but for many psycholinguistic experiments, the _truly_ maximal model will fail to converge and a reasonable subset model needs to be chosen.
 
 The `buildmer` package aims to automate the procedures identifying the maximal model that can still converge & performing backward stepwise elimination based on a variety of criteria (change in log-likelihood, AIC, BIC). The package does not contain any model-fitting code, but functions as an administrative loop around other packages by simply building up a maximal formula object and passing it along. Currently, the package supports models that can be fitted by `(g)lm`, `(g)lmer` (package `lme4`), `gls`, `lme` (package `nlme`), `gam`, `bam` (package `mgcv`), `gamm4` (package `gamm4`), `glmmTMB` (package `glmmTMB`), `multinom` (package `nnet`), and it can use `JuliaCall` to drive Douglas Bates's `MixedModels` package for Julia.
 
@@ -71,60 +71,10 @@ Fitting as (g)lm: f1 ~ following + timepoint
 Updating formula: f1 ~ following + vowel
 Currently evaluating LRT for: timepoint, vowel:following
 [...]
-')
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint
-#Fitting as (g)lm: f1 ~ following + vowel + vowel:following
-#Updating formula: f1 ~ following + vowel + timepoint
-#Currently evaluating LRT for: vowel:timepoint, vowel:following, timepoint:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:timepoint
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + timepoint:following
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint
-#Currently evaluating LRT for: vowel:following, timepoint:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:timepoint + vowel:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:timepoint + timepoint:following
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + timepoint:following
-#Currently evaluating LRT for: vowel:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + vowel:following
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + vowel:following
-#Currently evaluating LRT for: vowel:timepoint:following
-#Fitting as (g)lm: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + vowel:timepoint:following
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + vowel:timepoint:following
-#Currently evaluating LRT for: 1 | participant, 1 | word
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word)
-#Currently evaluating LRT for: 1 | participant, timepoint | word
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 | participant)
-#Currently evaluating LRT for: vowel | participant, timepoint | participant, following | participant, timepoint | word
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 + vowel | participant)
-#boundary (singular) fit: see ?isSingular
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 + timepoint | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 + following | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 | participant)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 | participant)
-#Currently evaluating LRT for: vowel | participant, timepoint | participant, following | participant
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + vowel | participant)
-#boundary (singular) fit: see ?isSingular
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + following | participant)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint | participant)
-#Currently evaluating LRT for: vowel | participant, following | participant
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + vowel | participant)
-#boundary (singular) fit: see ?isSingular
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following | participant)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following | participant)
-#Currently evaluating LRT for: vowel | participant, timepoint:following | participant
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + vowel | participant)
-#boundary (singular) fit: see ?isSingular
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-cat('Currently evaluating LRT for: vowel | participant
-Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following + vowel | participant)
+Currently evaluating LRT for: vowel | participant
+Fitting via lme4, with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following + vowel | participant)
 boundary (singular) fit: see ?isSingular
-None of the models converged - giving up ordering attempt.
+None of the models converged - giving up ordering attempt.')
 ```
 
 The `order` step is useful if the maximal model includes random effects: `buildmer` will start out with an empty model and keeps adding terms to this model until convergence can no longer be achieved. The `order` step adds terms in order of their contribution to a certain criterion, such that the most important random slopes will be included first; this criterion is controlled by the `crit` argument. The default criterion is the significance of the change in log-likelihood (`LRT`: terms which provide lower chi-square $p$ values are considered more important), but other options are also supported. These are the raw log-likelihood (`LL`: terms which provide the largest increase in the log-likelihood; this measure will favor categorical predictors with many levels), AIC (`AIC`), and BIC (`BIC`); you can select among them by passing e.g.\ `crit='LRT'`. The default `direction` is `c('order','backward')`, i.e.\ proceeding directly to backward stepwise elimination, but for illustration purposes we separate those steps here. (The `crit` argument also accepts vectors, such that e.g.\ `direction=c('order','backward'),crit=c('LL','LRT')` is allowed.)
@@ -143,7 +93,7 @@ f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + fol
 ```
 
 The maximal _feasible_ model, i.e.\ the maximal model that is actually capable of converging, is one excluding random slopes for vowels by participants. This is not optimal for inference purposes, but for now it will do; we will see below that taking out the correlation parameters in the random effects makes it possible to include random slopes for vowels as well.
-We now proceed to the next step: stepwise elimination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This used the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test. This is the preferred test for mixed models in [@stepwise].
+We now proceed to the next step: stepwise elimination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This used the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test. This is the preferred test for mixed models in @stepwise.
 
 ```{r,eval=F}
 m <- buildmer(f,data=vowels,direction='backward',control=lmerControl(optimizer='bobyqa'))

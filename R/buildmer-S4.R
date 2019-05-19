@@ -16,6 +16,7 @@
 #' @export mkBuildmer
 mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
 
+#' @import methods
 #' @S3method show buildmer
 show.buildmer <- function (object) {
 	methods::show(object@model)

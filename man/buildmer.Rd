@@ -5,7 +5,7 @@
 \title{Construct and fit as complete a model as possible and perform stepwise elimination}
 \usage{
 buildmer(formula, data = NULL, family = "gaussian", cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", keep = NULL,
+  direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
   calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
 }
@@ -21,6 +21,8 @@ buildmer(formula, data = NULL, family = "gaussian", cl = NULL,
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+
+\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
 
 \item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
 
@@ -60,7 +62,7 @@ clusterExport(cl,'control') #this is not done automatically for '...' arguments!
 m <- buildmer(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
               (timepoint|word),data=vowels,cl=cl,direction='order',crit='AIC',calc.anova=FALSE,
               calc.summary=FALSE,control=control,verbose=2)
-# The maximal model is: f1 ~  vowel + timepoint + vowel:timepoint + following +
+# The maximal model is: f1 ~ vowel + timepoint + vowel:timepoint + following +
 # timepoint:following +vowel:following + vowel:timepoint:following + (1 + timepoint +
 # following + timepoint:following | participant) + (1 + timepoint | word)
 # Now do backward stepwise elimination (result: f1 ~ vowel + timepoint + vowel:timepoint +
