@@ -18,7 +18,7 @@
 #' }
 #' @template seealso
 #' @export
-buildbam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildbam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -135,7 +135,7 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 #' }
 #' @template seealso
 #' @export
-buildgam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -184,7 +184,7 @@ buildgam <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('o
 #' }
 #' @template seealso
 #' @export
-buildgamm4 <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
@@ -215,7 +215,7 @@ buildgamm4 <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c(
 		fixed <- lme4::nobars(p$formula)
 		bars <- lme4::findbars(p$formula)
 		random <- if (length(bars)) stats::as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		reml <- p$family == 'gaussian'
+		reml <- p$family == NULL
 		p$model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	}
 	buildmer.finalize(p)
@@ -239,7 +239,7 @@ buildgamm4 <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c(
 #' }}
 #' @template seealso
 #' @export
-buildglmmTMB <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -285,7 +285,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 	p <- list(
 		formula=formula,
 		data=data,
-		family='gaussian',
+		family=NULL,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -317,8 +317,8 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
 #' @param include A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.
 #' @param quiet Logical indicating whether to suppress progress messages.
-#' @param julia_family For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if \code{family} is empty or \code{gaussian}. This should probably be the same as \code{family} but with an initial capital, with the notable exception of logistic regression: if the R family is \code{binomial}, the Julia family should be \code{'Bernoulli'}.
-#' @param julia_link For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if \code{family} is empty or \code{gaussian}. If not provided, Julia's default link for your error distribution is used.
+#' @param julia_family For generalized linear mixed models, the name of the Julia function to evaluate to obtain the error distribution. Only used if \code{family} is empty. This should probably be the same as \code{family} but with an initial capital, with the notable exception of logistic regression: if the R family is \code{binomial}, the Julia family should be \code{'Bernoulli'}.
+#' @param julia_link For generalized linear mixed models, the name of the Julia function to evaluate to obtain the link function. Only used if \code{family} is empty. If not provided, Julia's default link for your error distribution is used.
 #' @param julia_fun If you need to change some parameters in the Julia model object before Julia \code{fit!} is called, you can provide an R function to manipulate the unfitted Julia object here. This function should accept two arguments: the first is the \code{julia} structure, which is a list containing a \code{call} element you can use as a function to call Julia; the second argument is the R \code{JuliaObject} corresponding to the unfitted Julia model. This can be used to e.g. change optimizer parameters before the model is fitted.
 #' @param ... Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}.
 #' @examples
@@ -329,7 +329,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' }
 #' @template seealso
 #' @export
-buildjulia <- function (formula,data=NULL,family='gaussian',include=NULL,julia_family=NULL,julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,quiet=FALSE,...) {
+buildjulia <- function (formula,data=NULL,family=NULL,include=NULL,julia_family=NULL,julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
@@ -379,7 +379,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 	p <- list(
 		formula=formula,
 		data=data,
-		family='gaussian',
+		family=NULL,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -472,7 +472,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' m <- buildmer(terms,data=vowels,dep='f1')
 #' }
 #' @export
-buildmer <- function (formula,data=NULL,family='gaussian',cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,

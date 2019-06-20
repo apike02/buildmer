@@ -4,7 +4,7 @@
 \alias{buildmer}
 \title{Construct and fit as complete a model as possible and perform stepwise elimination}
 \usage{
-buildmer(formula, data = NULL, family = "gaussian", cl = NULL,
+buildmer(formula, data = NULL, family = NULL, cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
   calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)

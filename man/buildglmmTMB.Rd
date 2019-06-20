@@ -4,7 +4,7 @@
 \alias{buildglmmTMB}
 \title{Use buildmer to perform stepwise elimination on glmmTMB models}
 \usage{
-buildglmmTMB(formula, data = NULL, family = "gaussian", cl = NULL,
+buildglmmTMB(formula, data = NULL, family = NULL, cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
   quiet = FALSE, ...)

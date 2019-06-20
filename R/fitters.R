@@ -5,7 +5,7 @@ fit.bam <- function (p,formula) {
 }
 
 fit.buildmer <- function (p,formula) {
-	reml <- p$reml && p$family == 'gaussian'
+	reml <- p$reml && is.null(p$family)
 	if (has.smooth.terms(formula)) {
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
@@ -21,13 +21,13 @@ fit.buildmer <- function (p,formula) {
 			patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
 		} else {
 			if (!p$quiet) message(paste0('Fitting via (g)lm: ',as.character(list(formula))))
-			if (p$family == 'gaussian') patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$filtered.dots))
-			else                        patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
+			if (is.null(p$family)) patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$filtered.dots))
+			else                   patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
 		}
 	} else {
 		if (!p$quiet) message(paste0('Fitting via lme4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(formula))))
-		return(if (p$family == 'gaussian') patch.lmer(p,lme4::lmer ,c(list(formula=formula,data=p$data,REML=reml),p$dots))
-		       else                        patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		return(if (is.null(p$family)) patch.lmer(p,lme4::lmer ,c(list(formula=formula,data=p$data,REML=reml),p$dots))
+		       else                   patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 }
 
@@ -52,7 +52,7 @@ fit.julia <- function (p,formula) {
 	if (is.null(lme4::findbars(formula))) return(fit.buildmer(p,formula))
 	if (!p$quiet) message(paste0('Fitting via Julia: ',as.character(list(formula))))
 	.fit <- function (p) {
-		if (p$family == 'gaussian') {
+		if (is.null(p$family)) {
 			mod <- p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
 		} else {
 			fam <- p$julia$call(p$julia_family,need_return='Julia')

@@ -28,7 +28,7 @@ backward <- function (p) {
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
 	if (p$parallel) parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
 	while (T) {
-		need.reml <- any(sapply(unique(p$tab$block),function (b) {
+		need.reml <- is.null(p$family) && any(sapply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
 			any(!is.na(p$tab[i,'grouping']))
 		}))

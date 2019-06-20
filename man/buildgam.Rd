@@ -4,7 +4,7 @@
 \alias{buildgam}
 \title{Use buildmer to fit generalized additive models using \code{gam()} from package \code{mgcv}}
 \usage{
-buildgam(formula, data = NULL, family = "gaussian", cl = NULL,
+buildgam(formula, data = NULL, family = NULL, cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }
