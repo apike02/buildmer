@@ -232,7 +232,7 @@ order <- function (p) {
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','p'),environment())
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
-				tab <- rbind(have[,1:3],check[,1:3])
+				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
 				form <- build.formula(dep,tab)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))

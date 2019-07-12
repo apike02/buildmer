@@ -75,9 +75,10 @@ add.terms <- function (formula,add) {
 #' all.equal(check(form1),check(form2))
 #' @export
 build.formula <- function (dep,terms) {
-	if (is.na(terms[1,'grouping']) && terms[1,'term'] == '1') {
+	fixed.intercept <- is.na(terms$grouping) & terms$term == '1'
+	if (any(fixed.intercept)) {
 		form <- stats::as.formula(paste(dep,'~1'))
-		terms <- terms[-1,]
+		terms <- terms[!fixed.intercept,]
 	} else  form <- stats::as.formula(paste(dep,'~0'))
 	while (nrow(terms)) {
 		# we can't use a simple for loop: the data frame will mutate in-place when we encounter grouping factors
