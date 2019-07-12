@@ -39,6 +39,7 @@ buildbam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=T,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -110,6 +111,7 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 		crit=crit,
 		crit.name='custom criterion',
 		elim=elim,
+		can.use.REML=F,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -156,6 +158,7 @@ buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=T,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -206,6 +209,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=is.null(family),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -215,7 +219,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 		fixed <- lme4::nobars(p$formula)
 		bars <- lme4::findbars(p$formula)
 		random <- if (length(bars)) stats::as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		reml <- p$family == NULL
+		reml <- is.null(family)
 		p$model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	}
 	buildmer.finalize(p)
@@ -260,6 +264,7 @@ buildglmmTMB <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('ord
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=T,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -302,6 +307,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=T,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -349,6 +355,7 @@ buildjulia <- function (formula,data=NULL,family=NULL,include=NULL,julia_family=
 		calc.anova=F,
 		calc.summary=F,
 		quiet=quiet,
+		can.use.REML=is.null(family),
 		dots=list(...)
 	)
 
@@ -396,6 +403,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=T,
 		dots=list(random=random,...)
 	)
 	p <- buildmer.fit(p)
@@ -493,6 +501,7 @@ buildmer <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=is.null(family),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -534,6 +543,7 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
+		can.use.REML=F,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
