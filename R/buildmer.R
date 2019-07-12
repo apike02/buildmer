@@ -21,7 +21,7 @@
 buildbam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		cluster=cl,
 		reduce.fixed=T,
@@ -138,7 +138,7 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		cluster=cl,
 		reduce.fixed=T,
@@ -188,7 +188,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -243,7 +243,7 @@ buildglmmTMB <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('ord
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -284,7 +284,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 	if (!requireNamespace('nlme')) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=NULL,
 		cluster=cl,
 		reduce.fixed=T,
@@ -333,7 +333,7 @@ buildjulia <- function (formula,data=NULL,family=NULL,include=NULL,julia_family=
 	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		include=include,
 		julia_family=substitute(julia_family),
@@ -378,7 +378,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 	if (!requireNamespace('nlme')) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=NULL,
 		cluster=cl,
 		reduce.fixed=T,
@@ -475,7 +475,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 buildmer <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		family=substitute(family),
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
@@ -517,7 +517,7 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 	if (!requireNamespace('nnet')) stop('Please install package nnet')
 	p <- list(
 		formula=formula,
-		data=quote(data),
+		data=data,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
