@@ -1,4 +1,5 @@
 run <- function (fun,args) withCallingHandlers(try(do.call(fun,args)),warning=function (w) invokeRestart('muffleWarning'))
+patch.family <- function (family) if (is.null(family)) gaussian() else family
 
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
