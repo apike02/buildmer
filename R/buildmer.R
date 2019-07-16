@@ -42,6 +42,7 @@ buildbam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		can.use.REML=T,
 		dots=list(...)
 	)
+	p <- abort.PQL(p)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -161,6 +162,7 @@ buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		can.use.REML=T,
 		dots=list(...)
 	)
+	p <- abort.PQL(p)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -209,7 +211,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=is.null(family),
+		can.use.REML=is.gaussian(family),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -219,7 +221,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 		fixed <- lme4::nobars(p$formula)
 		bars <- lme4::findbars(p$formula)
 		random <- if (length(bars)) stats::as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		reml <- is.null(family)
+		reml <- is.gaussian(family)
 		p$model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	}
 	buildmer.finalize(p)
@@ -355,7 +357,7 @@ buildjulia <- function (formula,data=NULL,family=NULL,include=NULL,julia_family=
 		calc.anova=F,
 		calc.summary=F,
 		quiet=quiet,
-		can.use.REML=is.null(family),
+		can.use.REML=is.gaussian(family),
 		dots=list(...)
 	)
 
@@ -501,7 +503,7 @@ buildmer <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=is.null(family),
+		can.use.REML=is.gaussian(family),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
