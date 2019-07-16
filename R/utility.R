@@ -101,6 +101,7 @@ build.formula <- function (dep,terms) {
 
 #' Test a model for convergence
 #' @param model The model object to test.
+#' @param singular.ok A logical indicating whether singular fits are accepted as `converged' or not. Relevant only for lme4 models.
 #' @return Logical indicating whether the model converged.
 #' @examples
 #' library(buildmer)
@@ -111,7 +112,7 @@ build.formula <- function (dep,terms) {
 #'             optimizer='bobyqa',optCtrl=list(maxfun=1)))
 #' sapply(c(good1,good2,bad),conv)
 #' @export
-conv <- function (model) {
+conv <- function (model,singular.ok=TRUE) {
 	if (inherits(model,'try-error')) return(F)
 	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info)) {
@@ -129,7 +130,7 @@ conv <- function (model) {
 	if (inherits(model,'merMod')) {
 		if (model@optinfo$conv$opt != 0) return(F)
 		if (!length(model@optinfo$conv$lme4)) return(T)
-		if (is.null(model@optinfo$conv$lme4$code)) return(F) #happens when fit is singular
+		if (is.null(model@optinfo$conv$lme4$code)) return(singular.ok)
 		if (model@optinfo$conv$lme4$code != 0) return(F)
 	}
 	if (inherits(model,'glmmTMB')) {

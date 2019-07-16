@@ -18,6 +18,12 @@ buildmer.fit <- function (p) {
 	}
 	if (!is.null(p$include) && !is.character(p$include)) p$include <- attr(stats::terms(p$include),'term.labels')
 
+	# If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!
+	if ('p' %in% names(p$dots)) {
+		p <- c(p,p$dots$p)
+		p$dots$p <- NULL
+	}
+
 	p$reml <- T
 	p$ordered <- ''
 	crits <- p$crit
