@@ -4,10 +4,12 @@
 \alias{conv}
 \title{Test a model for convergence}
 \usage{
-conv(model)
+conv(model, singular.ok = FALSE)
 }
 \arguments{
 \item{model}{The model object to test.}
+
+\item{singular.ok}{A logical indicating whether singular fits are accepted as `converged' or not. Relevant only for lme4 models.}
 }
 \value{
 Logical indicating whether the model converged.

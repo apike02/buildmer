@@ -4,8 +4,8 @@
 \alias{buildjulia}
 \title{Use buildmer to perform stepwise elimination on models fit with Julia package MixedModels via JuliaCall}
 \usage{
-buildjulia(formula, data = NULL, family = NULL, include = NULL,
-  julia_family = NULL, julia_link = NULL, julia_fun = NULL,
+buildjulia(formula, data = NULL, family = gaussian(), include = NULL,
+  julia_family = gaussian(), julia_link = NULL, julia_fun = NULL,
   direction = c("order", "backward"), crit = "LRT",
   reduce.fixed = TRUE, reduce.random = TRUE, quiet = FALSE, ...)
 }

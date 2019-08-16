@@ -6,7 +6,6 @@ buildmer.fit <- function (p) {
 		p$formula <- build.formula(p$dots$dep,p$tab)
 		p$dots$dep <- NULL
 	} else p$tab <- tabulate.formula(p$formula)
-	if (is.gaussian(p$family)) p$family <- gaussian()
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
 	if (is.null(p$cluster)) {
 		p$parallel <- F
@@ -91,7 +90,11 @@ check.ddf <- function (ddf) {
 
 get.random.terms <- function (term) lme4::findbars(stats::as.formula(paste0('~',term)))
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
-is.gaussian <- function (family) is.null(family) || all.equal(if (is.function(family)) family() else family,gaussian())
+is.gaussian <- function (family) {
+	if (is.character(family)) family <- get(family)
+	if (is.function (family)) family <- family()
+	all.equal(family,gaussian())
+}
 is.smooth.term <- function (term) has.smooth.terms(stats::as.formula(paste0('~',list(term))))
 is.random.term <- function (term) length(get.random.terms(term)) > 0
 mkCrit <- function (crit) if (is.function(crit)) crit else get(paste0('crit.',crit))

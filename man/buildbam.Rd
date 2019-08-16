@@ -4,7 +4,7 @@
 \alias{buildbam}
 \title{Use buildmer to fit big generalized additive models using \code{bam()} from package \code{mgcv}}
 \usage{
-buildbam(formula, data = NULL, family = NULL, cl = NULL,
+buildbam(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
 }

@@ -18,7 +18,7 @@
 #' }
 #' @template seealso
 #' @export
-buildbam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -138,7 +138,7 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 #' }
 #' @template seealso
 #' @export
-buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -189,7 +189,7 @@ buildgam <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order',
 #' }
 #' @template seealso
 #' @export
-buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
@@ -245,7 +245,7 @@ buildgamm4 <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order
 #' }}
 #' @template seealso
 #' @export
-buildglmmTMB <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
+buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -292,7 +292,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 	p <- list(
 		formula=formula,
 		data=data,
-		family=NULL,
+		family=gaussian(),
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -337,7 +337,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' }
 #' @template seealso
 #' @export
-buildjulia <- function (formula,data=NULL,family=NULL,include=NULL,julia_family=NULL,julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,quiet=FALSE,...) {
+buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
@@ -388,7 +388,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 	p <- list(
 		formula=formula,
 		data=data,
-		family=NULL,
+		family=gaussian(),
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -482,7 +482,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' m <- buildmer(terms,data=vowels,dep='f1')
 #' }
 #' @export
-buildmer <- function (formula,data=NULL,family=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
+buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
