@@ -94,7 +94,7 @@ has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smoot
 is.gaussian <- function (family) {
 	if (is.character(family)) family <- get(family)
 	if (is.function (family)) family <- family()
-	all.equal(family,gaussian())
+	isTRUE(all.equal(family,gaussian()))
 }
 is.smooth.term <- function (term) has.smooth.terms(stats::as.formula(paste0('~',list(term))))
 is.random.term <- function (term) length(get.random.terms(term)) > 0
