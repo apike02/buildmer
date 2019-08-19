@@ -55,7 +55,7 @@ backward <- function (p) {
 		if (!p$quiet) message('Testing terms')
 		results <- p$parply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i) || any(p$tab[i,'term'] %in% p$include)) return(list(val=rep(NA,length(i))))
+			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
 			p$reml <- all(!is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,])
@@ -277,7 +277,7 @@ order <- function (p) {
 		fxd <- is.na(tab$grouping)
 	}
 	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
-	if (!is.null(p$include)) p$tab <- rbind(p$tab,data.frame(index=NA,grouping=NA,term=p$include,code=p$include,block=1,ok=T,score=NA))
+	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=T,score=NA))
 
 	p$reml <- F
 	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[fxd,])

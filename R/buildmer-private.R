@@ -15,7 +15,7 @@ buildmer.fit <- function (p) {
 		p$parply <- function (x,fun) parallel::parLapply(p$cluster,x,fun)
 		parallel::clusterExport(p$cluster,c('build.formula','p','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms','run','patch.gamm4','patch.lm','patch.lmer'),environment())
 	}
-	if (!is.null(p$include) && !is.character(p$include)) p$include <- attr(stats::terms(p$include),'term.labels')
+	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 
 	# If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!
 	if ('p' %in% names(p$dots)) {
