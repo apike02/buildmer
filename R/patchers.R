@@ -32,3 +32,17 @@ patch.lmer <- function (p,fun,args) {
 	if (!is.null(model@call$control)) model@call$control <- p$control.name
 	model
 }
+
+patch.mertree <- function (p,eltname,fun,args) {
+	name <- substitute(fun)
+	model <- run(fun,args)
+	if (inherits(model,'try-error')) return(model)
+	model$call$data <- p$data.name
+	ctrl <- paste0(eltname,'.control')
+	if (!is.null(model$call$subset))  model$call$subset  <- p$subset.name
+	if (!is.null(model$call[[ctrl]])) model$call[[ctrl]] <- p$control.name
+	model[[eltname]]@call$data <- p$data.name
+	if (!is.null(model[[eltname]]@call$subset))  model[[eltname]]@call$subset  <- p$subset.name
+	if (!is.null(model[[eltname]]@call$control)) model[[eltname]]@call$control <- p$control.name
+	model
+}

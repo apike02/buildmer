@@ -39,7 +39,7 @@ Use buildmer to perform stepwise elimination on glmmTMB models
 }
 \examples{
 library(buildmer)
-m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 \dontshow{\donttest{
 # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
 vowels$event <- with(vowels,interaction(participant,word))

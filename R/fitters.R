@@ -75,6 +75,19 @@ fit.lme <- function (p,formula) {
 	patch.lm(p,nlme::lme,c(list(formula,data=p$data,method=method),p$dots))
 }
 
+fit.mertree <- function (p,formula) {
+	dep <- formula[[2]]
+	ftext <- paste0(dep,' ~ ',p$left,' | (',attr(terms(formula),'term.labels'),') | ',p$right,collapse=' + ')
+	f <- as.formula(ftext,env=environment(formula))
+	if (is.gaussian(p$family)) {
+		if (!p$quiet) message(paste0('Fitting via lmertree: ',ftext))
+		patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
+	} else {
+		if (!p$quiet) message(paste0('Fitting via glmertree: ',ftext))
+		patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
+	}
+}
+
 fit.multinom <- function (p,formula) {
 	if (!p$quiet) message(paste0('Fitting via multinom: ',as.character(list(formula))))
 	patch.lm(p,nnet::multinom,c(list(formula=formula,data=p$data),p$dots))

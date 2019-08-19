@@ -180,7 +180,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' m <- buildgamm4(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+#' m <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' }
 #' \donttest{
 #' library(buildmer)
@@ -237,7 +237,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @param ... Additional options to be passed to \code{glmmTMB()}.
 #' @examples
 #' library(buildmer)
-#' m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+#' m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' \dontshow{\donttest{
 #' # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
 #' vowels$event <- with(vowels,interaction(participant,word))
@@ -510,6 +510,63 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	buildmer.finalize(p)
 }
 
+#' Use buildmer to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
+#' @template formula
+#' @template data
+#' @template common
+#' @template summary
+#' @param ... Additional options to be passed to \code{lmertree()} or \code{glmertree}.
+#' @examples
+#' library(buildmer)
+#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,data=lme4::sleepstudy)
+#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,data=lme4::sleepstudy,family=Gamma(link=identity))
+#' @template seealso
+#' @export
+buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,calc.summary=TRUE,quiet=FALSE,...) {
+	if (!requireNamespace('glmertree')) stop('Please install package glmertree')
+	if (any((!is.character(direction) | direction != 'order') || (!is.character(crit) | crit != 'LL'))) warning('It is uncertain that criteria other than "LL" and directions other than "order" are valid with buildmertree')
+
+	# Parse the dep ~ x | y | z formula into something buildmer can use
+	sane <- function (a,b) if (a != b) stop('Error: formula does not seem to be in glmertree format. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
+	sane(formula[[1]],'~')
+	dep <- formula[[2]]
+	terms <- formula[[3]]
+	sane(terms[[1]],'|')
+	right <- as.character(terms[3])
+	terms <- terms[[2]]
+	sane(terms[[1]],'|')
+	left <- as.character(terms[2])
+	if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
+	middle <- as.character(terms[3])
+
+	p <- list(
+		formula=reformulate(middle,dep),
+		left=left,
+		right=right,
+		data=data,
+		family=family,
+		cluster=cl,
+		reduce.fixed=F,
+		reduce.random=T,
+		direction=direction,
+		crit=mkCrit(crit),
+		crit.name=mkCritName(crit),
+		elim=mkElim(crit),
+		fit=fit.mertree,
+		include=include,
+		calc.anova=F,
+		calc.summary=calc.summary,
+		ddf=NULL,
+		quiet=quiet,
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
+		can.use.REML=is.gaussian(family),
+		dots=list(...)
+	)
+	p <- buildmer.fit(p)
+	buildmer.finalize(p)
+}
 #' Use buildmer to perform stepwise elimination for \code{multinom()} models from package \code{nnet}
 #' @template formula
 #' @template data
