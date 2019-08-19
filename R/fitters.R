@@ -21,13 +21,13 @@ fit.buildmer <- function (p,formula) {
 			patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
 		} else {
 			if (!p$quiet) message(paste0('Fitting via (g)lm: ',as.character(list(formula))))
-			if (is.gaussian(p$family)) patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$filtered.dots))
-			else                      patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
+			if (is.gaussian(p$family)) patch.lm(p,stats::lm ,c(list(formula=formula,data=p$data),p$filtered.dots))
+			else                       patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
 		}
 	} else {
 		if (!p$quiet) message(paste0('Fitting via lme4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(formula))))
 		return(if (is.gaussian(p$family)) patch.lmer(p,lme4::lmer ,c(list(formula=formula,data=p$data,REML=reml),p$dots))
-		       else                      patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
+		       else                       patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 }
 
