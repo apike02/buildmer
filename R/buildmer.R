@@ -518,13 +518,15 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @param ... Additional options to be passed to \code{lmertree()} or \code{glmertree}.
 #' @examples
 #' library(buildmer)
-#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,data=lme4::sleepstudy)
-#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,data=lme4::sleepstudy,family=Gamma(link=identity))
+#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#'                   data=lme4::sleepstudy)
+#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#'                   data=lme4::sleepstudy,family=Gamma(link=identity))
 #' @template seealso
 #' @export
 buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,calc.summary=TRUE,quiet=FALSE,...) {
 	if (!requireNamespace('glmertree')) stop('Please install package glmertree')
-	if (any((!is.character(direction) | direction != 'order') || (!is.character(crit) | crit != 'LL'))) warning('It is uncertain that criteria other than "LL" and directions other than "order" are valid with buildmertree')
+	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use only the raw log-likelihood instead (crit='LL') and only perform the term ordering step (direction='order'), but if you must use stepwise elimination, AIC may suit your needs instead of LRT.")
 
 	# Parse the dep ~ x | y | z formula into something buildmer can use
 	sane <- function (a,b) if (a != b) stop('Error: formula does not seem to be in glmertree format. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
