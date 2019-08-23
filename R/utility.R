@@ -35,7 +35,7 @@ add.terms <- function (formula,add) {
 					random.terms[[suitable[1]]] <- innerapply(random.terms[[suitable[1]]],function (term) {
 						grouping <- as.character(term[3])
 						terms <- as.character(term[2])
-						form <- stats::as.formula(paste0('~',terms))
+						form <- stats::as.formula(paste0('~',terms),environment(formula))
 						terms <- terms(form,keep.order=T)
 						intercept <- attr(terms,'intercept')
 						terms <- attr(terms,'term.labels')
@@ -55,13 +55,14 @@ add.terms <- function (formula,add) {
 		} else fixed.terms <- c(fixed.terms,term)
 	}
 	terms <- c(fixed.terms,random.terms)
-	if (length(terms)) return(stats::reformulate(terms,dep,intercept))
-	stats::as.formula(paste0(dep,'~',as.numeric(intercept)))
+	if (length(terms)) return(stats::reformulate(terms,dep,intercept,environment(formula)))
+	stats::as.formula(paste0(dep,'~',as.numeric(intercept)),environment(formula))
 }
 
 #' Convert a buildmer term list into a proper model formula
 #' @param dep The dependent variable.
 #' @param terms The term list.
+#' @param env The environment of the formula to return.
 #' @return A formula.
 #' @examples
 #' library(buildmer)
@@ -74,7 +75,7 @@ add.terms <- function (formula,add) {
 #' check <- function (f) resid(lmer(f,sleepstudy))
 #' all.equal(check(form1),check(form2))
 #' @export
-build.formula <- function (dep,terms) {
+build.formula <- function (dep,terms,env=environment()) {
 	fixed.intercept <- is.na(terms$grouping) & terms$term == '1'
 	if (any(fixed.intercept)) {
 		form <- stats::as.formula(paste(dep,'~1'))
@@ -96,6 +97,7 @@ build.formula <- function (dep,terms) {
 		}
 		form <- add.terms(form,cur)
 	}
+	environment(form) <- env
 	form
 }
 
@@ -262,8 +264,8 @@ remove.terms <- function (formula,remove) {
 	terms <- Filter(Negate(is.null),terms)
 
 	# Wrap up
-	if (length(terms)) return(stats::as.formula(paste0(dep,'~',paste(terms,collapse='+'))))
-	stats::as.formula(paste0(dep,'~1'))
+	if (length(terms)) return(stats::as.formula(paste0(dep,'~',paste(terms,collapse='+')),environment(formula)))
+	stats::as.formula(paste0(dep,'~1'),environment(formula))
 }
 
 #' Parse a formula into a buildmer terms list

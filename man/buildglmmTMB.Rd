@@ -16,7 +16,7 @@ buildglmmTMB(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{family}{The error distribution to use.}
 
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
+\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary.}
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 

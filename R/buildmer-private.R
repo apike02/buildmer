@@ -3,7 +3,7 @@ abort.PQL <- function (p) if (!is.gaussian(p$family) && ('I_KNOW_WHAT_I_AM_DOING
 buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
-		p$formula <- build.formula(p$dots$dep,p$tab)
+		p$formula <- build.formula(p$dots$dep,p$tab,p$env)
 		p$dots$dep <- NULL
 	} else p$tab <- tabulate.formula(p$formula)
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
@@ -13,7 +13,8 @@ buildmer.fit <- function (p) {
 	} else {
 		p$parallel <- T
 		p$parply <- function (x,fun) parallel::parLapply(p$cluster,x,fun)
-		parallel::clusterExport(p$cluster,c('build.formula','p','conv','add.terms','is.random.term','get.random.terms','has.smooth.terms','run','patch.gamm4','patch.lm','patch.lmer'),environment())
+		p$env <- .GlobalEnv
+		parallel::clusterExport(p$cluster,'p',environment())
 	}
 	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 
@@ -31,7 +32,7 @@ buildmer.fit <- function (p) {
 	if (length(p$direction)) {
 		if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
 		if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
-		if (p$crit.name == 'LRT' && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
+		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
 	}
 	p
 }
@@ -39,13 +40,15 @@ buildmer.fit <- function (p) {
 buildmer.finalize <- function (p) {
 	if (is.null(p$model) && !p$quiet) {
 		message('Fitting the final model')
-		p$model <- p$fit(p,p$formula)
+		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
 	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest')) {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		message('Finalizing by converting the model to lmerTest')
-		if ('control' %in% names(p$dots)) control <- p$dots$control
-		p$model <- lmerTest::as_lmerModLmerTest(p$model)
+		p$model@call$data <- p$data
+		if ('subset' %in% names(p$dots)) p$model@call$subset <- p$dots$subset
+		if ('control' %in% names(p$dots)) p$model@call$control <- p$dots$control
+		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
 	}
 	ret <- mkBuildmer(model=p$model,p=p)
 	ret@p$in.buildmer <- T

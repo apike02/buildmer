@@ -4,12 +4,14 @@
 \alias{build.formula}
 \title{Convert a buildmer term list into a proper model formula}
 \usage{
-build.formula(dep, terms)
+build.formula(dep, terms, env = environment())
 }
 \arguments{
 \item{dep}{The dependent variable.}
 
 \item{terms}{The term list.}
+
+\item{env}{The environment of the formula to return.}
 }
 \value{
 A formula.

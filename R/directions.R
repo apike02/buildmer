@@ -20,7 +20,7 @@ backward <- function (p) {
 	reduce.noconv <- function (p) {
 		if (!p$quiet) message('Convergence failure. Reducing terms and retrying...')
 		p$tab <- p$tab[-nrow(p$tab),]
-		p$formula <- build.formula(dep,p$tab)
+		p$formula <- build.formula(dep,p$tab,p$env)
 		p
 	}
 
@@ -55,12 +55,12 @@ backward <- function (p) {
 		if (!p$quiet) message('Testing terms')
 		results <- p$parply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
+			if (!buildmer:::can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
 			p$reml <- all(!is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
-			f.alt <- build.formula(dep,p$tab[-i,])
+			f.alt <- buildmer::build.formula(dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
-			val <- if (conv(m.alt)) p$crit(m.alt,m.cur) else NaN
+			val <- if (buildmer::conv(m.alt)) p$crit(m.alt,m.cur) else NaN
 			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
@@ -91,7 +91,7 @@ backward <- function (p) {
 		# 4. Remove the worst offender(s) and continue
 		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
-		p$formula <- build.formula(dep,p$tab)
+		p$formula <- build.formula(dep,p$tab,p$env)
 		p$cur.ml <- p$cur.reml <- NULL
 		if (length(results) == 1) {
 			# Recycle the current model as the next reference model
@@ -149,7 +149,7 @@ forward <- function (p) {
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
-	p$formula <- build.formula(dep,p$tab)
+	p$formula <- build.formula(dep,p$tab,p$env)
 	p$reml <- T
 	p$model <- p$fit(p,p$formula)
 	p
@@ -233,7 +233,7 @@ order <- function (p) {
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
-				form <- build.formula(dep,tab)
+				form <- buildmer::build.formula(dep,tab,p$env)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
@@ -254,7 +254,7 @@ order <- function (p) {
 				# In principle, there should be only one winner. If there are multiple candidates which happen to add _exactly_ the same amount of information to the model, this is
 				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
 				# needs an extra fit to obtain the new 'current' model.
-				form <- build.formula(dep,have)
+				form <- build.formula(dep,have,p$env)
 				cur <- p$fit(p,form)
 				if (!conv(cur)) {
 					if (!p$quiet) message('The reference model for the next step failed to converge - giving up ordering attempt.')
@@ -285,6 +285,6 @@ order <- function (p) {
 		p$reml <- T
 		p <- reorder(p,tab[!fxd,])
 	}
-	p$formula <- build.formula(dep,p$tab)
+	p$formula <- build.formula(dep,p$tab,p$env)
 	p
 }

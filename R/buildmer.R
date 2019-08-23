@@ -40,6 +40,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=T,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- abort.PQL(p)
@@ -113,6 +114,7 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 		crit.name='custom criterion',
 		elim=elim,
 		can.use.REML=F,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -160,6 +162,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=T,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- abort.PQL(p)
@@ -212,6 +215,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=is.gaussian(family),
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -267,6 +271,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=T,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -310,6 +315,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=T,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -358,6 +364,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		calc.summary=F,
 		quiet=quiet,
 		can.use.REML=is.gaussian(family),
+		env=parent.frame(),
 		dots=list(...)
 	)
 
@@ -406,6 +413,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=T,
+		env=parent.frame(),
 		dots=list(random=random,...)
 	)
 	p <- buildmer.fit(p)
@@ -504,6 +512,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=is.gaussian(family),
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -564,6 +573,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		subset.name=substitute(subset),
 		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
 		can.use.REML=is.gaussian(family),
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
@@ -605,6 +615,7 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.REML=F,
+		env=parent.frame(),
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
