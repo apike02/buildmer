@@ -4,10 +4,12 @@
 \alias{tabulate.formula}
 \title{Parse a formula into a buildmer terms list}
 \usage{
-tabulate.formula(formula)
+tabulate.formula(formula, group = NULL)
 }
 \arguments{
 \item{formula}{A formula.}
+
+\item{group}{A character vector of regular expressions. Terms matching the same regular expression are assigned the same block, and will be evaluated together in buildmer functions.}
 }
 \value{
 A buildmer terms list, which is just a normal data frame.
@@ -16,7 +18,8 @@ A buildmer terms list, which is just a normal data frame.
 Parse a formula into a buildmer terms list
 }
 \examples{
-form <- diag(f1 ~ vowel*timepoint*following + ((vowel1+vowel2+vowel3+vowel4)*timepoint*
-                  following|participant) + (timepoint|word))
+form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following +
+             ((vowel1+vowel2+vowel3+vowel4)*timepoint*following|participant) + (timepoint|word))
 tabulate.formula(form)
+tabulate.formula(form,group='vowel[1-4]')
 }

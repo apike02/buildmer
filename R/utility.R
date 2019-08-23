@@ -171,7 +171,6 @@ remove.terms <- function (formula,remove) {
 		})
 		unlist(terms,recursive=F)
 	}
-
 	get.random.list <- function (formula) {
 		bars <- lme4::findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
@@ -185,7 +184,6 @@ remove.terms <- function (formula,remove) {
 		names(randoms) <- groups
 		randoms
 	}
-
 	marginality.ok <- function (remove,have) {
 		forbidden <- if (!all(have == '1')) '1' else NULL
 		for (x in have) {
@@ -196,7 +194,6 @@ remove.terms <- function (formula,remove) {
 		}
 		!remove %in% forbidden
 	}
-
 	unwrap.terms <- function (terms,inner=F,intercept=F) {
 		form <- stats::as.formula(paste0('~',terms))
 		terms <- terms(form,keep.order=T)
@@ -270,13 +267,15 @@ remove.terms <- function (formula,remove) {
 
 #' Parse a formula into a buildmer terms list
 #' @param formula A formula.
+#' @param group A character vector of regular expressions. Terms matching the same regular expression are assigned the same block, and will be evaluated together in buildmer functions.
 #' @return A buildmer terms list, which is just a normal data frame.
 #' @examples
-#' form <- diag(f1 ~ vowel*timepoint*following + ((vowel1+vowel2+vowel3+vowel4)*timepoint*
-#'                   following|participant) + (timepoint|word))
+#' form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following +
+#'              ((vowel1+vowel2+vowel3+vowel4)*timepoint*following|participant) + (timepoint|word))
 #' tabulate.formula(form)
+#' tabulate.formula(form,group='vowel[1-4]')
 #' @export
-tabulate.formula <- function (formula) {
+tabulate.formula <- function (formula,group=NULL) {
 	decompose.random.terms <- function (terms) {
 		terms <- lapply(terms,function (x) {
 			x <- unwrap.terms(x,inner=T)
@@ -287,7 +286,6 @@ tabulate.formula <- function (formula) {
 		})
 		unlist(terms,recursive=F)
 	}
-
 	get.random.list <- function (formula) {
 		bars <- lme4::findbars(formula)
 		groups <- unique(sapply(bars,function (x) x[[3]]))
@@ -300,6 +298,10 @@ tabulate.formula <- function (formula) {
 		})
 		names(randoms) <- groups
 		randoms
+	}
+	mkGroups <- function (t) {
+		for (x in group) t <- gsub(x,x,t)
+		t
 	}
 
 	dep <- as.character(formula[2])
@@ -321,18 +323,14 @@ tabulate.formula <- function (formula) {
 				g <- names(terms)[j]
 				terms <- terms[[j]]
 				if (!length(terms)) return(NULL)
-				data.frame(index=paste(i,j),grouping=g,term=terms,stringsAsFactors=F)
+				ix <- paste(i,j)
+				data.frame(index=ix,grouping=g,term=terms,code=paste(ix,g,terms),block=paste(NA,g,mkGroups(terms)),stringsAsFactors=F)
 			})
 			terms <- Filter(Negate(is.null),terms)
 			if (!length(terms)) return(NULL)
 			do.call(rbind,terms)
-		} else data.frame(index=NA,grouping=NA,term=term,stringsAsFactors=F)
+		} else data.frame(index=NA,grouping=NA,term=term,code=term,block=paste(NA,NA,mkGroups(term)),stringsAsFactors=F)
 	})
 	terms <- Filter(Negate(is.null),terms)
-
-	# Wrap up
-	tab <- do.call(rbind,terms)
-	tab$code <- do.call(paste,tab[1:3])
-	tab$block <- 1:nrow(tab)
-	tab
+	do.call(rbind,terms)
 }
