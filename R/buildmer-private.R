@@ -3,6 +3,7 @@ abort.PQL <- function (p) if (!is.gaussian(p$family) && ('I_KNOW_WHAT_I_AM_DOING
 buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
+		if (is.null(p$dots$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
 		p$formula <- build.formula(p$dots$dep,p$tab,p$env)
 		p$dots$dep <- NULL
 	} else p$tab <- tabulate.formula(p$formula)

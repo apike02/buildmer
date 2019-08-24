@@ -77,16 +77,16 @@ fit.lme <- function (p,formula) {
 
 fit.mertree <- function (p,formula) {
 	dep <- formula[[2]]
-	ftext <- paste0(dep,' ~ ',p$left,' | (',attr(terms(formula),'term.labels'),') | ',p$right,collapse=' + ')
+	ftext <- paste0(dep,' ~ ',p$left,' | (',paste0(attr(terms(formula),'term.labels'),collapse=') + ('),') | ',p$right,collapse=' + ')
 	f <- as.formula(ftext,environment(formula))
 	if (buildmer:::is.gaussian(p$family)) {
 		if (!p$quiet) message(paste0('Fitting via lmertree: ',ftext))
 		m <- buildmer:::patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
-		if (!conv(m$lmer)) m$lmer else m
+		if (!buildmer::conv(m$lmer)) m$lmer else m
 	} else {
 		if (!p$quiet) message(paste0('Fitting via glmertree: ',ftext))
 		m <- buildmer:::patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
-		if (!conv(m$glmer)) m$glmer else m
+		if (!buildmer::conv(m$glmer)) m$glmer else m
 	}
 }
 

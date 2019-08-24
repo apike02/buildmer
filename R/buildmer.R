@@ -520,11 +520,13 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 }
 
 #' Use buildmer to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
-#' @template formula
+#' @param formula Either a code{glmertree} formula, looking like \code{dep ~ left | middle | right} where the \code{middle} part is an \code{lme4}-style random-effects specification, or an ordinary formula (or buildmer term list thereof) specifying only the dependent variable and \code{lme4}-style random effects. In the latter case, the additional arguments \code{left} and \code{right} must be specified as one-sided formulas containing the fixed part of the model and the partitioning part, respectively.
 #' @template data
 #' @template common
 #' @template summary
-#' @param ... Additional options to be passed to \code{lmertree()} or \code{glmertree}.
+#' @param left The left part of the code{glmertree} formula, used if \code{formula} does not contain code{glmertree}-specific terms. Note that if \code{left} is specified when \code{formula} is in code{glmertree} format, \code{left} overrides the \code{formula} specification!
+#' @param right The right part of the code{glmertree} formula, used if \code{formula} does not contain code{glmertree}-specific terms. Note that if \code{right} is specified when \code{formula} is in code{glmertree} format, \code{right} overrides the \code{formula} specification!
+#' @param ... Additional options to be passed to \code{lmertree()} or \code{glmertree()}.
 #' @examples
 #' library(buildmer)
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
@@ -533,25 +535,30 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #'                   data=lme4::sleepstudy,family=Gamma(link=identity))
 #' @template seealso
 #' @export
-buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('glmertree')) stop('Please install package glmertree')
+buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,calc.summary=TRUE,quiet=FALSE,left=NULL,right=NULL,...) {
+	if (!requireNamespace('glmertree',quietly=T)) stop('Please install package glmertree')
 	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use only the raw log-likelihood instead (crit='LL') and only perform the term ordering step (direction='order'), but if you must use stepwise elimination, AIC may suit your needs instead of LRT.")
 
-	# Parse the dep ~ x | y | z formula into something buildmer can use
-	sane <- function (a,b) if (a != b) stop('Error: formula does not seem to be in glmertree format. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
-	sane(formula[[1]],'~')
-	dep <- formula[[2]]
-	terms <- formula[[3]]
-	sane(terms[[1]],'|')
-	right <- as.character(terms[3])
-	terms <- terms[[2]]
-	sane(terms[[1]],'|')
-	left <- as.character(terms[2])
-	if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
-	middle <- as.character(terms[3])
+	if (is.null(c(left,right))) {
+		sane <- function (a,b) if (a != b) stop('Error: formula does not seem to be in glmertree format. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
+		sane(formula[[1]],'~')
+		dep <- formula[[2]]
+		terms <- formula[[3]]
+		sane(terms[[1]],'|')
+		right <- as.character(terms[3])
+		terms <- terms[[2]]
+		sane(terms[[1]],'|')
+		left <- as.character(terms[2])
+		if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
+		middle <- as.character(terms[3])
+		formula <- reformulate(middle,dep)
+	} else {
+		left <- as.character(left[2])
+		right <- as.character(right[2])
+	}
 
 	p <- list(
-		formula=reformulate(middle,dep),
+		formula=formula,
 		left=left,
 		right=right,
 		data=data,
