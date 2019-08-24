@@ -300,7 +300,7 @@ tabulate.formula <- function (formula,group=NULL) {
 		randoms
 	}
 	mkGroups <- function (t) {
-		for (x in group) t <- gsub(x,x,t)
+		for (x in group) t <- gsub(x,x,t,perl=T)
 		t
 	}
 
