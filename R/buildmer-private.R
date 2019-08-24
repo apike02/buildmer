@@ -1,4 +1,4 @@
-abort.PQL <- function (p) if (!is.gaussian(p$family) && ('I_KNOW_WHAT_I_AM_DOING' %in% p$dots || !isTRUE(p$I_KNOW_WHAT_I_AM_DOING))) stop('You are attempting to fit a non-Gaussian model using buildgam() or buildbam(). For non-Gaussian errors, bam() and gam() use PQL, so likelihood-based model comparisons are not valid! It is recommended to use gamm4() instead, or if this is not possible, to directly fit the full model and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildgam()/buildbam() invocation to sidestep this error.') else within.list(p,{ dots$I_KNOW_WHAT_I_AM_DOING <- NULL })
+abort.PQL <- function (p) if (!is.gaussian(eval(p$family,p$env)) && ('I_KNOW_WHAT_I_AM_DOING' %in% p$dots || !isTRUE(p$I_KNOW_WHAT_I_AM_DOING))) stop('You are attempting to fit a non-Gaussian model using buildgam() or buildbam(). For non-Gaussian errors, bam() and gam() use PQL, so likelihood-based model comparisons are not valid! It is recommended to use gamm4() instead, or if this is not possible, to directly fit the full model and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildgam()/buildbam() invocation to sidestep this error.') else within.list(p,{ dots$I_KNOW_WHAT_I_AM_DOING <- NULL })
 
 buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
@@ -33,7 +33,7 @@ buildmer.fit <- function (p) {
 	if (length(p$direction)) {
 		if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
 		if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
-		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
+		if ('LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
 	}
 	p
 }
@@ -46,10 +46,7 @@ buildmer.finalize <- function (p) {
 	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=T)) {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		message('Finalizing by converting the model to lmerTest')
-		p$model@call$data <- p$data
-		if ('subset' %in% names(p$dots)) p$model@call$subset <- p$dots$subset
-		if ('control' %in% names(p$dots)) p$model@call$control <- p$dots$control
-		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
+		p$model <- p$parply(list(p$model),lmerTest::as_lmerModLmerTest)[[1]]
 	}
 	ret <- mkBuildmer(model=p$model,p=p)
 	ret@p$in.buildmer <- T
@@ -100,11 +97,11 @@ is.gaussian <- function (family) {
 	if (is.function (family)) family <- family()
 	isTRUE(all.equal(family,gaussian()))
 }
+is.LRT <- function (crit) if (is.character(crit)) crit == 'LRT' else isTRUE(all.equal(crit,crit.LRT))
 is.smooth.term <- function (term) has.smooth.terms(stats::as.formula(paste0('~',list(term))))
 is.random.term <- function (term) length(get.random.terms(term)) > 0
 mkCrit <- function (crit) if (is.function(crit)) crit else get(paste0('crit.',crit))
 mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
-mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
 
 unpack.smooth.terms <- function (x) {
 	fm <- stats::as.formula(paste0('~',list(x)))
