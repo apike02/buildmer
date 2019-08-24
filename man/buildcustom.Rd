@@ -2,42 +2,42 @@
 % Please edit documentation in R/buildmer.R
 \name{buildcustom}
 \alias{buildcustom}
-\title{Use buildmer to perform stepwise elimination using a custom fitting function}
+\title{Use \code{buildmer} to perform stepwise elimination using a custom fitting function}
 \usage{
 buildcustom(formula, cl = NULL, direction = c("order", "backward"),
   crit = function(ref, alt) stop("'crit' not specified"),
-  include = NULL, reduce.fixed = T, reduce.random = T,
+  include = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
   fit = function(p, formula) stop("'fit' not specified"),
-  elim = function(x) stop("'elim' not specified"), quiet = FALSE, ...)
+  elim = function(x) stop("'elim' not specified"), ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms.}
+\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{crit}{A function taking two arguments and outputting a single score, denoting the difference between the models. This can also be a character string or vector of any of \code{'LRT'} (likelihood-ratio test), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{include}{A one-sided formula whose terms will always be included in the model formula. Useful for e.g.\ passing correlation structures in \code{glmmTMB} models.}
+\item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
+\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list {p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge.}
+\item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge}
 
-\item{elim}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE}).}
+\item{elim}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})}
 
-\item{quiet}{Logical indicating whether to suppress progress messages.}
+\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument}
 
-\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument.}
+\item{data}{See the general documentation under \code{\link{buildmer-package}}}
 }
 \description{
-Use buildmer to perform stepwise elimination using a custom fitting function
+Use \code{buildmer} to perform stepwise elimination using a custom fitting function
 }
 \examples{
-## Use buildmer to do stepwise linear discriminant analysis
+## Use \\code{buildmer} to do stepwise linear discriminant analysis
 library(buildmer)
 migrant[,-1] <- scale(migrant[,-1])
 flipfit <- function (p,formula) {
@@ -71,5 +71,5 @@ library(MASS)
 m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 }
 \seealso{
-\code{\link[=buildmer]{buildmer()}}
+\code{\link{buildmer-package}}
 }

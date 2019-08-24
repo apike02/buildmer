@@ -1,1 +1,1 @@
-#' @seealso \code{\link[=buildmer]{buildmer()}}
+#' @seealso \code{\link{buildmer-package}}

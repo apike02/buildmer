@@ -2,40 +2,38 @@
 % Please edit documentation in R/buildmer.R
 \name{buildglmmTMB}
 \alias{buildglmmTMB}
-\title{Use buildmer to perform stepwise elimination on glmmTMB models}
+\title{Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models}
 \usage{
 buildglmmTMB(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
-  quiet = FALSE, ...)
+  ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{data}{The data to fit the models to.}
+\item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{family}{The error distribution to use.}
+\item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary.}
+\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
+\item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
+\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
+\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{quiet}{Logical indicating whether to suppress progress messages.}
-
-\item{...}{Additional options to be passed to \code{glmmTMB()}.}
+\item{...}{Additional options to be passed to \code{glmmTMB}}
 }
 \description{
-Use buildmer to perform stepwise elimination on glmmTMB models
+Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models
 }
 \examples{
 library(buildmer)
@@ -47,5 +45,5 @@ m <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
 }}
 }
 \seealso{
-\code{\link[=buildmer]{buildmer()}}
+\code{\link{buildmer-package}}
 }

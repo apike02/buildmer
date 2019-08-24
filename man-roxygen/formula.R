@@ -1,1 +1,1 @@
-#' @param formula The model formula for the maximal model you would like to fit, if possible.
+#' @param formula See the general documentation under \code{\link{buildmer-package}}

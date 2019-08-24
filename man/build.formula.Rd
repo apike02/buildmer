@@ -4,7 +4,7 @@
 \alias{build.formula}
 \title{Convert a buildmer term list into a proper model formula}
 \usage{
-build.formula(dep, terms, env = environment())
+build.formula(dep, terms, env = parent.frame())
 }
 \arguments{
 \item{dep}{The dependent variable.}

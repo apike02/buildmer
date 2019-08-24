@@ -1,1 +1,1 @@
-#' @param family The error distribution to use.
+#' @param family See the general documentation under \code{\link{buildmer-package}}

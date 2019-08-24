@@ -274,6 +274,7 @@ remove.terms <- function (formula,remove) {
 #'              ((vowel1+vowel2+vowel3+vowel4)*timepoint*following|participant) + (timepoint|word))
 #' tabulate.formula(form)
 #' tabulate.formula(form,group='vowel[1-4]')
+#' @seealso buildmer-package
 #' @export
 tabulate.formula <- function (formula,group=NULL) {
 	decompose.random.terms <- function (terms) {

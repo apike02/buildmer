@@ -2,42 +2,40 @@
 % Please edit documentation in R/buildmer.R
 \name{buildlme}
 \alias{buildlme}
-\title{Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme}
+\title{Use \code{buildmer} to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via \code{lme} from \code{nlme}}
 \usage{
 buildlme(formula, data = NULL, random, cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
-  calc.anova = TRUE, calc.summary = TRUE, quiet = FALSE, ...)
+  calc.anova = TRUE, calc.summary = TRUE, ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{data}{The data to fit the models to.}
+\item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{random}{The random-effects specification for the model. This is not manipulated by buildlme() in any way!}
+\item{random}{The random-effects specification for the model. This is not manipulated by \code{buildlme} in any way!}
 
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary.}
+\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
+\item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
+\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
+\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{quiet}{Logical indicating whether to suppress progress messages.}
-
-\item{...}{Additional options to be passed to \code{lme()}.}
+\item{...}{Additional options to be passed to \code{lme}}
 }
 \description{
-Use buildmer to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via lme() from nlme
+Use \code{buildmer} to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via \code{lme} from \code{nlme}
 }
 \examples{
 library(buildmer)
 m <- buildlme(Reaction ~ Days,data=lme4::sleepstudy,random=~Days|Subject)
 }
 \seealso{
-\code{\link[=buildmer]{buildmer()}}
+\code{\link{buildmer-package}}
 }

@@ -23,3 +23,6 @@ form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following +
 tabulate.formula(form)
 tabulate.formula(form,group='vowel[1-4]')
 }
+\seealso{
+buildmer-package
+}

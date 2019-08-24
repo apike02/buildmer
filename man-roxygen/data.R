@@ -1,1 +1,1 @@
-#' @param data The data to fit the models to.
+#' @param data See the general documentation under \code{\link{buildmer-package}}

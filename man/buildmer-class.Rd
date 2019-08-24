@@ -11,13 +11,13 @@ This is a simple convenience class that allows `anova()' and `summary()' calls t
 \section{Slots}{
 
 \describe{
-\item{\code{model}}{The final model containing only the terms that survived elimination.}
+\item{\code{model}}{The final model containing only the terms that survived elimination}
 
-\item{\code{p}}{Parameters used during the fitting process.}
+\item{\code{p}}{Parameters used during the fitting process}
 
-\item{\code{anova}}{The model's ANOVA, if the model was built with `anova=TRUE'.}
+\item{\code{anova}}{The model's ANOVA, if the model was built with `anova=TRUE'}
 
-\item{\code{summary}}{The model's summary, if the model was built with `summary=TRUE'.}
+\item{\code{summary}}{The model's summary, if the model was built with `summary=TRUE'}
 }}
 
 \examples{

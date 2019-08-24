@@ -1,10 +1,10 @@
 #' The buildmer class
 #' 
 #' This is a simple convenience class that allows `anova()' and `summary()' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
-#' @slot model The final model containing only the terms that survived elimination.
-#' @slot p Parameters used during the fitting process.
-#' @slot anova The model's ANOVA, if the model was built with `anova=TRUE'.
-#' @slot summary The model's summary, if the model was built with `summary=TRUE'.
+#' @slot model The final model containing only the terms that survived elimination
+#' @slot p Parameters used during the fitting process
+#' @slot anova The model's ANOVA, if the model was built with `anova=TRUE'
+#' @slot summary The model's summary, if the model was built with `summary=TRUE'
 #' @seealso [buildmer()]
 #' @examples
 #' # Manually create a bare-bones buildmer object:
@@ -44,7 +44,7 @@ anova.buildmer <- function (object,...) {
 	if (!is.null(type)) {
 		if (inherits(object@model,'lmerMod')) {
 			if (!type %in% c(1,3)) {
-				warning("Invalid 'type' argument, allowed options are 1 and 3. Resetting to type 3.")
+				warning("Invalid 'type' argument, allowed options are 1 and 3. Resetting to type 3")
 				type <- 3
 			}
 		}
@@ -108,7 +108,7 @@ setMethod('summary','buildmer',summary.buildmer)
 setGeneric('diag')
 #' Diagonalize the random-effect covariance structure, possibly assisting convergence
 #' @param x A model formula.
-#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000).
+#' @return The formula with all random-effect correlations forced to zero, per Pinheiro & Bates (2000)
 #' @examples
 #' # 1. Create explicit columns for factor variables
 #' library(buildmer)
@@ -117,22 +117,11 @@ setGeneric('diag')
 #' form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following + 
 #' 	     ((vowel1+vowel2+vowel3+vowel4)*timepoint*following | participant) +
 #' 	     (timepoint | word))
-#' # 3. Convert formula to buildmer terms list
-#' terms <- tabulate.formula(form)
-#' # 4. Assign the different vowelN columns to identical blocks
-#' terms[ 2: 5,'block'] <- 'same1'
-#' terms[ 7:10,'block'] <- 'same2'
-#' terms[12:15,'block'] <- 'same3'
-#' terms[17:20,'block'] <- 'same4'
-#' terms[22:25,'block'] <- 'same5'
-#' terms[27:30,'block'] <- 'same6'
-#' terms[32:35,'block'] <- 'same7'
-#' terms[37:40,'block'] <- 'same8'
-#' # 5. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
+#' # 3. Convert formula to buildmer terms list, grouping terms starting with 'vowel'
+#' terms <- tabulate.formula(form,group='vowel[^:]')
+#' # 4. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
 #' # the dependent variable
-#' \donttest{
-#' m <- buildmer(terms,data=vowels,dep='f1')
-#' }
+#' \donttest{m <- buildmer(terms,data=vowels,dep='f1')}
 #' @export
 setMethod('diag','formula',function (x) {
 	dep <- as.character(x[2])

@@ -39,7 +39,7 @@ buildmer.fit <- function (p) {
 }
 
 buildmer.finalize <- function (p) {
-	if (is.null(p$model) && !p$quiet) {
+	if (is.null(p$model)) {
 		message('Fitting the final model')
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}

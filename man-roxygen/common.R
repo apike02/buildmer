@@ -1,5 +1,4 @@
-#' @param cl An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary.
-#' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).
-#' @param include A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.
-#' @param quiet Logical indicating whether to suppress progress messages.
+#' @param cl See the general documentation under \code{\link{buildmer-package}}
+#' @param direction See the general documentation under \code{\link{buildmer-package}}
+#' @param crit See the general documentation under \code{\link{buildmer-package}}
+#' @param include See the general documentation under \code{\link{buildmer-package}}

@@ -2,44 +2,42 @@
 % Please edit documentation in R/buildmer.R
 \name{buildgamm4}
 \alias{buildgamm4}
-\title{Use buildmer to fit generalized additive models using package \code{gamm4}}
+\title{Use \code{buildmer} to fit generalized additive models using package \code{gamm4}}
 \usage{
 buildgamm4(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
-  calc.summary = TRUE, ddf = "Wald", quiet = FALSE, ...)
+  calc.summary = TRUE, ddf = "Wald", ...)
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit, if possible.}
+\item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{data}{The data to fit the models to.}
+\item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{family}{The error distribution to use.}
+\item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{An optional cluster object as returned by function \code{makeCluster()} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary.}
+\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
+\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion).}
+\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{include}{A character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument.}
+\item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{Logical indicating whether to reduce the fixed-effect structure.}
+\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.random}{Logical indicating whether to reduce the random-effect structure.}
+\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
+\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
+\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
+\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
 
-\item{quiet}{Logical indicating whether to suppress progress messages.}
-
-\item{...}{Additional options to be passed to \code{gamm4()}.}
+\item{...}{Additional options to be passed to \code{gamm4}}
 }
 \description{
-Use buildmer to fit generalized additive models using package \code{gamm4}
+Use \code{buildmer} to fit generalized additive models using package \code{gamm4}
 }
 \examples{
 \dontshow{
@@ -53,5 +51,5 @@ m <- buildgamm4(f1 ~ s(timepoint,by=following) +
 }
 }
 \seealso{
-\code{\link[=buildmer]{buildmer()}}
+\code{\link{buildmer-package}}
 }

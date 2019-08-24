@@ -1,1 +1,1 @@
-#' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
+#' @param calc.summary See the general documentation under \code{\link{buildmer-package}}
