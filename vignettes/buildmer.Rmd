@@ -1,7 +1,7 @@
 ---
 title: "Using `buildmer' to automatically find & compare maximal (mixed) models"
 author: "Cesko C. Voeten"
-date: "19 April 2019"
+date: "24 Augustus 2019"
 bibliography: bibliography.bib
 csl: apa.csl
 output: pdf_document
@@ -16,7 +16,7 @@ vignette: >
 # Introduction
 @keepitmaximal suggest that for valid statistical inference, a regression model must control for all possible confounding factors, specifically those coming from random effects such as subjects and items. @parsimonious suggest that this proposed strategy leads to overfitting and that an appropriately-parsimonious model must be chosen, preferably based on theory but possibly also using stepwise elimination [@stepwise]. Both strategies require a maximal model to be identified (for @keepitmaximal, this is the final model; for @stepwise, this is the basis for backward stepwise elimination), but for many psycholinguistic experiments, the _truly_ maximal model will fail to converge and a reasonable subset model needs to be chosen.
 
-The `buildmer` package aims to automate the procedures identifying the maximal model that can still converge & performing backward stepwise elimination based on a variety of criteria (change in log-likelihood, AIC, BIC). The package does not contain any model-fitting code, but functions as an administrative loop around other packages by simply building up a maximal formula object and passing it along. Currently, the package supports models that can be fitted by `(g)lm`, `(g)lmer` (package `lme4`), `gls`, `lme` (package `nlme`), `gam`, `bam` (package `mgcv`), `gamm4` (package `gamm4`), `glmmTMB` (package `glmmTMB`), `multinom` (package `nnet`), and it can use `JuliaCall` to drive Douglas Bates's `MixedModels` package for Julia.
+The `buildmer` package aims to automate the procedures identifying the maximal model that can still converge & performing backward stepwise elimination based on a variety of criteria (change in log-likelihood, AIC, BIC). The package does not contain any model-fitting code, but functions as an administrative loop around other packages by simply building up a maximal formula object and passing it along. Currently, the package supports models that can be fitted by `(g)lm`, `(g)lmer` (package `lme4`), `gls`, `lme` (package `nlme`), `gam`, `bam` (package `mgcv`), `gamm4` (package `gamm4`), `glmmTMB` (package `glmmTMB`), `multinom` (package `nnet`), `glmertree` (eponymous package), and it can use `JuliaCall` to drive Douglas Bates's `MixedModels` package for Julia.
 
 # A vowel study
 To illustrate what `buildmer` can do for you, the package comes with a particularly pathological dataset called `vowels`. It looks like this:
@@ -93,7 +93,7 @@ f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + fol
 ```
 
 The maximal _feasible_ model, i.e.\ the maximal model that is actually capable of converging, is one excluding random slopes for vowels by participants. This is not optimal for inference purposes, but for now it will do; we will see below that taking out the correlation parameters in the random effects makes it possible to include random slopes for vowels as well.
-We now proceed to the next step: stepwise elimination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This used the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test. This is the preferred test for mixed models in @stepwise.
+We now proceed to the next step: stepwise elimination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This uses the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test. This is the preferred test for mixed models in @stepwise.
 
 ```{r,eval=F}
 m <- buildmer(f,data=vowels,direction='backward',control=lmerControl(optimizer='bobyqa'))
@@ -107,71 +107,26 @@ Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + followin
 Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 | word) + (1 + timepoint + following + timepoint:following | participant)
 Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + following:vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following | participant)
       grouping                      term block           LRT Iteration
-1         <NA>                         1     1            NA         1
-2         <NA>                 following     2            NA         1
-3         <NA>                     vowel     3            NA         1
-4         <NA>                 timepoint     4            NA         1
-5         <NA>           vowel:timepoint     5            NA         1
-6         <NA>       following:timepoint     6            NA         1
-7         <NA>           following:vowel     7            NA         1
-8         <NA> following:vowel:timepoint     8  4.967286e-01         1
-9         word                         1     9            NA         1
-10        word                 timepoint    10 2.134598e-153         1
-11 participant                         1    11            NA         1
-12 participant                 timepoint    12            NA         1
-13 participant                 following    13            NA         1
-14 participant       timepoint:following    14  8.319280e-11         1
-Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
+      grouping                      term                              block           LRT Iteration
+1         <NA>                         1                            NA NA 1            NA         1
+2         <NA>                 following                    NA NA following            NA         1
+3         <NA>                     vowel                        NA NA vowel            NA         1
+4         <NA>                 timepoint                    NA NA timepoint            NA         1
+5         <NA>           vowel:timepoint              NA NA vowel:timepoint            NA         1
+6         <NA>       following:timepoint          NA NA following:timepoint            NA         1
+7         <NA>           following:vowel              NA NA following:vowel            NA         1
+8         <NA> following:vowel:timepoint    NA NA following:vowel:timepoint  7.223287e-08         1
+9         word                         1                          NA word 1            NA         1
+10        word                 timepoint                  NA word timepoint 2.134598e-153         1
+11 participant                         1                   NA participant 1            NA         1
+12 participant                 timepoint           NA participant timepoint            NA         1
+13 participant                 following           NA participant following            NA         1
+14 participant       timepoint:following NA participant timepoint:following  8.319280e-11         1
+ Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
 Fitting ML and REML reference models
 [...]
-All terms are significant')
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting ML and REML reference models
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Testing terms
-#Fitting with ML: f1 ~ following + vowel + timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + following:vowel + (1 + timepoint | word) + (1 + timepoint + following | participant)
-#   index    grouping                term                                 code block           LRT Iteration
-#1   <NA>        <NA>                   1                              NA NA 1     1            NA         1
-#2   <NA>        <NA>           following                      NA NA following     2            NA         1
-#3   <NA>        <NA>               vowel                          NA NA vowel     3            NA         1
-#4   <NA>        <NA>           timepoint                      NA NA timepoint     4            NA         1
-#5   <NA>        <NA>     vowel:timepoint                NA NA vowel:timepoint     5  2.820922e-10         1
-#6   <NA>        <NA> following:timepoint            NA NA following:timepoint     6  6.701786e-04         1
-#7   <NA>        <NA>     following:vowel                NA NA following:vowel     7  1.104266e-01         1
-#9    9 1        word                   1                           9 1 word 1     9            NA         1
-#10   9 1        word           timepoint                   9 1 word timepoint    10 1.218638e-157         1
-#11  10 1 participant                   1                   10 1 participant 1    11            NA         1
-#12  10 1 participant           timepoint           10 1 participant timepoint    12            NA         1
-#13  10 1 participant           following           10 1 participant following    13            NA         1
-#14  10 1 participant timepoint:following 10 1 participant timepoint:following    14  8.298328e-11         1
-#Updating formula: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting ML and REML reference models
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Testing terms
-#Fitting with ML: f1 ~ following + vowel + timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with ML: f1 ~ following + vowel + timepoint + vowel:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 | word) + (1 + timepoint + following + timepoint:following | participant)
-#Fitting with REML: f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following | participant)
-#   index    grouping                term                                 code block           LRT Iteration
-#1   <NA>        <NA>                   1                              NA NA 1     1            NA         2
-#2   <NA>        <NA>           following                      NA NA following     2            NA         2
-#3   <NA>        <NA>               vowel                          NA NA vowel     3            NA         2
-#4   <NA>        <NA>           timepoint                      NA NA timepoint     4            NA         2
-#5   <NA>        <NA>     vowel:timepoint                NA NA vowel:timepoint     5  2.827268e-10         2
-#6   <NA>        <NA> following:timepoint            NA NA following:timepoint     6  6.714423e-04         2
-#9    9 1        word                   1                           9 1 word 1     9            NA         2
-#10   9 1        word           timepoint                   9 1 word timepoint    10 6.501098e-158         2
-#11  10 1 participant                   1                   10 1 participant 1    11            NA         2
-#12  10 1 participant           timepoint           10 1 participant timepoint    12            NA         2
-#13  10 1 participant           following           10 1 participant following    13            NA         2
-#14  10 1 participant timepoint:following 10 1 participant timepoint:following    14  8.450196e-11         2
-#All terms are significant
+All terms are significant
+Finalizing by converting the model to lmerTest')
 f2 <- f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + 
     (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | 
     participant)
@@ -184,43 +139,28 @@ By default, `buildmer` automatically calculates summary and ANOVA statistics bas
 summary(m)
 ```
 
-The highly-significant effect for `followinglOns:timepoint` shows that if the following /l/ is in the onset of the next syllable, there is a much larger change in F1 compared to the reference condition of having the following /l/ in the coda of the same syllable.
+The highly significant effect for `followinglOns:timepoint` shows that if the following /l/ is in the onset of the next syllable, there is a much larger change in F1 compared to the reference condition of having the following /l/ in the coda of the same syllable.
 
 # Diagonal random-effects covariances
-One hidden feature that is present in `buildmer` but that has not yet been discussed is the ability to group terms together in blocks for ordering and stepwise-elimination purposes. This is not documented because it requires some knowledge of `buildmer` internals, but this vignette offers an opportunity to demonstrate how this can be done. While the first argument to `buildmer` functions is normally a formula, it is also possible to pass a data frame as generated by `tabulate.formula`:
+One hidden feature that is present in `buildmer` but that has not yet been discussed is the ability to group terms together in blocks for ordering and stepwise-elimination purposes. While the first argument to `buildmer` functions is normally a formula, it is also possible to pass a `buildmer terms list'. This is a data frame as generated by `tabulate.formula`:
 
 ```{r}
 tabulate.formula(f)
 ```
 
-This is an internal `buildmer` data structure, but it is rather self-explanatory in how it is used. It is possible to modify the `block` column to force terms to be evaluated as a single group, rather than separately, by giving these terms the same `block` value. These values are not used in any other way than this purpose of selecting terms to be grouped together; they therefore do not even have to be numerics.
-
-This data structure can be used to fit models with diagonal random-effects structures. The `buildmer()` function documentation provides an example, which we will follow here. The first step is to create explicit columns for the factor `vowel`; if this is not done, only random-effect correlations between vowels and _other_ random slopes will be eliminated and those between the vowels themselves will remain.
+This is an internal `buildmer` data structure, but it is rather self-explanatory in how it is used. It is possible to modify the `block` column to force terms to be evaluated as a single group, rather than separately, by giving these terms the same `block` value. These values are not used in any other way than this purpose of selecting terms to be grouped together, which can be exploited to fit models with diagonal random-effects structures. The first step is to create explicit columns for the factor `vowel`; if this is not done, only random-effect correlations between vowels and _other_ random slopes will be eliminated and those between the vowels themselves will remain.
 
 ```{r}
 vowels <- cbind(vowels,model.matrix(~vowel,vowels))
 ```
 
-We next create a formula for this modified data set. To make it easier to type, we do not explicitly diagonalize the formula ourselves, but use `buildmer`'s `diag()` method for `formula` objects. We then call `tabulate.formula()` on the new formula. Note that we *cannot* use the simple `vowel` factor in the fixed-effects part of the formula, as this will break `buildmer`'s marginality checks when considering which terms are eligible for inclusion or removal.
+We next create a formula for this modified data set. To make it easier to type, we do not explicitly diagonalize the formula ourselves, but use `buildmer`'s `diag()` method for `formula` objects. We then call `tabulate.formula()` on the new formula, providing a regular expression that matches terms belonging to the same vowel. Note that we *cannot* use the simple `vowel` factor in the fixed-effects part of the formula, as this will break `buildmer`'s marginality checks when considering which terms are eligible for inclusion or removal.
 
 ```{r}
 form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following + 
 	     ((vowel1+vowel2+vowel3+vowel4)*timepoint*following | participant) +
 	     (timepoint | word))
-(terms <- tabulate.formula(form))
-```
-
-We next need to instruct `buildmer` that terms belonging to the same vowel terms should be evaluated as a single group. This can be done by giving them the same identifier in the `block` column. This can be any numeric or character string, as long as it is the same for terms belonging to the same block.
-
-```{r}
-terms[ 2: 5,'block'] <- 'same1'
-terms[ 7:10,'block'] <- 'same2'
-terms[12:15,'block'] <- 'same3'
-terms[17:20,'block'] <- 'same4'
-terms[22:25,'block'] <- 'same5'
-terms[27:30,'block'] <- 'same6'
-terms[32:35,'block'] <- 'same7'
-terms[37:40,'block'] <- 'same8'
+(terms <- tabulate.formula(form,group='vowel[^:]'))
 ```
 
 Finally, we can instruct `buildmer` to use this specially-crafted `terms` object by simply passing it along instead of a regular formula. `buildmer` will recognize what is going on, and look for an additional `dep` argument for the name of the dependent variable in the data frame (provided as a character string).
@@ -232,6 +172,6 @@ m <- buildmer(terms,data=vowels,dep='f1',control=lmerControl(optimizer='bobyqa')
 This approach allows random slopes for `vowel` and for `vowel:timepoint` to make it in, both of which significantly improve model fit. This model seems much more adequate for statistical inference.
 
 # Other options
-Because `buildmer` does not do any model fitting by itself but is only an administrative formula processor around pre-existing modeling fuctions, it was straightforward to extend it beyond its original purpose of mixed-effects models. The logical extension of `buildmer` to GAMMs is fully supported (with the exception of `gamm` models; see `buildgamm()` for options). Relevant functions are available as `buildgam`, `buildbam`, and `buildgamm4`. `glmmTMB` models are also supported, although their syntax for covariance structures (e.g. `diag(timepoint | participant)`) is not; these models are still useful for their ability to handle autocorrelation, zero-inflation, and to use REML for GLMMs. At the request of Willemijn Heeren, `buildmer` was also extended to handle multinomial-logistic-regression models fitted by function `multinom` from package `nnet`. It is also possible to use `buildjulia` to drive Douglas Bates's `MixedModels` package for Julia.
+Because `buildmer` does not do any model fitting by itself but is only an administrative formula processor around pre-existing modeling fuctions, it was straightforward to extend it beyond its original purpose of mixed-effects models. The logical extension of `buildmer` to GAMMs is fully supported (with the exception of `gamm` models; see `buildgamm()` for options). Relevant functions are available as `buildgam`, `buildbam`, and `buildgamm4`. `glmmTMB` models are also supported via function `buildglmmTMB`, although their syntax for covariance structures (e.g. `diag(timepoint | participant)`) is not; these models are still useful for their ability to handle autocorrelation, zero-inflation, and to use REML for GLMMs. From package `nlme`, `gls` models are supported via `buildgls`, and the fixed-effects part of `lme` models can be eliminated via `buildlme`. At the request of Willemijn Heeren, `buildmer` was also extended to handle multinomial-logistic-regression models fitted by function `multinom` from package `nnet`; see function `buildmultinom`. It is also possible to use `buildjulia` to drive Douglas Bates's `MixedModels` package for Julia. Finally, `buildmertree` was recently added, which makes it possible to do term ordering and backward elimination of the random-effects part of `glmertree` models.
 
 # References
