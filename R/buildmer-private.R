@@ -13,7 +13,7 @@ buildmer.fit <- function (p) {
 		p$parply <- lapply
 	} else {
 		p$parallel <- T
-		p$parply <- function (x,fun) parallel::parLapply(p$cluster,x,fun)
+		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
 		p$env <- .GlobalEnv
 		parallel::clusterExport(p$cluster,'p',environment())
 	}
@@ -43,7 +43,7 @@ buildmer.finalize <- function (p) {
 		message('Fitting the final model')
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
-	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest')) {
+	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=T)) {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		message('Finalizing by converting the model to lmerTest')
 		p$model@call$data <- p$data
@@ -82,11 +82,11 @@ check.ddf <- function (ddf) {
 	}
 	ddf <- valid[i]
 	if (ddf %in% c('Wald','lme4')) return(ddf)
-	if (!requireNamespace('lmerTest')) {
+	if (!requireNamespace('lmerTest',quietly=T)) {
 		warning('lmerTest package is not available, could not calculate requested denominator degrees of freedom')
 		return('lme4')
 	}
-	if (ddf == 'Kenward-Roger' && !requireNamespace('pbkrtest')) {
+	if (ddf == 'Kenward-Roger' && !requireNamespace('pbkrtest',quietly=T)) {
 		warning('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
 		return('lme4')
 	}

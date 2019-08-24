@@ -75,7 +75,7 @@ add.terms <- function (formula,add) {
 #' check <- function (f) resid(lmer(f,sleepstudy))
 #' all.equal(check(form1),check(form2))
 #' @export
-build.formula <- function (dep,terms,env=environment()) {
+build.formula <- function (dep,terms,env=parent.frame()) {
 	fixed.intercept <- is.na(terms$grouping) & terms$term == '1'
 	if (any(fixed.intercept)) {
 		form <- stats::as.formula(paste(dep,'~1'))

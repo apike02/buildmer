@@ -94,7 +94,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 #' @template seealso
 #' @export
-buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=T,reduce.random=T,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),quiet=FALSE,...) {
+buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),quiet=FALSE,...) {
 	p <- list(
 		formula=formula,
 		cluster=cl,
@@ -193,7 +193,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template seealso
 #' @export
 buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',quiet=FALSE,...) {
-	if (!requireNamespace('gamm4')) stop('Please install package gamm4')
+	if (!requireNamespace('gamm4',quietly=T)) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -250,7 +250,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @template seealso
 #' @export
 buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('glmmTMB')) stop('Please install package glmmTMB')
+	if (!requireNamespace('glmmTMB',quietly=T)) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -293,7 +293,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template seealso
 #' @export
 buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('nlme')) stop('Please install package nlme')
+	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -344,7 +344,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @template seealso
 #' @export
 buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('JuliaCall')) stop('Please install package JuliaCall')
+	if (!requireNamespace('JuliaCall',quietly=T)) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -391,7 +391,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' @template seealso
 #' @export
 buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('nlme')) stop('Please install package nlme')
+	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -601,7 +601,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template seealso
 #' @export
 buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,quiet=FALSE,...) {
-	if (!requireNamespace('nnet')) stop('Please install package nnet')
+	if (!requireNamespace('nnet',quietly=T)) stop('Please install package nnet')
 	p <- list(
 		formula=formula,
 		data=data,
