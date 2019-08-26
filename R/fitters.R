@@ -81,12 +81,10 @@ fit.mertree <- function (p,formula) {
 	f <- as.formula(ftext,environment(formula))
 	if (buildmer:::is.gaussian(p$family)) {
 		message(paste0('Fitting via lmertree: ',ftext))
-		m <- buildmer:::patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
-		if (!buildmer::conv(m$lmer)) m$lmer else m
+		buildmer:::patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 	} else {
 		message(paste0('Fitting via glmertree: ',ftext))
-		m <- buildmer:::patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
-		if (!buildmer::conv(m$glmer)) m$glmer else m
+		buildmer:::patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 	}
 }
 

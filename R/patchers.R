@@ -37,6 +37,7 @@ patch.mertree <- function (p,eltname,fun,args) {
 	name <- substitute(fun)
 	model <- buildmer:::run(fun,args)
 	if (inherits(model,'try-error')) return(model)
+	if (!conv(model[[eltname]])) return(model[[eltname]])
 	model$call$data <- p$data.name
 	ctrl <- paste0(eltname,'.control')
 	if (!is.null(model$call$subset))  model$call$subset  <- p$subset.name
