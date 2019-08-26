@@ -1,72 +1,58 @@
-run <- function (ns,fun,args) {
-	if (!requireNamespace(ns)) stop(paste('Please install the',ns,'package'))
-	assign(fun,getFromNamespace(fun,ns))
-	withCallingHandlers(try(do.call(fun,args)),warning=function (w) invokeRestart('muffleWarning'))
-}
-
 fit.bam <- function (p,formula) {
 	method <- if (p$reml) 'fREML' else 'ML'
-	if (!requireNamespace('mgcv')) stop('Please install the mgcv package')
 	message(paste0('Fitting via bam, with ',method,': ',as.character(list(formula))))
-	buildmer:::run('bam',c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
+	buildmer:::patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
 fit.buildmer <- function (p,formula) {
-	reml <- p$reml && buildmer:::is.gaussian(eval(p$family,env=p$env))
+	reml <- p$reml && buildmer:::is.gaussian(p$family)
 	if (buildmer:::has.smooth.terms(formula)) {
 		fixed <- lme4::nobars(formula)
 		bars <- lme4::findbars(formula)
 		random <- if (length(bars)) stats::as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		if (!requireNamespace('gamm4',quietly=T)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam()')
+		if (!requireNamespace('gamm4',quietly=T)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
 		message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
-		m <- buildmer:::run('gamm4',c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
-		return(if (inherits(m,'try-error')) m else m$mer)
+		model <- buildmer:::patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
+		return(if (inherits(model,'try-error')) model else model$mer)
 	}
 	if (is.null(lme4::findbars(formula))) {
 		if (reml) {
 			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
-			buildmer:::run('nlme','gls',c(list(model=formula,data=p$data,method='REML'),p$dots))
-		} else if (buildmer:::is.gaussian(eval(p$family,p$env))) {
-			message(paste0('Fitting via lm: ',as.character(list(formula))))
-			buildmer:::run('stats','lm',c(list(formula=formula,data=p$data),p$filtered.dots))
-		}
-		else {
-			message(paste0('Fitting via glm: ',as.character(list(formula))))
-			buildmer:::run('stats','glm',c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
+			buildmer:::patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
+		} else {
+			message(paste0('Fitting via (g)lm: ',as.character(list(formula))))
+			if (buildmer:::is.gaussian(p$family)) buildmer:::patch.lm(p,stats::lm ,c(list(formula=formula,data=p$data),p$filtered.dots))
+			else                                  buildmer:::patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
 		}
 	} else {
-		if (buildmer:::is.gaussian(eval(p$family,p$env))) {
-			message(paste0('Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',as.character(list(formula))))
-			buildmer:::run('lme4','lmer',c(list(formula=formula,data=p$data,REML=reml),p$dots))
-		} else {
-			message(paste0('Fitting via glmer: ',as.character(list(formula))))
-			buildmer:::run('lme4','glmer',c(list(formula=formula,data=p$data,family=p$family),p$dots))
-		}
+		message(paste0('Fitting via lme4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(formula))))
+		return(if (buildmer:::is.gaussian(p$family)) buildmer:::patch.lmer(p,lme4::lmer ,c(list(formula=formula,data=p$data,REML=reml),p$dots))
+		       else                                  buildmer:::patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots)))
 	}
 }
 
 fit.gam <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gam, with ',method,': ',as.character(list(formula))))
-	buildmer:::run('mgcv','gam',c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
+	buildmer:::patch.lm(p,mgcv::gam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
 fit.glmmTMB <- function (p,formula) {
 	message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
-	buildmer:::run('glmmTMB','glmmTMB',c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
+	buildmer:::patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
 }
 
 fit.gls <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gls, with ',method,': ',as.character(list(formula))))
-	buildmer:::run('nlme','gls',c(list(formula,data=p$data,method=method),p$dots))
+	buildmer:::patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
 }
 
 fit.julia <- function (p,formula) {
 	if (is.null(lme4::findbars(formula))) return(buildmer:::fit.buildmer(p,formula))
 	message(paste0('Fitting via Julia: ',as.character(list(formula))))
 	.fit <- function (p) {
-		if (buildmer:::is.gaussian(eval(p$family,p$env))) {
+		if (buildmer:::is.gaussian(p$family)) {
 			mod <- p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
 		} else {
 			fam <- p$julia$call(p$julia_family,need_return='Julia')
@@ -86,25 +72,25 @@ fit.julia <- function (p,formula) {
 fit.lme <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via lme, with ',method,': ',as.character(list(formula))))
-	buildmer:::run('nlme','lme',c(list(formula,data=p$data,method=method),p$dots))
+	buildmer:::patch.lm(p,nlme::lme,c(list(formula,data=p$data,method=method),p$dots))
 }
 
 fit.mertree <- function (p,formula) {
 	dep <- formula[[2]]
 	ftext <- paste0(dep,' ~ ',p$left,' | (',paste0(attr(terms(formula),'term.labels'),collapse=') + ('),') | ',p$right,collapse=' + ')
 	f <- as.formula(ftext,environment(formula))
-	if (buildmer:::is.gaussian(eval(p$family,p$env))) {
+	if (buildmer:::is.gaussian(p$family)) {
 		message(paste0('Fitting via lmertree: ',ftext))
-		m <- buildmer:::run('glmertree',lmertree,c(list(formula=f,data=p$data),p$dots))
+		m <- buildmer:::patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		if (!buildmer::conv(m$lmer)) m$lmer else m
 	} else {
 		message(paste0('Fitting via glmertree: ',ftext))
-		m <- buildmer:::run('glmertree','glmertree',c(list(formula=f,data=p$data,family=p$family),p$dots))
+		m <- buildmer:::patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		if (!buildmer::conv(m$glmer)) m$glmer else m
 	}
 }
 
 fit.multinom <- function (p,formula) {
 	message(paste0('Fitting via multinom: ',as.character(list(formula))))
-	buildmer:::run('nnet','multinom',c(list(formula=formula,data=p$data),p$dots))
+	buildmer:::patch.lm(p,nnet::multinom,c(list(formula=formula,data=p$data),p$dots))
 }

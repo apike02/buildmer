@@ -61,7 +61,7 @@ backward <- function (p) {
 			f.alt <- buildmer::build.formula(dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
 			val <- if (buildmer::conv(m.alt)) p$crit(m.alt,m.cur) else NaN
-			if (p$crit.name == 'LRT' || is.LRT(p$crit) && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
+			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
@@ -76,9 +76,9 @@ backward <- function (p) {
 		}
 		progrep <- p$tab
 		progrep$index <- progrep$code <- progrep$ok <- NULL
-		if (p$crit.name == 'LRT' || is.LRT(p$crit)) progrep$LRT <- exp(results)
+		if (p$crit.name == 'LRT') progrep$LRT <- exp(results)
 		print(progrep)
-		remove <- eval(p$elim)(results)
+		remove <- p$elim(results)
 		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
 		if (length(remove) == 0) {
 			message('All terms are significant')
@@ -87,7 +87,7 @@ backward <- function (p) {
 		}
 
 		# 4. Remove the worst offender(s) and continue
-		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit])]
+		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
 		p$formula <- build.formula(dep,p$tab,p$env)
 		p$cur.ml <- p$cur.reml <- NULL
@@ -133,10 +133,10 @@ forward <- function (p) {
 	if (p$ordered != p$crit.name) p <- order(p) else if (p$ordered == 'custom') warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
 	progrep <- p$tab
 	progrep$index <- progrep$code <- progrep$ok <- NULL
-	if (p$crit.name == 'LRT' || is.LRT(p$crit)) progrep$LRT <- exp(progrep$LRT)
+	if (p$crit.name == 'LRT') progrep$LRT <- exp(progrep$LRT)
 	print(progrep)
 	dep <- as.character(p$formula[[2]])
-	remove <- eval(p$elim)(p$tab$score)
+	remove <- p$elim(p$tab$score)
 	# Retain all terms up to the last significant one, even if they were not significant themselves
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
 	keep <- which(!remove)
@@ -235,7 +235,7 @@ order <- function (p) {
 			})
 			mods <- unlist(mods,recursive=F)
 			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(cur,mod) else NaN)
-			if (p$crit.name == 'LRT' || is.LRT(p$crit) && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
+			if (p$crit.name == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
 				message('None of the models converged - giving up ordering attempt.')
