@@ -7,50 +7,49 @@
 #' form <- Reaction ~ Days + (1|Subject)
 #' add.terms(form,'Days|Subject')
 #' add.terms(form,'(0+Days|Subject)')
+#' add.terms(form,c('many','more|terms','to|terms','(be|added)','to|test'))
 #' @export
 add.terms <- function (formula,add) {
-	innerapply <- function (random.terms,FUN) sapply(random.terms,function (term) sapply(get.random.terms(term),FUN))
-
 	dep <- as.character(formula[2])
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
 	random.terms <- Filter(is.random.term,terms)
-	if (length(random.terms)) random.terms <- paste('(',random.terms,')')
+	if (length(random.terms)) random.terms <- sapply(random.terms,function (x) if (mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
 
 	for (term in add) {
 		if (is.random.term(term)) {
-			if (substr(term,nchar(term),nchar(term)) == ')') {
+			bar <- mkTerm(term)
+			if (bar[[1]] == '(') {
 				# independent term: tack it on at the end
 				random.terms <- c(random.terms,term)
 				next
 			}
-			for (bar in get.random.terms(term)) {
-				bar.grouping <- as.character(bar[3])
-				bar.terms <- bar[[2]]
-				# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
-				suitable <- if (length(random.terms)) which(innerapply(random.terms,function (term) term[[3]] == bar.grouping)) else NULL
-				if (length(suitable)) {
-					random.terms[[suitable[1]]] <- innerapply(random.terms[[suitable[1]]],function (term) {
-						grouping <- as.character(term[3])
-						terms <- as.character(term[2])
-						form <- stats::as.formula(paste0('~',terms),environment(formula))
-						terms <- terms(form,keep.order=T)
-						intercept <- attr(terms,'intercept')
-						terms <- attr(terms,'term.labels')
-						terms <- c(terms,bar.terms)
-						if (intercept) terms <- c('1',terms)
-						else terms[[1]] <- paste0('0 + ',terms[[1]])
-						terms <- paste(terms,collapse=' + ')
-						paste0('(',terms,' | ',grouping,')')
-					})
-				} else {
-					#still have to tack it on at the end in the end...
-					term <- paste(bar.terms,collapse=' + ')
-					if (!any(bar.terms == '1')) term <- paste0('0 + ',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
-					random.terms <- c(random.terms,paste0('(',term,' | ',bar.grouping,')'))
-				}
+			bar.grouping <- as.character(bar[3])
+			bar.terms <- bar[[2]]
+			# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
+			suitable <- if (length(random.terms)) which(sapply(random.terms,function (term) mkTerm(term)[[2]][[3]] == bar.grouping)) else NULL
+			if (length(suitable)) {
+				random.terms[[suitable[1]]] <- sapply(random.terms[[suitable[1]]],function (x) {
+					bar <- mkTerm(x)[[2]]
+					grouping <- as.character(bar[3])
+					terms <- as.character(bar[2])
+					form <- mkForm(terms)
+					terms <- terms(form,keep.order=T)
+					intercept <- attr(terms,'intercept')
+					terms <- attr(terms,'term.labels')
+					terms <- c(terms,bar.terms)
+					if (intercept) terms <- c('1',terms)
+					else terms[[1]] <- paste0('0 + ',terms[[1]])
+					terms <- paste(terms,collapse=' + ')
+					paste0('(',terms,' | ',grouping,')')
+				})
+			} else {
+				#still have to tack it on at the end in the end...
+				term <- paste(bar.terms,collapse=' + ')
+				if (!any(bar.terms == '1')) term <- paste0('0 + ',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
+				random.terms <- c(random.terms,paste0('(',term,' | ',bar.grouping,')'))
 			}
 		} else fixed.terms <- c(fixed.terms,term)
 	}

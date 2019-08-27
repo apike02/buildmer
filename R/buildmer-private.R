@@ -93,18 +93,23 @@ check.ddf <- function (ddf) {
 	return(ddf)
 }
 
-get.random.terms <- function (term) lme4::findbars(stats::as.formula(paste0('~',term)))
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 is.gaussian <- function (family) {
 	if (is.character(family)) family <- get(family)
 	if (is.function (family)) family <- family()
 	isTRUE(all.equal(family,gaussian()))
 }
-is.smooth.term <- function (term) has.smooth.terms(stats::as.formula(paste0('~',list(term))))
-is.random.term <- function (term) length(get.random.terms(term)) > 0
+is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
+is.random.term <- function (term) {
+	term <- mkTerm(term)
+	if (is.name(term)) return(F)
+	return(term[[1]] == '|')
+}
 mkCrit <- function (crit) if (is.function(crit)) crit else get(paste0('crit.',crit))
-mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
 mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
+mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
+mkForm <- function (term) stats::as.formula(paste0('~',term))
+mkTerm <- function (term) mkForm(term)[[2]]
 
 unpack.smooth.terms <- function (x) {
 	fm <- stats::as.formula(paste0('~',list(x)))
