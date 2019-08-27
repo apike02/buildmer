@@ -17,12 +17,13 @@
 #'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -35,6 +36,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=NULL,
+		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -134,12 +136,13 @@ buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=fu
 #'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -152,6 +155,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=NULL,
+		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -185,13 +189,14 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #'                      s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',...) {
 	if (!requireNamespace('gamm4',quietly=T)) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -204,6 +209,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=ddf,
+		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -241,13 +247,14 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' m <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
 #' }}
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
 	if (!requireNamespace('glmmTMB',quietly=T)) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -259,6 +266,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		include=include,
 		calc.anova=F,
 		calc.summary=calc.summary,
+		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -332,13 +340,14 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #'                 (timepoint|word),data=vowels)
 #' }
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,...) {
 	if (!requireNamespace('JuliaCall',quietly=T)) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		include=include,
 		julia_family=substitute(julia_family),
 		julia_link=substitute(julia_link),
@@ -421,12 +430,13 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' @examples
 #' library(buildmer)
 #' m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+#' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',...) {
 	p <- list(
 		formula=formula,
 		data=data,
-		family=substitute(family),
+		family=family,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -439,6 +449,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
 		ddf=ddf,
+		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
@@ -453,6 +464,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
 #' @param formula Either a \code{glmertree} formula, looking like \code{dep ~ left | middle | right} where the \code{middle} part is an \code{lme4}-style random-effects specification, or an ordinary formula (or buildmer term list thereof) specifying only the dependent variable and \code{lme4}-style random effects. In the latter case, the additional arguments \code{left} and \code{right} must be specified as one-sided formulas containing the fixed part of the model and the partitioning part, respectively
 #' @template data
+#' @template family
 #' @template common
 #' @template summary
 #' @param left The left part of the \code{glmertree} formula, used if \code{formula} does not contain \code{glmertree}-specific terms. Note that if \code{left} is specified when \code{formula} is in \code{glmertree} format, \code{left} overrides the \code{formula} specification!
@@ -465,6 +477,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
 #'                   data=lme4::sleepstudy,family=Gamma(link=identity))
 #' @template seealso
+#' @importFrom stats gaussian
 #' @export
 buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,calc.summary=TRUE,left=NULL,right=NULL,...) {
 	if (!requireNamespace('glmertree',quietly=T)) stop('Please install package glmertree')
