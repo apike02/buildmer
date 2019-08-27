@@ -1,5 +1,24 @@
-'**' denotes big changes
-'*' denotes minor changes
+'**' denotes big changes visible to the user
+'*' denotes minor changes visible to the user
+'.' denotes minor bug fixes
+
+1.2
+
+** Proper environment support
+** glmertree support
+* More formal support for diagonal covariance structures via a new 'groups'
+  argument to tabulate.formula
+* Retire the 'quiet' argument
+* Overhaul documentation
+* Significantly improve family handling
+* Allow 'include' to take a tabulated formula
+* conv() now accepts a singular.ok argument, which is always FALSE inside
+  buildmer
+. Improve REML detection
+. Increase robustness with user-provided formula tab
+. Make convergence checks more consistent between model types
+. Rework add.terms and related random-effects detection to fix obscure bug
+  when tabulating non-r.e. terms that fool lme4::findbars (e.g. 'ar1(x|g)')
 
 1.1
 
@@ -9,7 +28,7 @@
   github bug #1)
 * New function 'buildcustom'
 * Added raw log-likelihood as a criterion: 'LL'
-* Fix bug in calculating anova table with lmerTest ddf options
-* Make calcWald respect numerator df in anova table
-* Remove incorrect gradient check for mgcv models in conv(), instead check for
+. Fix bug in calculating anova table with lmerTest ddf options
+. Make calcWald respect numerator df in anova table
+. Remove incorrect gradient check for mgcv models in conv(), instead check for
   'full convergence' string

@@ -10,6 +10,7 @@ The package supports the fitting of a wide variety of models, if the relevant pa
  * *buildmer*: `lm`, `glm`, `lmer`, `glmer`, `gamm4` (package `gamm4`)
  * *buildgam*, *buildbam*: `gam`, `bam` (package `mgcv`)
  * *buildglmmTMB*: `glmmTMB` (package `glmmTMB`)
+ * *buildmertree*: `lmertree`, `glmertree` (package `glmertree`)
  * *buildjulia*: uses `RCall` to drive a Julia installation to fit models using Julia package `MixedModels`
 
 No support is available (or planned) for fitting generalized additive mixed models via `mgcv`'s `gamm` function; use `gamm4`'s eponymous function instead.
@@ -20,7 +21,7 @@ The intention of the `buildmer` package is to make your life as simple as:
 
 ```
 library(buildmer)
-model = buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+model <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
 ```
 
 In other words, the intention of the package is for you to specify the maximal model that you *would like* to fit, and let the package worry about whether or not your model converges, and whether or not your effect structure before, during, or after non-significant term removal needs to be passed to `gamm4`, `lmer`, or `lm` (or `glm`(`er`) or `{g,b}am`). More options are available; please see the documentation for details.
