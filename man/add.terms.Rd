@@ -22,4 +22,5 @@ library(buildmer)
 form <- Reaction ~ Days + (1|Subject)
 add.terms(form,'Days|Subject')
 add.terms(form,'(0+Days|Subject)')
+add.terms(form,c('many','more|terms','to|terms','(be|added)','to|test'))
 }

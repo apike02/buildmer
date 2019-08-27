@@ -2,7 +2,7 @@ run <- function (fun,args) withCallingHandlers(try(do.call(fun,args)),warning=fu
 
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- buildmer:::run(fun,args)
+	model <- run(fun,args)
 	if (inherits(model,'try-error')) return(model)
 	model$mer@call[[1]] <- name
 	model$mer@call$data <- p$data
@@ -14,7 +14,7 @@ patch.gamm4 <- function (p,fun,args) {
 
 patch.lm <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- buildmer:::run(fun,args)
+	model <- run(fun,args)
 	if (inherits(model,'try-error')) return(model)
 	model$call[[1]] <- name
 	model$call$data <- p$data.name
@@ -26,7 +26,7 @@ patch.lm <- function (p,fun,args) {
 
 patch.lmer <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- buildmer:::run(fun,args)
+	model <- run(fun,args)
 	if (inherits(model,'try-error')) return(model)
 	model@call[[1]] <- name
 	model@call$data <- p$data.name
@@ -38,7 +38,7 @@ patch.lmer <- function (p,fun,args) {
 
 patch.mertree <- function (p,eltname,fun,args) {
 	name <- substitute(fun)
-	model <- buildmer:::run(fun,args)
+	model <- run(fun,args)
 	if (inherits(model,'try-error')) return(model)
 	if (!conv(model[[eltname]])) return(model[[eltname]])
 	model$call$data <- p$data.name

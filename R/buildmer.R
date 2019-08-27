@@ -87,14 +87,15 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' # First, order the terms based on Wilks' Lambda
 #' m <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
 #' sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
-#' # Now, use the six most important terms (arbitrary choice) in the LDA
+#' # Now, use the six most importFromant terms (arbitrary choice) in the LDA
 #' library(MASS)
 #' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 #' @template seealso
 #' @export
-buildcustom <- function (formula,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),...) {
+buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),...) {
 	p <- list(
 		formula=formula,
+		data=data,
 		cluster=cl,
 		reduce.fixed=reduce.fixed,
 		reduce.random=reduce.random,
@@ -336,8 +337,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @examples
 #' \donttest{
 #' library(buildmer)
-#' m <- buildjulia(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
-#'                 (timepoint|word),data=vowels)
+#' m <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -473,9 +473,9 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @examples
 #' library(buildmer)
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#'                   data=lme4::sleepstudy)
+#'                   data=lme4::sleepstudy,joint=FALSE)
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#'                   data=lme4::sleepstudy,family=Gamma(link=identity))
+#'                   data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
@@ -495,7 +495,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		left <- as.character(terms[2])
 		if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
 		middle <- as.character(terms[3])
-		formula <- reformulate(middle,dep)
+		formula <- stats::reformulate(middle,dep)
 	} else {
 		left <- as.character(left[2])
 		right <- as.character(right[2])

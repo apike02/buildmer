@@ -15,7 +15,7 @@ buildmer.fit <- function (p) {
 		p$parallel <- T
 		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
 		p$env <- .GlobalEnv
-		parallel::clusterExport(p$cluster,'p',environment())
+		parallel::clusterExport(p$cluster,privates,environment())
 	}
 	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 
@@ -56,6 +56,7 @@ buildmer.finalize <- function (p) {
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	ret@p$in.buildmer <- F
+	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=privates),silent=T)
 	ret
 }
 
@@ -110,6 +111,7 @@ mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
 mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
 mkForm <- function (term) stats::as.formula(paste0('~',term))
 mkTerm <- function (term) mkForm(term)[[2]]
+privates <- c('p','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','run')
 
 unpack.smooth.terms <- function (x) {
 	fm <- stats::as.formula(paste0('~',list(x)))

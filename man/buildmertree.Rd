@@ -13,6 +13,8 @@ buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
+\item{family}{See the general documentation under \code{\link{buildmer-package}}}
+
 \item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{direction}{See the general documentation under \code{\link{buildmer-package}}}
@@ -35,9 +37,9 @@ Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects
 \examples{
 library(buildmer)
 m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-                  data=lme4::sleepstudy)
+                  data=lme4::sleepstudy,joint=FALSE)
 m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-                  data=lme4::sleepstudy,family=Gamma(link=identity))
+                  data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
 }
 \seealso{
 \code{\link{buildmer-package}}

@@ -40,8 +40,7 @@ Use \code{buildmer} to perform stepwise elimination on models fit with Julia pac
 \examples{
 \donttest{
 library(buildmer)
-m <- buildjulia(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
-                (timepoint|word),data=vowels)
+m <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
 }
 }
 \seealso{
