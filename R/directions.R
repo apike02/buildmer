@@ -19,7 +19,12 @@ backward <- function (p) {
 	}
 	reduce.noconv <- function (p) {
 		message('Convergence failure. Reducing terms and retrying...')
-		p$tab <- p$tab[p$tab$block != p$tab$block[nrow(p$tab)],]
+		cands <- p$tab$block[!is.na(p$tab$block)]
+		if (!length(cands)) {
+			message('No terms left for reduction, giving up')
+			return(p)
+		}
+		p$tab <- p$tab[!is.na(p$tab$block) & p$tab$block != cands[length(cands)],]
 		p$formula <- build.formula(dep,p$tab,p$env)
 		p
 	}
@@ -52,6 +57,10 @@ backward <- function (p) {
 			}
 		}
 
+		if (!nrow(p$tab)) {
+			message("There's nothing left!")
+			return(p)
+		}
 		message('Testing terms')
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
