@@ -104,7 +104,9 @@ is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {
 	term <- mkTerm(term)
 	if (is.name(term)) return(F)
-	return(term[[1]] == '|')
+	if (term[[1]] == '|') return(T)
+	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(T)
+	F
 }
 mkCrit <- function (crit) if (is.function(crit)) crit else get(paste0('crit.',crit))
 mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
