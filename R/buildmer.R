@@ -495,7 +495,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		left <- as.character(terms[2])
 		if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
 		middle <- as.character(terms[3])
-		formula <- stats::reformulate(middle,dep)
+		formula <- stats::as.formula(paste0(dep,'~',paste0(middle,collapse='+')),env=parent.frame())
 	} else {
 		left <- as.character(left[2])
 		right <- as.character(right[2])

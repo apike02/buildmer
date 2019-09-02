@@ -53,9 +53,8 @@ add.terms <- function (formula,add) {
 			}
 		} else fixed.terms <- c(fixed.terms,term)
 	}
-	terms <- c(fixed.terms,random.terms)
-	if (length(terms)) return(stats::reformulate(terms,dep,intercept,environment(formula)))
-	stats::as.formula(paste0(dep,'~',as.numeric(intercept)),environment(formula))
+	terms <- c(as.numeric(intercept),fixed.terms,random.terms)
+	stats::as.formula(paste0(dep,'~',paste0(terms,collapse='+')),environment(formula))
 }
 
 #' Convert a buildmer term list into a proper model formula
