@@ -117,8 +117,8 @@ conv <- function (model,singular.ok=FALSE) {
 	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info)) {
 			if (!is.null(model$outer.info$conv) && model$outer.info$conv != 'full convergence') return(F)
-			ev <- eigen(model$outer.info$hess)$values
-			if (min(ev) < -.002) return(F)
+			ev <- try(eigen(model$outer.info$hess)$values,silent=T)
+			if (inherits(ev,'try-error') || min(ev) < 1e-05) return(F)
 		} else {
 			if (!length(model$sp)) return(T)
 			if (!model$mgcv.conv$fully.converged) return(F)
@@ -137,7 +137,7 @@ conv <- function (model,singular.ok=FALSE) {
 		if (!is.null(model$sdr$pdHess)) {
 			if (!model$sdr$pdHess) return(F)
 			ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
-			if (inherits(ev,'try-error') || (min(ev) < -.002)) return(F)
+			if (inherits(ev,'try-error') || (min(ev) < 1e-05)) return(F)
 		}
 		return(T)
 	}
