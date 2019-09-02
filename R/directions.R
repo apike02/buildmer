@@ -19,7 +19,7 @@ backward <- function (p) {
 	}
 	reduce.noconv <- function (p) {
 		message('Convergence failure. Reducing terms and retrying...')
-		p$tab <- p$tab[-nrow(p$tab),]
+		p$tab <- p$tab[p$tab$block != p$tab$block[nrow(p$tab)],]
 		p$formula <- build.formula(dep,p$tab,p$env)
 		p
 	}
