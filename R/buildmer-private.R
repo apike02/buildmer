@@ -7,6 +7,10 @@ buildmer.fit <- function (p) {
 		p$formula <- build.formula(p$dots$dep,p$tab,p$env)
 		p$dots$dep <- NULL
 	} else p$tab <- tabulate.formula(p$formula)
+	if (!is.null(p$dots$REML) && p$can.use.reml) {
+		if (isFALSE(p$dots$REML)) p$can.use.reml <- F
+		p$dots$REML <- NULL
+	}
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
 	if (is.null(p$cluster)) {
 		p$parallel <- F
