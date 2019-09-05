@@ -66,7 +66,7 @@ crit.Wilks <- function (ma,mb) {
 # First, order the terms based on Wilks' Lambda
 m <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
 sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
-# Now, use the six most importFromant terms (arbitrary choice) in the LDA
+# Now, use the six most important terms (arbitrary choice) in the LDA
 library(MASS)
 m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 }

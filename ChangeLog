@@ -2,6 +2,16 @@
 '*' denotes minor changes visible to the user
 '.' denotes minor bug fixes
 
+1.2.1
+
+. Avoid the use of reformulate(), as its env= argument is only available on R
+  >= 3.6 (bug reported by Willemijn Heeren)
+. Relax the convergence checks for negative eigenvalues (affects mgcv and
+  glmmTMB models)
+. Improve detection of random effects
+. Remove terms by block when a reference model fails to converge and detect
+  empty models
+
 1.2
 
 ** Proper environment support
