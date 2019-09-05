@@ -12,6 +12,15 @@ buildmer.fit <- function (p) {
 		p$dots$REML <- NULL
 	}
 	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
+	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
+
+	# the below comment will be found even if just printing the parsed R code:
+	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'
+	if ('p' %in% names(p$dots)) {
+		p <- c(p,p$dots$p)
+		p$dots$p <- NULL
+	}
+
 	if (is.null(p$cluster)) {
 		p$parallel <- F
 		p$parply <- lapply
@@ -20,14 +29,6 @@ buildmer.fit <- function (p) {
 		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
 		p$env <- .GlobalEnv
 		parallel::clusterExport(p$cluster,privates,environment())
-	}
-	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
-
-	# the below comment will be found even if just printing the parsed R code:
-	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'
-	if ('p' %in% names(p$dots)) {
-		p <- c(p,p$dots$p)
-		p$dots$p <- NULL
 	}
 
 	p$reml <- T
