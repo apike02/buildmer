@@ -65,7 +65,7 @@ backward <- function (p) {
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
 			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
-			p$reml <- all(!is.na(p$tab[i,'grouping']))
+			p$reml <- p$can.use.REML && all(!is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
