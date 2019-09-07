@@ -4,9 +4,13 @@ buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
 		if (is.null(p$dots$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
-		p$formula <- build.formula(p$dots$dep,p$tab,p$env)
+		p$dep <- p$dots$dep
+		p$formula <- build.formula(p$dep,p$tab,p$env)
 		p$dots$dep <- NULL
-	} else p$tab <- tabulate.formula(p$formula)
+	} else {
+		p$dep <- as.character(p$formula[2])
+		p$tab <- tabulate.formula(p$formula)
+	}
 	if (!is.null(p$dots$REML) && p$can.use.reml) {
 		if (isFALSE(p$dots$REML)) p$can.use.reml <- F
 		p$dots$REML <- NULL

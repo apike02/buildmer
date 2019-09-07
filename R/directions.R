@@ -25,11 +25,10 @@ backward <- function (p) {
 			return(p)
 		}
 		p$tab <- p$tab[!is.na(p$tab$block) & p$tab$block != cands[length(cands)],]
-		p$formula <- build.formula(dep,p$tab,p$env)
+		p$formula <- build.formula(p$dep,p$tab,p$env)
 		p
 	}
 
-	dep <- as.character(p$formula[2])
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
 	if (p$parallel) parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
 	while (T) {
@@ -67,7 +66,7 @@ backward <- function (p) {
 			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
 			p$reml <- p$can.use.REML && all(!is.na(p$tab[i,'grouping']))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
-			f.alt <- build.formula(dep,p$tab[-i,],p$env)
+			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
 			val <- if (conv(m.alt)) p$crit(m.alt,m.cur) else NaN
 			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
@@ -98,7 +97,7 @@ backward <- function (p) {
 		# 4. Remove the worst offender(s) and continue
 		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
-		p$formula <- build.formula(dep,p$tab,p$env)
+		p$formula <- build.formula(p$dep,p$tab,p$env)
 		p$cur.ml <- p$cur.reml <- NULL
 		if (length(results) == 1) {
 			# Recycle the current model as the next reference model
@@ -144,7 +143,6 @@ forward <- function (p) {
 	progrep$index <- progrep$code <- progrep$ok <- NULL
 	if (p$crit.name == 'LRT') progrep$score <- exp(progrep$score)
 	print(progrep)
-	dep <- as.character(p$formula[2])
 	remove <- p$elim(p$tab$score)
 	# Retain all terms up to the last significant one, even if they were not significant themselves
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
@@ -154,7 +152,7 @@ forward <- function (p) {
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
-	p$formula <- build.formula(dep,p$tab,p$env)
+	p$formula <- build.formula(p$dep,p$tab,p$env)
 	p$reml <- T
 	p$model <- p$fit(p,p$formula)
 	p
@@ -238,7 +236,7 @@ order <- function (p) {
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
-				form <- build.formula(dep,tab,p$env)
+				form <- build.formula(p$dep,tab,p$env)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
@@ -259,20 +257,19 @@ order <- function (p) {
 				# In principle, there should be only one winner. If there are multiple candidates which happen to add _exactly_ the same amount of information to the model, this is
 				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
 				# needs an extra fit to obtain the new 'current' model.
-				form <- build.formula(dep,have,p$env)
+				form <- build.formula(p$dep,have,p$env)
 				cur <- p$fit(p,form)
 				if (!conv(cur)) {
 					message('The reference model for the next step failed to converge - giving up ordering attempt.')
 					return(p)
 				}
 			}
-			message(paste0('Updating formula: ',as.character(list(build.formula(dep,have)))))
+			message(paste0('Updating formula: ',as.character(list(build.formula(p$dep,have)))))
 		}
 	}
 
 	message('Determining predictor order')
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula) else p$tab$ok <- p$tab$score <- NULL
-	dep <- as.character(p$formula[2])
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) {
@@ -290,6 +287,6 @@ order <- function (p) {
 		p$reml <- T
 		p <- reorder(p,tab[!fxd,])
 	}
-	p$formula <- build.formula(dep,p$tab,p$env)
+	p$formula <- build.formula(p$dep,p$tab,p$env)
 	p
 }
