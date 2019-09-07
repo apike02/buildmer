@@ -42,4 +42,10 @@ Use \code{buildmer} to fit mixed-effects models using \code{lmer}/\code{glmer} f
 \examples{
 library(buildmer)
 m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+
+#tests from github issue #2:
+bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp)
+bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward')
+bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,crit='AIC')
+bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 }

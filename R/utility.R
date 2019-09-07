@@ -142,6 +142,7 @@ conv <- function (model,singular.ok=FALSE) {
 		return(T)
 	}
 	if (inherits(model,'nnet')) return(model$convergence == 0)
+	if (inherits(model,'MixMod')) return(model$converged)
 	T
 }
 

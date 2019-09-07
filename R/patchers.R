@@ -1,5 +1,16 @@
 run <- function (fun,args) withCallingHandlers(try(do.call(fun,args)),warning=function (w) invokeRestart('muffleWarning'))
 
+patch.GLMMadaptive <- function (p,fun,args) {
+	name <- substitute(fun)
+	model <- run(fun,args)
+	if (inherits(model,'try-error')) return(model)
+	model$call[[1]] <- name
+	model$call$data <- p$data.name
+	model$call$family <- p$family.name
+	if (!is.null(model$call$control)) model$call$control <- p$control.name
+	model
+}
+
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)

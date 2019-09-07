@@ -1,3 +1,47 @@
+#' Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_model} from package \code{GLMMadaptive}
+#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildGLMMadaptive} does not use a separate \code{random} argument!)
+#' @template data
+#' @template family
+#' @template common
+#' @template reduce
+#' @template summary
+#' @param ... Additional options to be passed to \code{mixed_model}
+#' @examples
+#' \donttest{
+#' # nonsensical model given these data
+#' model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
+#' }
+#' @template seealso
+#' @export
+buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
+	if (!requireNamespace('GLMMadaptive',quietly=T)) stop('Please install package GLMMadaptive')
+	p <- list(
+		formula=formula,
+		data=data,
+		family=family,
+		cluster=cl,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
+		direction=direction,
+		crit=mkCrit(crit),
+		crit.name=mkCritName(crit),
+		elim=mkElim(crit),
+		fit=fit.GLMMadaptive,
+		include=include,
+		calc.anova=F,
+		calc.summary=calc.summary,
+		family.name=substitute(family),
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		can.use.REML=F,
+		env=parent.frame(),
+		dots=list(...)
+	)
+	p <- buildmer.fit(p)
+	buildmer.finalize(p)
+}
+
 #' Use \code{buildmer} to fit big generalized additive models using \code{bam} from package \code{mgcv}
 #' @template formula
 #' @template data
@@ -174,9 +218,9 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template data
 #' @template family
 #' @template common
+#' @template reduce
 #' @template anova
 #' @template summary
-#' @template reduce
 #' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
 #' @param ... Additional options to be passed to \code{gamm4}
 #' @examples
@@ -430,6 +474,12 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' @examples
 #' library(buildmer)
 #' m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+#' 
+#' #tests from github issue #2:
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp)
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward')
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,crit='AIC')
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',...) {

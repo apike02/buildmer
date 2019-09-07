@@ -1,3 +1,13 @@
+fit.GLMMadaptive <- function (p,formula) {
+	fixed <- lme4::nobars(formula)
+	bars <- lme4::findbars(formula)
+	if (is.null(bars)) return(fit.buildmer(p,formula))
+	if (length(bars) != 1) stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
+	random <- mkForm(as.character(bars),p$env)
+	message(paste0('Fitting via mixed_model: ',as.character(list(fixed)),', random=',as.character(list(random))))
+	patch.GLMMadaptive(p,GLMMadaptive::mixed_model,c(list(fixed=fixed,random=random,data=p$data,family=p$family),p$dots))
+}
+
 fit.bam <- function (p,formula) {
 	method <- if (p$reml) 'fREML' else 'ML'
 	message(paste0('Fitting via bam, with ',method,': ',as.character(list(formula))))
