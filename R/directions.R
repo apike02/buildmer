@@ -148,7 +148,7 @@ forward <- function (p) {
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
 	keep <- which(!remove)
 	remove[1:length(keep)] <- F
-	remove.ok <- sapply(1:nrow(p$tab),function (i) can.remove(p$tab,i))
+	remove.ok <- sapply(1:nrow(p$tab),function (i) !is.na(p$tab[i,]$block) && can.remove(p$tab,i))
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
@@ -215,7 +215,7 @@ order <- function (p) {
 
 		p$ordered <- p$crit.name
 		have <- p$tab
-		cur <- NULL
+		cur <- p$fit(p,build.formula(p$dep,have,p$env))
 		while (T) {
 			check <- tab[!tab$code %in% have$code,]
 			if (!nrow(check)) {
@@ -273,7 +273,7 @@ order <- function (p) {
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) {
-		where <- fxd & tab$term == '1'
+		where <- tab$block == tab[fxd & tab$term == '1',]$block
 		p$tab <- cbind(tab[where,],ok=T,score=NA)
 		tab <- tab[!where,]
 		fxd <- is.na(tab$grouping)
