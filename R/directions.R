@@ -142,9 +142,9 @@ forward <- function (p) {
 	if (p$ordered != p$crit.name) p <- order(p) else if (p$ordered == 'custom') warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
 	progrep <- p$tab
 	progrep$index <- progrep$code <- progrep$ok <- NULL
-	if (p$crit.name == 'LRT') progrep$LRT <- exp(progrep$LRT)
+	if (p$crit.name == 'LRT') progrep$score <- exp(progrep$score)
 	print(progrep)
-	dep <- as.character(p$formula[[2]])
+	dep <- as.character(p$formula[2])
 	remove <- p$elim(p$tab$score)
 	# Retain all terms up to the last significant one, even if they were not significant themselves
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
