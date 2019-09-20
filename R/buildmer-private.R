@@ -35,7 +35,7 @@ buildmer.fit <- function (p) {
 		parallel::clusterExport(p$cluster,privates,environment())
 	}
 
-	p$reml <- T
+	p$reml <- p$can.use.reml
 	p$ordered <- ''
 	crits <- p$crit
 	if (length(crits) == 1) crits <- sapply(1:length(p$direction),function (i) crits)

@@ -34,7 +34,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=F,
+		can.use.reml=F,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -84,7 +84,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=T,
+		can.use.reml=T,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -155,7 +155,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 		crit=crit,
 		crit.name='custom criterion',
 		elim=elim,
-		can.use.REML=F,
+		can.use.reml=F,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -204,7 +204,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=T,
+		can.use.reml=T,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -258,7 +258,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=is.gaussian(family),
+		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -315,7 +315,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=T,
+		can.use.reml=T,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -358,7 +358,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=T,
+		can.use.reml=T,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -405,7 +405,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		fit=fit.julia,
 		calc.anova=F,
 		calc.summary=F,
-		can.use.REML=is.gaussian(family),
+		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -453,7 +453,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=T,
+		can.use.reml=T,
 		env=parent.frame(),
 		dots=list(random=random,...)
 	)
@@ -503,7 +503,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=is.gaussian(family),
+		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -572,7 +572,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
-		can.use.REML=is.gaussian(family),
+		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -613,7 +613,7 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.REML=F,
+		can.use.reml=F,
 		env=parent.frame(),
 		dots=list(...)
 	)

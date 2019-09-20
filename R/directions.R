@@ -32,7 +32,7 @@ backward <- function (p) {
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
 	if (p$parallel) parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
 	while (T) {
-		need.reml <- p$can.use.REML && any(sapply(unique(p$tab$block),function (b) {
+		need.reml <- p$can.use.reml && p$reduce.random && any(sapply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
 			any(!is.na(p$tab[i,'grouping']))
 		}))
@@ -63,8 +63,12 @@ backward <- function (p) {
 		message('Testing terms')
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,'grouping']) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
-			p$reml <- p$can.use.REML && all(!is.na(p$tab[i,'grouping']))
+			out <- list(val=rep(NA,length(i)))
+			if (!p$reduce.fixed  &&  is.na(p$tab[i,]$grouping)) return(out)
+			if (!p$reduce.random && !is.na(p$tab[i,]$grouping)) return(out)
+			if (!can.remove(p$tab,i)) return(out)
+			if (any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(out)
+			p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
@@ -148,7 +152,13 @@ forward <- function (p) {
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
 	keep <- which(!remove)
 	remove[1:length(keep)] <- F
-	remove.ok <- sapply(1:nrow(p$tab),function (i) !is.na(p$tab[i,]$block) && can.remove(p$tab,i))
+	remove.ok <- sapply(1:nrow(p$tab),function (i) {
+		if (is.na(p$tab[i,]$block)) return(F)
+		if (!p$reduce.fixed  &&  is.na(p$tab[i,]$grouping)) return(F)
+		if (!p$reduce.random && !is.na(p$tab[i,]$grouping)) return(F)
+		if (!can.remove(p$tab,i)) return(F)
+		T
+	})
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
@@ -282,8 +292,8 @@ order <- function (p) {
 	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=T,score=NA))
 
 	p$reml <- F
-	if (p$reduce.fixed  && any( fxd)) p <- reorder(p,tab[fxd,])
-	if (p$reduce.random && any(!fxd)) {
+	if (any( fxd)) p <- reorder(p,tab[fxd,])
+	if (any(!fxd)) {
 		p$reml <- T
 		p <- reorder(p,tab[!fxd,])
 	}
