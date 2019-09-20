@@ -6,7 +6,7 @@
 \usage{
 buildmer(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
+  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = FALSE,
   calc.summary = TRUE, ddf = "Wald", ...)
 }
 \arguments{
@@ -32,7 +32,7 @@ buildmer(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{ddf}{The method used for calculating \emph{p}-values if \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
+\item{ddf}{The method used for calculating \emph{p}-values if \code{calc.anova=FALSE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
 
 \item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}.)}
 }

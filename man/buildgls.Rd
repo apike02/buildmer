@@ -5,7 +5,7 @@
 \title{Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}}
 \usage{
 buildgls(formula, data = NULL, cl = NULL, direction = c("order",
-  "backward"), crit = "LRT", include = NULL, calc.anova = TRUE,
+  "backward"), crit = "LRT", include = NULL, calc.anova = FALSE,
   calc.summary = TRUE, ...)
 }
 \arguments{

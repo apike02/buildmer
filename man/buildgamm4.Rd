@@ -6,7 +6,7 @@
 \usage{
 buildgamm4(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = TRUE,
+  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = FALSE,
   calc.summary = TRUE, ddf = "Wald", ...)
 }
 \arguments{

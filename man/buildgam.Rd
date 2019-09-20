@@ -6,7 +6,7 @@
 \usage{
 buildgam(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = c("order", "backward"), crit = "LRT", include = NULL,
-  calc.anova = TRUE, calc.summary = TRUE, ...)
+  calc.anova = FALSE, calc.summary = TRUE, ...)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}

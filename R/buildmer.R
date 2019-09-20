@@ -63,7 +63,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
+buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -183,7 +183,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
+buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -236,7 +236,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',...) {
+buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
 	if (!requireNamespace('gamm4',quietly=T)) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
@@ -337,7 +337,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' m <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
 #' @template seealso
 #' @export
-buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
+buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
@@ -432,7 +432,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' m <- buildlme(Reaction ~ Days,data=lme4::sleepstudy,random=~Days|Subject)
 #' @template seealso
 #' @export
-buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=TRUE,calc.summary=TRUE,...) {
+buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
@@ -469,7 +469,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' @template reduce
 #' @template anova
 #' @template summary
-#' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
+#' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=FALSE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
 #' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}.)
 #' @examples
 #' library(buildmer)
@@ -482,7 +482,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 #' @importFrom stats gaussian
 #' @export
-buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=TRUE,calc.summary=TRUE,ddf='Wald',...) {
+buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
 	p <- list(
 		formula=formula,
 		data=data,
