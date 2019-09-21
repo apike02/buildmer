@@ -155,7 +155,7 @@ forward <- function (p) {
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
 	p$formula <- build.formula(p$dep,p$tab,p$env)
-	p$reml <- T
+	p$reml <- p$can.use.reml
 	p$model <- p$fit(p,p$formula)
 	p
 }
@@ -291,7 +291,7 @@ order <- function (p) {
 	p$reml <- F
 	if (any( fxd)) p <- reorder(p,tab[fxd,])
 	if (any(!fxd)) {
-		p$reml <- T
+		p$reml <- p$can.use.reml
 		p <- reorder(p,tab[!fxd,])
 	}
 	p$formula <- build.formula(p$dep,p$tab,p$env)
