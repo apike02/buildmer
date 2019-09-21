@@ -35,6 +35,9 @@ buildGLMMadaptive(formula, data = NULL, family, cl = NULL,
 \description{
 Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_model} from package \code{GLMMadaptive}
 }
+\details{
+The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+}
 \examples{
 \donttest{
 # nonsensical model given these data

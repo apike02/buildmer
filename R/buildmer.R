@@ -11,6 +11,8 @@
 #' # nonsensical model given these data
 #' model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
 #' }
+#' @details
+#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
 #' @template seealso
 #' @export
 buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
@@ -419,28 +421,31 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 	buildmer.finalize(p)
 }
 
-#' Use \code{buildmer} to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via \code{lme} from \code{nlme}
-#' @template formula
+#' Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}
+#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildlme} does not use a separate \code{random} argument!)
 #' @template data
-#' @param random The random-effects specification for the model. This is not manipulated by \code{buildlme} in any way!
 #' @template common
+#' @template reduce
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{lme}
 #' @examples
 #' library(buildmer)
-#' m <- buildlme(Reaction ~ Days,data=lme4::sleepstudy,random=~Days|Subject)
+#' m <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' @details
+#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts. Correlation structures can be specified as part of the \code{...} argument, and are handled appropriately.
+#' Only a single grouping factor is allowed. The covariance matrix is always unstructured. If you want to use \code{nlme} covariance structures, you must (a) \emph{not} specify a \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 #' @template seealso
 #' @export
-buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
+buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,...) {
 	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
 		family=gaussian(),
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
+		reduce.fixed=reduce.fixed,
+		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -455,7 +460,7 @@ buildlme <- function (formula,data=NULL,random,cl=NULL,direction=c('order','back
 		control.name=substitute(control),
 		can.use.reml=T,
 		env=parent.frame(),
-		dots=list(random=random,...)
+		dots=list(...)
 	)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)

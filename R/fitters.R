@@ -88,9 +88,25 @@ fit.julia <- function (p,formula) {
 }
 
 fit.lme <- function (p,formula) {
+	fixed <- lme4::nobars(formula)
+	bars <- lme4::findbars(formula)
+	if ((length(bars) + !is.null(p$dots$random)) > 1) stop(paste0('lme can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
+	if (!is.null(bars)) {
+		random <- mkForm(as.character(bars),p$env)
+		# and continue with lme
+	} else {
+		if (!is.null(p$dots$random)) {
+			random <- p$dots$random
+			p$dots$random <- NULL
+			# and continue with lme
+		} else {
+			# nothing to do for lme, bail out to either gls or buildmer
+			return((if (!is.null(p$dots$correlation)) fit.gls else fit.buildmer)(p,formula))
+		}
+	}
 	method <- if (p$reml) 'REML' else 'ML'
-	message(paste0('Fitting via lme, with ',method,': ',as.character(list(formula))))
-	patch.lm(p,nlme::lme,c(list(formula,data=p$data,method=method),p$dots))
+	message(paste0('Fitting via lme, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	patch.lm(p,nlme::lme,c(list(fixed,data=p$data,random=random,method=method),p$dots))
 }
 
 fit.mertree <- function (p,formula) {

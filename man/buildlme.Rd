@@ -2,18 +2,16 @@
 % Please edit documentation in R/buildmer.R
 \name{buildlme}
 \alias{buildlme}
-\title{Use \code{buildmer} to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via \code{lme} from \code{nlme}}
+\title{Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}}
 \usage{
-buildlme(formula, data = NULL, random, cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  calc.anova = FALSE, calc.summary = TRUE, ...)
+buildlme(formula, data = NULL, cl = NULL, direction = c("order",
+  "backward"), crit = "LRT", include = NULL, reduce.fixed = TRUE,
+  reduce.random = TRUE, calc.anova = FALSE, calc.summary = TRUE, ...)
 }
 \arguments{
-\item{formula}{See the general documentation under \code{\link{buildmer-package}}}
+\item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildlme} does not use a separate \code{random} argument!)}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{random}{The random-effects specification for the model. This is not manipulated by \code{buildlme} in any way!}
 
 \item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
@@ -23,6 +21,10 @@ buildlme(formula, data = NULL, random, cl = NULL,
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
+\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
+
+\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
+
 \item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
@@ -30,11 +32,15 @@ buildlme(formula, data = NULL, random, cl = NULL,
 \item{...}{Additional options to be passed to \code{lme}}
 }
 \description{
-Use \code{buildmer} to perform stepwise elimination of the fixed-effects part of mixed-effects models fit via \code{lme} from \code{nlme}
+Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}
+}
+\details{
+The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts. Correlation structures can be specified as part of the \code{...} argument, and are handled appropriately.
+Only a single grouping factor is allowed. The covariance matrix is always unstructured. If you want to use \code{nlme} covariance structures, you must (a) \emph{not} specify a \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 }
 \examples{
 library(buildmer)
-m <- buildlme(Reaction ~ Days,data=lme4::sleepstudy,random=~Days|Subject)
+m <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 }
 \seealso{
 \code{\link{buildmer-package}}
