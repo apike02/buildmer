@@ -28,7 +28,7 @@ show.buildmer <- function (object) {
 setMethod('show','buildmer',show.buildmer)
 
 #' @S3method anova buildmer
-anova.buildmer <- function (object,...) {
+anova.buildmer <- function (object,...) try({
 	if (length(object@p$messages)) warning(object@p$messages)
 	dots <- list(...)
 	ddf <- dots$ddf
@@ -72,10 +72,10 @@ anova.buildmer <- function (object,...) {
 		table <- stats::anova(object@model,ddf=ddf,type=type)
 	}
 	return(table)
-}
+})
 
 #' @S3method summary buildmer
-summary.buildmer <- function (object,...) {
+summary.buildmer <- function (object,...) try({
 	if (length(object@p$messages)) warning(object@p$messages)
 	dots <- list(...)
 	ddf <- dots$ddf
@@ -102,7 +102,7 @@ summary.buildmer <- function (object,...) {
 		table <- summary(object@model,ddf=ddf)
 	}
 	return(table)
-}
+})
 setMethod('summary','buildmer',summary.buildmer)
 
 setGeneric('diag')
