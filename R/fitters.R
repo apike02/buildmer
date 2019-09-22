@@ -110,15 +110,31 @@ fit.lme <- function (p,formula) {
 }
 
 fit.mertree <- function (p,formula) {
-	dep <- formula[[2]]
-	ftext <- paste0(dep,' ~ ',p$left,' | (',paste0(attr(stats::terms(formula),'term.labels'),collapse=') + ('),') | ',p$right,collapse=' + ')
-	f <- stats::as.formula(ftext,environment(formula))
-	if (is.gaussian(p$family)) {
-		message(paste0('Fitting via lmertree: ',ftext))
-		patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
+	fixed <- lme4::nobars(formula)
+	bars <- lme4::findbars(formula)
+	if (is.null(bars)) {
+		ftext <- paste0(as.character(list(fixed)),' | ',p$partitioning,sep='',collapse=' + ')
+		f <- stats::as.formula(ftext,environment(formula))
+		if (is.gaussian(p$family)) {
+			message(paste0('Fitting via lmtree: ',ftext))
+			dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::lmertree)) & !names(p$dots) %in% names(formals(partykit::lmtree)))]
+			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),dots))
+		} else {
+			message(paste0('Fitting via glmtree: ',ftext))
+			dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
+			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),dots))
+		}
 	} else {
-		message(paste0('Fitting via glmertree: ',ftext))
-		patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
+		random <- paste0('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + ')
+		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
+		f <- stats::as.formula(ftext,environment(formula))
+		if (is.gaussian(p$family)) {
+			message(paste0('Fitting via lmertree: ',ftext))
+			patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
+		} else {
+			message(paste0('Fitting via glmertree: ',ftext))
+			patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
+		}
 	}
 }
 

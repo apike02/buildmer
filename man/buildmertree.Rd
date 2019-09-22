@@ -6,10 +6,11 @@
 \usage{
 buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
   direction = "order", crit = "LL", include = NULL,
-  calc.summary = TRUE, left = NULL, right = NULL, ...)
+  reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
+  ...)
 }
 \arguments{
-\item{formula}{Either a \code{glmertree} formula, looking like \code{dep ~ left | middle | right} where the \code{middle} part is an \code{lme4}-style random-effects specification, or an ordinary formula (or buildmer term list thereof) specifying only the dependent variable and \code{lme4}-style random effects. In the latter case, the additional arguments \code{left} and \code{right} must be specified as one-sided formulas containing the fixed part of the model and the partitioning part, respectively}
+\item{formula}{Either a \code{glmertree} formula, looking like \code{dep ~ left | middle | right} where the \code{middle} part is an \code{lme4}-style random-effects specification, or an ordinary formula (or buildmer term list thereof) specifying only the dependent variable and the fixed and random effects for the regression part. In the latter case, the additional argument \code{partitioning} must be specified as a one-sided formula containing the partitioning part of the model.}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
@@ -23,11 +24,11 @@ buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
+\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
+
+\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
+
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{left}{The left part of the \code{glmertree} formula, used if \code{formula} does not contain \code{glmertree}-specific terms. Note that if \code{left} is specified when \code{formula} is in \code{glmertree} format, \code{left} overrides the \code{formula} specification!}
-
-\item{right}{The right part of the \code{glmertree} formula, used if \code{formula} does not contain \code{glmertree}-specific terms. Note that if \code{right} is specified when \code{formula} is in \code{glmertree} format, \code{right} overrides the \code{formula} specification!}
 
 \item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}}
 }

@@ -13,7 +13,7 @@ Depends:
 Imports:
     methods, mgcv, lme4, plyr, stats, utils
 Suggests:
-    GLMMadaptive, JuliaCall, MASS, gamm4, glmertree, glmmTMB, knitr, lmerTest, nlme, nnet, parallel, pbkrtest, rmarkdown
+    GLMMadaptive, JuliaCall, MASS, gamm4, glmertree, glmmTMB, knitr, lmerTest, nlme, nnet, parallel, partykit, pbkrtest, rmarkdown
 License: FreeBSD
 Encoding: UTF-8
 LazyData: true
