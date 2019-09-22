@@ -15,7 +15,6 @@ buildmer.fit <- function (p) {
 		if (isFALSE(p$dots$REML)) p$can.use.reml <- F
 		p$dots$REML <- NULL
 	}
-	p$filtered.dots <- p$dots[names(p$dots) != 'control' & names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
 	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 
 	# the below comment will be found even if just printing the parsed R code:

@@ -523,7 +523,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template common
 #' @template reduce
 #' @template summary
-#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}
+#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}.)
 #' @examples
 #' library(buildmer)
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',

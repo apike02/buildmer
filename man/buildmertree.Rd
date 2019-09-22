@@ -30,7 +30,7 @@ buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}}
+\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}.)}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}

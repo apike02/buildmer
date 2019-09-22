@@ -26,16 +26,18 @@ fit.buildmer <- function (p,formula) {
 		return(if (inherits(model,'try-error')) model else model$mer)
 	}
 	if (is.null(lme4::findbars(formula))) {
+		p$dots <- p$dots[names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
+		p$dots$control <- NULL
 		if (reml) {
 			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
 			patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
 		} else {
 			if (is.gaussian(p$family)) {
 				message(paste0('Fitting via lm: ',as.character(list(formula))))
-				patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$filtered.dots))
+				patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
 			} else {
 				message(paste0('Fitting via glm: ',as.character(list(formula))))
-				patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$filtered.dots))
+				patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 			}
 		}
 	} else {
@@ -100,7 +102,8 @@ fit.lme <- function (p,formula) {
 			p$dots$random <- NULL
 			# and continue with lme
 		} else {
-			# nothing to do for lme, bail out to either gls or buildmer
+			p$dots <- p$dots[names(p$dots) %in% names(c(formals(stats::lm),formals(nlme::gls)))]
+			p$dots$control <- NULL
 			return((if (!is.null(p$dots$correlation)) fit.gls else fit.buildmer)(p,formula))
 		}
 	}
@@ -117,12 +120,14 @@ fit.mertree <- function (p,formula) {
 		f <- stats::as.formula(ftext,environment(formula))
 		if (is.gaussian(p$family)) {
 			message(paste0('Fitting via lmtree: ',ftext))
-			dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::lmertree)) & !names(p$dots) %in% names(formals(partykit::lmtree)))]
-			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),dots))
+			p$dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::lmertree)) & !names(p$dots) %in% names(formals(partykit::lmtree)))]
+			p$dots$lmer.control <- p$dots$glmer.control <- NULL
+			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
 		} else {
 			message(paste0('Fitting via glmtree: ',ftext))
 			dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
-			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),dots))
+			p$dots$control <- NULL
+			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
 	} else {
 		random <- paste0('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + ')
