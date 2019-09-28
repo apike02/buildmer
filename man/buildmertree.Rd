@@ -5,7 +5,7 @@
 \title{Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}}
 \usage{
 buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
-  direction = "order", crit = "LL", include = NULL,
+  direction = c("order", "backward"), crit = "AIC", include = NULL,
   reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
   ...)
 }
@@ -34,6 +34,10 @@ buildmertree(formula, data = NULL, family = gaussian(), cl = NULL,
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
+}
+\details{
+Note that the likelihood-ratio test is not available for \code{glmertree} models, as it cannot be assured that the models being compared are nested. The default is thus to use AIC.
+It is recommended to pass \code{joint=FALSE}, as this speeds up the fits (drastically so in the case of a generalized linear mixed model), and reduces the odds of the final \code{(g)lmer} model failing to converge or converging singularly.
 }
 \examples{
 library(buildmer)

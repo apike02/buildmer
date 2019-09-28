@@ -235,6 +235,8 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- buildgamm4(f1 ~ s(timepoint,by=following) +
 #'                      s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
+#' @details
+#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
@@ -531,12 +533,15 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
 #'                   data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
 #' @template seealso
+#' @details
+#' Note that the likelihood-ratio test is not available for \code{glmertree} models, as it cannot be assured that the models being compared are nested. The default is thus to use AIC.
+#' It is recommended to pass \code{joint=FALSE}, as this speeds up the fits (drastically so in the case of a generalized linear mixed model), and reduces the odds of the final \code{(g)lmer} model failing to converge or converging singularly.
 #' @importFrom stats gaussian
 #' @export
-buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction='order',crit='LL',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
+buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='AIC',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
 	if (!requireNamespace('glmertree',quietly=T)) stop('Please install package glmertree')
 	if (!requireNamespace('partykit',quietly=T)) stop('Please install package partykit')
-	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use only the raw log-likelihood instead (crit='LL') and only perform the term ordering step (direction='order'), but if you must use stepwise elimination, AIC may suit your needs instead of LRT.")
+	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use the raw log-likelihood instead (crit='LL') and only perform the term-ordering step (direction='order'). If you require stepwise elimination, information criteria such as AIC should be valid.")
 
 	dots <- list(...)
 	if (is.null(dots$partitioning)) {
@@ -549,7 +554,6 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		terms <- terms[[2]]
 		sane(terms[[1]],'|')
 		left <- as.character(terms[2])
-		if (is.null(lme4::findbars(terms[[3]]))) stop('Error: no random effects found in the middle block of the glmertree formula. Use the following format: dep ~ offset terms | random-effect terms | partitioning variables, where the random effects are specified in lme4 form, e.g. dep ~ a | (1|b) + (1|c) | d.')
 		middle <- as.character(terms[3])
 		formula <- stats::as.formula(paste0(dep,'~',paste0(c(left,middle),collapse='+')),env=parent.frame())
 	} else {
@@ -577,13 +581,14 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
-		can.use.reml=is.gaussian(family),
+		can.use.reml=F,
 		env=parent.frame(),
 		dots=dots
 	)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
+
 #' Use \code{buildmer} to perform stepwise elimination for \code{multinom} models from package \code{nnet}
 #' @template formula
 #' @template data
