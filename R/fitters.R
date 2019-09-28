@@ -9,6 +9,7 @@ fit.GLMMadaptive <- function (p,formula) {
 }
 
 fit.bam <- function (p,formula) {
+	if (length(attr(stats::terms(formula),'term.labels')) == 0) return(fit.buildmer(p,formula)) #bam is unable to fit intercept-only models
 	method <- if (p$reml) 'fREML' else 'ML'
 	message(paste0('Fitting via bam, with ',method,': ',as.character(list(formula))))
 	patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
