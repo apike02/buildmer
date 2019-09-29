@@ -126,7 +126,7 @@ fit.mertree <- function (p,formula) {
 			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
 		} else {
 			message(paste0('Fitting via glmtree: ',ftext))
-			dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
+			p$dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
 			p$dots$control <- NULL
 			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
