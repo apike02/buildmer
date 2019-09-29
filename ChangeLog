@@ -2,6 +2,23 @@
 '*' denotes minor changes visible to the user
 '.' denotes minor bug fixes
 
+1.3
+
+** GLMMadaptive support
+** lme models (package nlme) now have full support for the random part as well
+* glmertree models now have full support for stepwise elimination
+* calc.anova is now FALSE by default. Most users will not use it anyway, and
+  for some lmerTest-based models it can cause an error.
+* It is now (experimentally) possible to pass REML=FALSE to all buildmer
+  functions to disable REML detection and always use ML. This may be useful if
+  you are fitting GLMMs using glmmTMB and do not want to use their REML
+  approximation.
+. Nonconvergence of the fixed-effects part of the term-ordering step is now
+  handled properly
+. Fix bugs in order() and forward() breaking ML-only GLMM fits (GitHub issue #2)
+. The 'include' argument was not being processed correctly when a cluster was
+  provided. This is now fixed.
+
 1.2.1
 
 . Avoid the use of reformulate(), as its env= argument is only available on R

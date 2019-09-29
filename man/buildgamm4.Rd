@@ -39,6 +39,9 @@ buildgamm4(formula, data = NULL, family = gaussian(), cl = NULL,
 \description{
 Use \code{buildmer} to fit generalized additive models using package \code{gamm4}
 }
+\details{
+The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+}
 \examples{
 \dontshow{
 library(buildmer)

@@ -483,10 +483,14 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
 #' 
 #' #tests from github issue #2:
-#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp)
-#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward')
-#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,crit='AIC')
-#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
+#'            family=binomial,data=lme4::cbpp)
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
+#'            family=binomial,data=lme4::cbpp,direction='forward')
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
+#'            family=binomial,data=lme4::cbpp,crit='AIC')
+#' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
+#'            family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
