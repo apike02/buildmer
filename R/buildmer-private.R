@@ -1,5 +1,3 @@
-abort.PQL <- function (p) if (!is.gaussian(p$family) && ('I_KNOW_WHAT_I_AM_DOING' %in% p$dots || !isTRUE(p$I_KNOW_WHAT_I_AM_DOING))) stop('You are attempting to fit a non-Gaussian model using buildgam() or buildbam(). For non-Gaussian errors, bam() and gam() use PQL, so likelihood-based model comparisons are not valid! It is recommended to use gamm4() instead, or if this is not possible, to directly fit the full model and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildgam()/buildbam() invocation to sidestep this error.') else within.list(p,{ dots$I_KNOW_WHAT_I_AM_DOING <- NULL })
-
 buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula

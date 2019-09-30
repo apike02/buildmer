@@ -66,6 +66,10 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @importFrom stats gaussian
 #' @export
 buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
+	if (!is.gaussian(family)) {
+		if (!'I_KNOW_WHAT_I_AM_DOING' %in% dots || !isTRUE(dots$I_KNOW_WHAT_I_AM_DOING)) stop('You are attempting to fit a non-Gaussian model using buildbam(). bam() fits using PQL (a normal-distribution-based approximation), so the function does not optimize a true likelihood in the non-Gaussian case. Thus, likelihood-based model comparisons are not valid! It is recommended to use buildgam() or buildgamm4() instead, or if this is not possible, to directly fit the full model using bam() and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildbam() invocation to sidestep this error.')
+		dots$I_KNOW_WHAT_I_AM_DOING <- NULL
+	}
 	p <- list(
 		formula=formula,
 		data=data,
@@ -90,7 +94,6 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
-	p <- abort.PQL(p)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -210,7 +213,6 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
-	p <- abort.PQL(p)
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
