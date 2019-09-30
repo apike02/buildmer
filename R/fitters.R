@@ -27,16 +27,18 @@ fit.buildmer <- function (p,formula) {
 		return(if (inherits(model,'try-error')) model else model$mer)
 	}
 	if (is.null(lme4::findbars(formula))) {
-		p$dots <- p$dots[names(p$dots) %in% names(c(formals(stats::lm),formals(stats::glm)))]
 		p$dots$control <- NULL
 		if (reml) {
+			p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
 			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
 			patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
 		} else {
 			if (is.gaussian(p$family)) {
+				p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
 				message(paste0('Fitting via lm: ',as.character(list(formula))))
 				patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
 			} else {
+				p$dots <- p$dots[names(p$dots) %in% names(formals(stats::glm))]
 				message(paste0('Fitting via glm: ',as.character(list(formula))))
 				patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 			}
