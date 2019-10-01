@@ -66,10 +66,6 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @importFrom stats gaussian
 #' @export
 buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
-	if (!is.gaussian(family)) {
-		if (!'I_KNOW_WHAT_I_AM_DOING' %in% dots || !isTRUE(dots$I_KNOW_WHAT_I_AM_DOING)) stop('You are attempting to fit a non-Gaussian model using buildbam(). bam() fits using PQL (a normal-distribution-based approximation), so the function does not optimize a true likelihood in the non-Gaussian case. Thus, likelihood-based model comparisons are not valid! It is recommended to use buildgam() or buildgamm4() instead, or if this is not possible, to directly fit the full model using bam() and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildbam() invocation to sidestep this error.')
-		dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-	}
 	p <- list(
 		formula=formula,
 		data=data,
@@ -94,6 +90,8 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
+	croak <- if (!'I_KNOW_WHAT_I_AM_DOING' %in% dots || !isTRUE(dots$I_KNOW_WHAT_I_AM_DOING)) stop else warning
+	if (!is.gaussian(family)) croak('You are attempting to fit a non-Gaussian model using buildbam(). bam() fits using PQL (a normal-distribution-based approximation), so the function does not optimize a true likelihood in the non-Gaussian case. Thus, likelihood-based model comparisons are not valid! It is recommended to use buildgam() or buildgamm4() instead, or if this is not possible, to directly fit the full model using bam() and use the argument select=TRUE to perform term elimination. If you really know what you are doing, pass I_KNOW_WHAT_I_AM_DOING to your buildbam() invocation to sidestep this error.')
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -213,6 +211,14 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
+        if (is.character(family)) family <- get(family)
+        if (is.function (family)) family <- family()
+	croak <- if (!'I_KNOW_WHAT_I_AM_DOING' %in% dots || !isTRUE(dots$I_KNOW_WHAT_I_AM_DOING)) stop else warning
+	for (fam in c('cox.ph','gaulss','gevlss','ziplss','mvn','multinom')) if (family == get(fam)()$family) {
+		p$can.use.reml <- F
+		croak("It seems that you are trying to fit a buildgam() model using the ",fam," family. This family can only be fitted with REML. You _must_ make sure that buildgam() will not attempt to compare models differing in fixed effects/unpenalized terms. To do so, list all parametric terms in buildgam()'s include= argument, and pass the extra argument 'select=TRUE' (or use only smooths that have no null space). If you have ensured this, add the argument 'I_KNOW_WHAT_I_AM_DOING=TRUE' to your buildgam() call to bypass this safeguard.")
+	}
+	if ('optimizer' %in% p$dots && p$dots$optimizer[1] != 'outer') croak("It seems that you have passed an 'optimizer' argument that disables outer iteration. This causes gam() to use a PQL algorithm, which results in invalid likelihoods! If you really know what you're doing, add the argument 'I_KNOW_WHAT_I_AM_DOING=TRUE' to your buildgam() call to bypass this safeguard.")
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
