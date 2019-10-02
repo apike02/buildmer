@@ -170,7 +170,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template common
 #' @template anova
 #' @template summary
-#' @param ... Additional options to be passed to \code{bam}
+#' @param ... Additional options to be passed to \code{gam}
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -209,11 +209,20 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
-        if (is.character(family)) family <- get(family)
-        if (is.function (family)) family <- family()
+	if (is.character(family)) family <- get(family)
+	if (is.function (family)) family <- family()
 	if (inherits(family,'general.family')) {
 		p$can.use.reml <- F
-		(if (!'I_KNOW_WHAT_I_AM_DOING' %in% dots || !isTRUE(dots$I_KNOW_WHAT_I_AM_DOING)) stop else warning)("It seems that you are trying to fit a buildgam() model using the ",fam," family. This family can only be fitted with REML. You _must_ make sure that buildgam() will not attempt to compare models differing in fixed effects/unpenalized terms. To do so, list all parametric terms in buildgam()'s include= argument, and pass the extra argument 'select=TRUE' (or use only smooths that have no null space). If you have ensured this, add the argument 'I_KNOW_WHAT_I_AM_DOING=TRUE' to your buildgam() call to bypass this safeguard.")
+		if (is.null(p$dots$select) || isFALSE(p$dots$select)) warning(family$family," only supports REML, adding select=TRUE to gam()'s command arguments. See ?gam to find out what this means!")
+		p$dots$select <- T
+		if (is.null(p$dots$include)) warning(family$family," only supports REML, adding all parametric terms to the include list!")
+		if (!is.data.frame(p$formula)) {
+			p$dots$dep <- as.character(p$formula[2])
+			p$formula <- tabulate.formula(p$formula)
+		}
+		if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
+		add <- p$formula[!sapply(p$formula$term,is.smooth.term),]
+		p$include <- if (is.null(p$include)) add else rbind(p$include,add)
 	}
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)

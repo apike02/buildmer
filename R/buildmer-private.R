@@ -14,7 +14,6 @@ buildmer.fit <- function (p) {
 		p$dots$REML <- NULL
 	}
 	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
-	p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
 
 	# the below comment will be found even if just printing the parsed R code:
 	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'

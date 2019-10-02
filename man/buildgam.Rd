@@ -27,7 +27,7 @@ buildgam(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{...}{Additional options to be passed to \code{bam}}
+\item{...}{Additional options to be passed to \code{gam}}
 }
 \description{
 Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}
