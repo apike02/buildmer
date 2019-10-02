@@ -32,6 +32,10 @@ buildgam(formula, data = NULL, family = gaussian(), cl = NULL,
 \description{
 Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}
 }
+\details{
+To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
+General families implemented in \code{mgcv} are supported, provided that they use normal formulae. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms. This behavior cannot currently be disabled.
+}
 \examples{
 \dontshow{
 library(buildmer)

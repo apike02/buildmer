@@ -52,6 +52,8 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{bam}
+#' @details
+#' To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -171,6 +173,9 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{gam}
+#' @details
+#' To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
+#' General families implemented in \code{mgcv} are supported, provided that they use normal formulae. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms. This behavior cannot currently be disabled.
 #' @examples
 #' \dontshow{
 #' library(buildmer)

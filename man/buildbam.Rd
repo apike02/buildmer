@@ -32,6 +32,9 @@ buildbam(formula, data = NULL, family = gaussian(), cl = NULL,
 \description{
 Use \code{buildmer} to fit big generalized additive models using \code{bam} from package \code{mgcv}
 }
+\details{
+To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
+}
 \examples{
 \dontshow{
 library(buildmer)
