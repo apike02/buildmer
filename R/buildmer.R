@@ -103,6 +103,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template reduce
 #' @param fit A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge
 #' @param elim A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})
+#' @param REML A logical indicating if the fitting function distinguishes between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE).
 #' @param ... Additional options to be passed to the fitting function, such as perhaps a \code{data} argument
 #' @examples
 #' ## Use \code{buildmer} to do stepwise linear discriminant analysis
@@ -139,7 +140,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 #' @template seealso
 #' @export
-buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),...) {
+buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -158,7 +159,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 		crit=crit,
 		crit.name='custom criterion',
 		elim=elim,
-		can.use.reml=F,
+		can.use.reml=REML,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -216,11 +217,12 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if (is.character(family)) family <- get(family)
 	if (is.function (family)) family <- family()
-	if (inherits(family,'general.family')) {
+	reml.only.cause <- NULL
+	if (inherits(family,'general.family')) reml.only.cause <- paste0(family$family,' family')
+	if (!is.null(p$dots$optimizer) && all(p$dots$optimizer == 'efs')) reml.only.cause <- c(reml.only.cause,'EFS optimizer')
+	if (!is.null(reml.only.cause)) {
 		p$can.use.reml <- F
-		if (is.null(p$dots$select) || isFALSE(p$dots$select)) warning(family$family," only supports REML, adding select=TRUE to gam()'s command arguments. See ?gam to find out what this means!")
-		p$dots$select <- T
-		if (is.null(p$dots$include)) warning(family$family," only supports REML, adding all parametric terms to the include list!")
+		reml.only.action <- 'adding all parametric terms to the include list'
 		if (!is.data.frame(p$formula)) {
 			p$dots$dep <- as.character(p$formula[2])
 			p$formula <- tabulate.formula(p$formula)
@@ -228,6 +230,9 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 		add <- p$formula[!sapply(p$formula$term,is.smooth.term),]
 		p$include <- if (is.null(p$include)) add else rbind(p$include,add)
+		if (is.null(p$dots$select) || isFALSE(p$dots$select)) reml.only.action <- c(reml.only.action,"adding select=TRUE to gam()'s command arguments (see ?gam to review the implications)")
+		p$dots$select <- T
+		warning(paste0('The ',paste0(reml.only.cause,collapse=' and the '),' only work',if (length(reml.only.cause)>1) 's' else '',' with REML-based estimation -- ',paste0(reml.only.action,collapse=' and ')))
 	}
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
