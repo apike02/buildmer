@@ -11,7 +11,6 @@ fit.GLMMadaptive <- function (p,formula) {
 fit.bam <- function (p,formula) {
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# bam is unable to fit intercept-only models
-		if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 		formula <- add.terms(formula,c('1','intercept'))
 		p$data$intercept <- 1
 	}
@@ -62,7 +61,6 @@ fit.buildmer <- function (p,formula) {
 fit.gam <- function (p,formula) {
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# gam is sometimes unable to fit intercept-only models
-		if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 		formula <- add.terms(formula,c('1','intercept'))
 		p$data$intercept <- 1
 	}
