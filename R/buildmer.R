@@ -93,10 +93,8 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		dots=list(...)
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
-	if (!is.gaussian(family)) {
-		if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-		else stop("You are trying to use buildbam() with a non-Gaussian error family. bam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
-	}
+	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
+	else stop("You are trying to use buildbam(). bam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -223,15 +221,13 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL else {
+		if (!is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), or use buildgamm(). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 		if (is.character(family)) family <- get(family)
 		if (is.function (family)) family <- family()
-		if (!is.gaussian(family) && !is.null(p$dots$optimizer) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() with a non-Gaussian error family using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
-		reml.only.cause <- NULL
-		if (inherits(family,'general.family')) reml.only.cause <- paste0(family$family,' family')
-		if (!is.null(p$dots$optimizer) && all(p$dots$optimizer == 'efs')) reml.only.cause <- c(reml.only.cause,'EFS optimizer')
-		if (!is.null(reml.only.cause)) {
+		if (inherits(family,'general.family')) {
 			p$can.use.reml <- F
-			reml.only.action <- 'adding all parametric terms to the include list'
+			warning('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects")
+			p$dots$select <- T
 			if (!is.data.frame(p$formula)) {
 				p$dots$dep <- as.character(p$formula[2])
 				p$formula <- tabulate.formula(p$formula)
@@ -239,9 +235,6 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 			if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 			add <- p$formula[!sapply(p$formula$term,is.smooth.term),]
 			p$include <- if (is.null(p$include)) add else rbind(p$include,add)
-			if (is.null(p$dots$select) || isFALSE(p$dots$select)) reml.only.action <- c(reml.only.action,"adding select=TRUE to gam()'s command arguments (see ?gam to review the implications)")
-			p$dots$select <- T
-			warning(paste0('The ',paste0(reml.only.cause,collapse=' and the '),' only work',if (length(reml.only.cause)>1) '' else 's',' with REML-based estimation -- ',paste0(reml.only.action,collapse=' and ')))
 		}
 	}
 	p <- buildmer.fit(p)
