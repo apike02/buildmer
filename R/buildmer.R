@@ -174,6 +174,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template formula
 #' @template data
 #' @template family
+#' @param quickstart A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @template common
 #' @template anova
 #' @template summary
@@ -181,6 +182,8 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @details
 #' To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
 #' General families implemented in \code{mgcv} are supported, provided that they use normal formulae. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms. This behavior cannot currently be disabled.
+#' 
+#' The quickstart function is experimental. If you desire more control (e.g. \code{discrete=FALSE} but \code{use.chol=TRUE}), additional options can be provided as extra arguments and will be passed on to \code{bam} as they are applicable. Note that \code{quickstart} needs to be larger than 0 to trigger the quickstart path at all.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -194,11 +197,12 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
+buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
 		family=family,
+		quickstart=quickstart,
 		cluster=cl,
 		reduce.fixed=T,
 		reduce.random=F,
@@ -219,12 +223,14 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		env=parent.frame(),
 		dots=list(...)
 	)
+	if (is.null(p$data)) stop("Sorry, buildgam() requires data to be passed via the data= argument")
 	if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL else {
-		if (!is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), or use buildgamm(). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 		if (is.character(family)) family <- get(family)
 		if (is.function (family)) family <- family()
+		if (!is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','",if (family$family == 'gaussian') "newton'))), or use buildgamm()" else "bfgs')))",". (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 		if (inherits(family,'general.family')) {
+			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
 			p$can.use.reml <- F
 			warning('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects")
 			p$dots$select <- T
