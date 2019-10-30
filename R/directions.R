@@ -196,7 +196,6 @@ order <- function (p) {
 						if (length(smooths) && all(smooths)) unpack.smooth.terms(x) else unravel(x)
 					})
 					check <- function (i) {
-						if (i %in% smooths && !all(smooths)) return(F) #see 3. above
 						test <- all.components[[i]]
 						for (x in all.components[-i]) { #walk all other terms' components
 							if (any(x == '1')) return(F) #intercept should always come first
