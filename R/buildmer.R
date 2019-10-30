@@ -94,7 +94,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	if (!is.gaussian(family)) {
-		if (!isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
+		if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
 		else stop("You are trying to use buildbam() with a non-Gaussian error family. bam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 	}
 	p <- buildmer.fit(p)
@@ -171,6 +171,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
+
 #' Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}
 #' @template formula
 #' @template data
