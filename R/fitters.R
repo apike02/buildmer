@@ -69,6 +69,16 @@ fit.gam <- function (p,formula) {
 	patch.lm(p,mgcv::gam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
+fit.gamm <- function (p,formula) {
+	fixed <- lme4::nobars(formula)
+	bars <- lme4::findbars(formula)
+	if (length(bars) > 1) stop(paste0('gamm can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
+	random <- if (is.null(bars)) NULL else mkForm(as.character(bars),p$env)
+	method <- if (p$reml) 'REML' else 'ML'
+	message(paste0('Fitting via gamm, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	patch.lm(p,mgcv::gamm,c(list(formula=formula,random=random,family=p$family,data=p$data,method=method),p$dots)$lme)
+}
+
 fit.glmmTMB <- function (p,formula) {
 	message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
 	patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))

@@ -248,6 +248,70 @@ buildgam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	buildmer.finalize(p)
 }
 
+#' Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}
+#' @template formula
+#' @template data
+#' @template family
+#' @template common
+#' @template anova
+#' @template summary
+#' @param ... Additional options to be passed to \code{gamm}
+#' @examples
+#' \dontshow{
+#' library(buildmer)
+#' m <- buildgamm(f1 ~ s(timepoint,bs='cr') + (pdIdent(~following)|participant),data=vowels)
+#' }
+#' \donttest{
+#' library(buildmer)
+#' m <- buildgamm(f1 ~ s(timepoint,by=following) + (pdIdent(~following)|participant) +
+#'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' }
+#' @template seealso
+#' @importFrom stats gaussian
+#' @details
+#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+#' @export
+buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
+	p <- list(
+		formula=formula,
+		data=data,
+		family=family,
+		cluster=cl,
+		reduce.fixed=T,
+		reduce.random=F,
+		direction=direction,
+		crit=mkCrit(crit),
+		crit.name=mkCritName(crit),
+		elim=mkElim(crit),
+		fit=fit.gamm,
+		include=include,
+		calc.anova=calc.anova,
+		calc.summary=calc.summary,
+		ddf=NULL,
+		family.name=substitute(family),
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		control.name=substitute(control),
+		can.use.reml=T,
+		env=parent.frame(),
+		dots=list(...)
+	)
+	if (!is.gaussian(family)) {
+		if (!isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
+		else stop("You are trying to use buildgamm() with a non-Gaussian error family. In this situation, gamm() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
+	}
+	p <- buildmer.fit(p)
+	if (has.smooth.terms(p$formula)) {
+		# gamm models need a final refit because p$model will only be model$mer...
+		message('Fitting final gamm model')
+		fixed <- lme4::nobars(p$formula)
+		bars <- lme4::findbars(p$formula)
+		random <- if (is.null(bars)) NULL else mkForm(as.character(bars),p$env)
+		patch.gamm(p,mgcv::gamm,c(list(formula=formula,random=random,family=p$family,data=p$data,method='REML'),p$dots))
+	}
+	buildmer.finalize(p)
+}
+
 #' Use \code{buildmer} to fit generalized additive models using package \code{gamm4}
 #' @template formula
 #' @template data

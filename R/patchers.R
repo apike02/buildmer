@@ -11,6 +11,18 @@ patch.GLMMadaptive <- function (p,fun,args) {
 	model
 }
 
+patch.gamm <- function (p,fun,args) {
+	name <- substitute(fun)
+	model <- run(fun,args)
+	if (inherits(model,'try-error')) return(model)
+	model$lme$call[[1]] <- name
+	model$lme$call$data <- p$data.name
+	if (!is.null(model$lme$call$family))  model$lme$call$family  <- p$family.name
+	if (!is.null(model$lme$call$subset))  model$lme$call$subset  <- p$subset.name
+	if (!is.null(model$lme$call$control)) model$lme$call$control <- p$control.name
+	model
+}
+
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
