@@ -9,7 +9,7 @@ buildmer.fit <- function (p) {
 		p$dep <- as.character(p$formula[2])
 		p$tab <- tabulate.formula(p$formula)
 	}
-	if (!is.null(p$dots$REML) && p$can.use.reml) {
+	if (!is.null(p$dots$REML)) {
 		if (isFALSE(p$dots$REML)) p$can.use.reml <- F
 		p$dots$REML <- NULL
 	}
