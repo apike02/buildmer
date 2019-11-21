@@ -34,18 +34,16 @@ fit.buildmer <- function (p,formula) {
 		p$dots$control <- NULL
 		if (reml) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
-			message(paste0('Fitting via gls (because REML was requested): ',as.character(list(formula))))
-			patch.lm(p,nlme::gls,c(list(model=formula,data=p$data,method='REML'),p$dots))
+			return(fit.gls(p,formula))
+		}
+		if (is.gaussian(p$family)) {
+			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
+			message(paste0('Fitting via lm: ',as.character(list(formula))))
+			patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
 		} else {
-			if (is.gaussian(p$family)) {
-				p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
-				message(paste0('Fitting via lm: ',as.character(list(formula))))
-				patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
-			} else {
-				p$dots <- p$dots[names(p$dots) %in% names(formals(stats::glm))]
-				message(paste0('Fitting via glm: ',as.character(list(formula))))
-				patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
-			}
+			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::glm))]
+			message(paste0('Fitting via glm: ',as.character(list(formula))))
+			patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 		}
 	} else {
 		if (is.gaussian(p$family)) {
@@ -98,6 +96,17 @@ fit.gamm <- function (p,formula) {
 }
 
 fit.glmmTMB <- function (p,formula) {
+	# work around bug in glmmTMB: REML only works if at least one non-f.e. parameter is specified
+	if (p$reml) {
+		family <- p$family
+		if (is.character(family)) family <- get(family)
+		if (is.function (family)) family <- family()
+		if (family$family %in% c('poisson','binomial')) {
+			p$dots$control <- NULL
+			p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
+			return(fit.gls(p,formula))
+		}
+	}
 	message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
 	patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
 }
