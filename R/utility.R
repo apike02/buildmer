@@ -136,8 +136,10 @@ conv <- function (model,singular.ok=FALSE) {
 		if (!is.null(model$fit$convergence) && model$fit$convergence != 0) return(F)
 		if (!is.null(model$sdr$pdHess)) {
 			if (!model$sdr$pdHess) return(F)
-			ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
-			if (inherits(ev,'try-error') || (min(ev) < 10*.Machine$double.eps)) return(F)
+			if (sum(dim(model$sdr$cov.fixed))) {
+				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
+				if (inherits(ev,'try-error') || (min(ev) < 10*.Machine$double.eps)) return(F)
+			}
 		}
 		return(T)
 	}
