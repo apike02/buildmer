@@ -96,14 +96,16 @@ fit.gamm <- function (p,formula) {
 }
 
 fit.glmmTMB <- function (p,formula) {
-	# work around bug in glmmTMB: REML only works if at least one non-f.e. parameter is specified
-	family <- p$family
-	if (is.character(family)) family <- get(family)
-	if (is.function (family)) family <- family()
-	if (family$family %in% c('poisson','binomial')) {
-		p$dots$control <- NULL
-		p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
-		return(fit.gls(p,formula))
+	if (p$reml && is.null(lme4::findbars(formula))) {
+		# work around bug in glmmTMB: REML only works if at least one non-f.e. parameter is specified
+		family <- p$family
+		if (is.character(family)) family <- get(family)
+		if (is.function (family)) family <- family()
+		if (family$family %in% c('poisson','binomial')) {
+			p$dots$control <- NULL
+			p$quickstart <- 0
+			return(fit.gam(p,formula))
+		}
 	}
 	message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
 	patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
