@@ -62,24 +62,40 @@ fit.gam <- function (p,formula) {
 		formula <- add.terms(formula,c('1','intercept'))
 		p$data$intercept <- 1
 	}
-	method <- if (p$reml) 'REML' else 'ML'
-	if (p$quickstart > 0) p$dots$in.out <- local({
-		qslist <- list()
-		if (p$reml || p$quickstart > 1) method <- 'fREML'
-		if (method == 'fREML' && p$quickstart > 2) qslist$discrete <- T
+	if (p$quickstart > 0) {
+		data <- data
+		method <- if (p$reml || p$quickstart > 1) 'fREML' else 'ML'
+		dots <- p$dots[names(p$dots) %in% names(formals(mgcv::bam))]
+		if (method == 'fREML' && p$quickstart > 2 && !'discrete' %in% names(dots)) dots$discrete <- T
 		if (p$quickstart > 3) {
 			samfrac <- p$quickstart - 3
 			samfrac <- samfrac - floor(samfrac)
 			if (samfrac == 0) samfrac <- .1
 			n <- nrow(p$data)
-			p$data <- p$data[sample.int(n,n*samfrac),]
+			data <- data[sample.int(n,n*samfrac),]
 		}
-		if (p$quickstart > 4) p$dots$control <- c(p$dots$control,list(epsilon=.02))
-		p$dots <- p$dots[names(p$dots) %in% names(formals(mgcv::bam))]
+		if (p$quickstart > 4) dots$control <- c(p$dots$control,list(epsilon=.02))
 		message(paste0('Quickstart fit with bam/',method,': ',as.character(list(formula))))
-		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),qslist,p$dots))
-		if (inherits(qs,'try-error')) NULL else list(sp=qs$sp,scale=qs$sig2)
-	})
+		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=family,data=data,method=method),dots))
+		p$dots$in.out <- if (inherits(qs,'try-error')) NULL else list(sp=qs$sp,scale=qs$sig2)
+		if (qs$family$family == 'scaled t') {
+			if (packageVersion('mgcv') < '1.8.32') {
+				message("mgcv version < 1.8.32, not passing starting values for scaled-t's theta parameter")
+			} else {
+				# set up starting values for theta
+				th.notrans <- qs$family$getTheta(F)
+				th.trans   <- qs$family$getTheta(T)
+				# transformation undoes the logarithm and then adds min.df to the df, so:
+				min.df <- th.trans - exp(th.notrans)
+				theta <- -th.trans
+				message(paste0('Starting values: ',p$dots$in.out,', with theta ',theta,' and min.df ',min.df))
+				p$family <- scat(theta=theta,link=qs$family$link,min.df=min.df)
+			}
+		} else {
+			message(paste0('Starting values: ',p$dots$in.out))
+		}
+	}
+	method <- if (p$reml) 'REML' else 'ML'
 	p$dots <- p$dots[names(p$dots) %in% names(formals(mgcv::gam))]
 	message(paste0('Fitting via gam, with ',method,': ',as.character(list(formula))))
 	patch.lm(p,mgcv::gam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
