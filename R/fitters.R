@@ -114,7 +114,19 @@ fit.glmmTMB <- function (p,formula) {
 fit.gls <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gls, with ',method,': ',as.character(list(formula))))
-	patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
+	# gls cannot handle rank-deficient fixed effects --- work around the problem
+	X <- model.matrix(formula,p$data)
+	nc <- ncol(X)
+	X <- lme4:::chkRank.drop.cols(X,'silent.drop.cols')
+	ndrop <- nc - ncol(x)
+	if (ndrop) {
+		message('gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
+		formula <- update(formula,.~-.-1+X)
+		patch.lm(p,nlme::gls,c(list(formula,data=list(X=X),method=method),p$dots))
+	} else {
+		# no problem
+		patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
+	}
 }
 
 fit.julia <- function (p,formula) {
