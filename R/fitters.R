@@ -137,7 +137,7 @@ fit.gls <- function (p,formula) {
 	X <- model.matrix(formula,p$data)
 	nc <- ncol(X)
 	X <- lme4:::chkRank.drop.cols(X,'silent.drop.cols')
-	ndrop <- nc - ncol(x)
+	ndrop <- nc - ncol(X)
 	if (ndrop) {
 		message('gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
 		formula <- update(formula,.~-.-1+X)
