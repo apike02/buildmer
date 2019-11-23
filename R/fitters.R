@@ -66,7 +66,7 @@ fit.gam <- function (p,formula) {
 		p$data$intercept <- 1
 	}
 	if (p$quickstart > 0) {
-		data <- data
+		data <- p$data
 		method <- if (p$reml || p$quickstart > 1) 'fREML' else 'ML'
 		dots <- p$dots[names(p$dots) %in% names(formals(mgcv::bam))]
 		if (method == 'fREML' && p$quickstart > 2 && !'discrete' %in% names(dots)) dots$discrete <- T
@@ -74,7 +74,7 @@ fit.gam <- function (p,formula) {
 			samfrac <- p$quickstart - 3
 			samfrac <- samfrac - floor(samfrac)
 			if (samfrac == 0) samfrac <- .1
-			n <- nrow(p$data)
+			n <- nrow(data)
 			data <- data[sample.int(n,n*samfrac),]
 		}
 		if (p$quickstart > 4) dots$control <- c(p$dots$control,list(epsilon=.02))
