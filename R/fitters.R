@@ -57,6 +57,9 @@ fit.buildmer <- function (p,formula) {
 }
 
 fit.gam <- function (p,formula) {
+	re <- re2mgcv(formula,p$data)
+	formula <- re$formula
+	p$data <- re$data
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# gam is sometimes unable to fit intercept-only models
 		formula <- add.terms(formula,c('1','intercept'))

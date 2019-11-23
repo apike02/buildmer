@@ -149,6 +149,42 @@ conv <- function (model,singular.ok=FALSE) {
 	T
 }
 
+#' Convert lme4 random-effect terms to mgcv 're' smooths
+#' @param formula The lme4 formula.
+#' @param data The data.
+#' @examples
+#' library(buildmer)
+#' re <- re2mgcv(log(Reaction) ~ Days + (Days|Subject),lme4::sleepstudy)
+#' model <- buildgam(re$formula,re$data,family=mgcv::scat)
+#' @export
+re2mgcv <- function (formula,data) {
+	dep <- formula[[2]]
+	data <- data[!is.na(data[[dep]]),]
+	formula <- tabulate.formula(formula)
+	fixed <- is.na(formula$grouping)
+	random <- formula[!fixed,]
+	formula <- formula[fixed,]
+	org.names <- names(data)
+	for (g in unique(random$grouping)) {
+		if (!g %in% names(data)) stop('No factor named "',g,'" in your data')
+		data[[g]] <- factor(data[[g]])
+		tab <- random[random$grouping == g,]
+		tab$index <- tab$grouping <- NA
+		f <- build.formula(dep,tab)
+		terms <- model.matrix(f,data)
+		nms <- gsub('[():]','_',colnames(terms))
+		for (i in 1:ncol(terms)) {
+			nm <- paste0(g,'_',nms[i])
+			if (nm %in% org.names) stop('Error: please remove/rename ',nm,' from your data!')
+			data[[nm]] <- terms[,i]
+			term <- paste0('s(',g,',by=',nm,',bs="re")')
+			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=F)
+		}			
+	}
+	formula <- build.formula(dep,formula)
+	list(formula=formula,data=data)
+}
+
 #' Remove terms from an lme4 formula
 #' @param formula The lme4 formula.
 #' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
