@@ -14,7 +14,7 @@ fit.bam <- function (p,formula) {
 	p$data <- re$data
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# bam is unable to fit intercept-only models
-		formula <- add.terms(formula,c('1','intercept'))
+		formula <- add.terms(formula,c('intercept'))
 		p$data$intercept <- 1
 	}
 	method <- if (p$reml) 'fREML' else 'ML'
@@ -65,7 +65,7 @@ fit.gam <- function (p,formula) {
 	p$data <- re$data
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# gam is sometimes unable to fit intercept-only models
-		formula <- add.terms(formula,c('1','intercept'))
+		formula <- add.terms(formula,c('intercept'))
 		p$data$intercept <- 1
 	}
 	if (p$quickstart > 0) {
@@ -85,7 +85,7 @@ fit.gam <- function (p,formula) {
 		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=family,data=data,method=method),dots))
 		p$dots$in.out <- if (inherits(qs,'try-error')) NULL else list(sp=qs$sp,scale=qs$sig2)
 		if (qs$family$family == 'scaled t') {
-			if (packageVersion('mgcv') < '1.8.32') {
+			if (utils::packageVersion('mgcv') < '1.8.32') {
 				message("mgcv version < 1.8.32, not passing starting values for scaled-t's theta parameter")
 			} else {
 				# set up starting values for theta
@@ -95,7 +95,7 @@ fit.gam <- function (p,formula) {
 				min.df <- th.trans - exp(th.notrans)
 				theta <- -th.trans
 				message(paste0('Starting values: ',p$dots$in.out,', with theta ',theta,' and min.df ',min.df))
-				p$family <- scat(theta=theta,link=qs$family$link,min.df=min.df)
+				p$family <- mgcv::scat(theta=theta,link=qs$family$link,min.df=min.df)
 			}
 		} else {
 			message(paste0('Starting values: ',p$dots$in.out))
@@ -110,11 +110,21 @@ fit.gam <- function (p,formula) {
 fit.gamm <- function (p,formula) {
 	fixed <- lme4::nobars(formula)
 	bars <- lme4::findbars(formula)
-	if (length(bars) > 1) stop(paste0('gamm can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
-	random <- if (is.null(bars)) NULL else mkForm(as.character(bars),p$env)
+	if (is.null(bars)) {
+		if (!has.smooth.terms(formula)) {
+			p$dots <- p$dots[names(p$dots) %in% names(formals(mgcv::gam))]
+			p$quickstart <- 0
+			return(fit.gam(p,formula))
+		}
+		random <- NULL
+	} else {
+		random <- lapply(bars,function (x) mkForm(as.character(x[2]),p$env))
+		names(random) <- sapply(bars,function (x) as.character(x[[3]]))
+	}
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gamm, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
-	patch.lm(p,mgcv::gamm,c(list(formula=formula,random=random,family=p$family,data=p$data,method=method),p$dots)$lme)
+	m <- patch.lm(p,mgcv::gamm,c(list(formula=fixed,random=random,family=p$family,data=p$data,method=method),p$dots))
+	if (inherits(m,'try-error')) m else m$lme
 }
 
 fit.glmmTMB <- function (p,formula) {
@@ -138,17 +148,16 @@ fit.gls <- function (p,formula) {
 	message(paste0('Fitting via gls, with ',method,': ',as.character(list(formula))))
 	# gls cannot handle rank-deficient fixed effects --- work around the problem
 	X <- model.matrix(formula,p$data)
-	nc <- ncol(X)
-	X <- lme4:::chkRank.drop.cols(X,'silent.drop.cols')
-	ndrop <- nc - ncol(X)
-	if (ndrop) {
+	newform <- update(formula,.~-.+0+X)
+	newdata <- within(p$data,{ X <- X })
+	cc <- coef(lm(newform,newdata))
+	if (any(is.na(cc))) {
+		ndrop <- sum(is.na(cc))
 		message('gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
-		formula <- update(formula,.~-.-1+X)
-		patch.lm(p,nlme::gls,c(list(formula,data=list(X=X),method=method),p$dots))
-	} else {
-		# no problem
-		patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
+		formula <- newform
+		p$data <- newdata
 	}
+	patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
 }
 
 fit.julia <- function (p,formula) {
