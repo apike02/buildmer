@@ -69,7 +69,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
+buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='deviance',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -96,7 +96,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-	else stop("You are trying to use buildbam(). bam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
+	else if (!all(crit == 'deviance') || !(is.gaussian(family)) && is.null(lme4::findbars(formula)) && !has.smooth.terms(formula)) stop("bam() uses PQL, which means that likelihood-based model comparisons are not valid. Try using buildgam() instead, or use crit='deviance'.")
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -228,7 +228,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL else {
 		if (is.character(family)) family <- get(family)
 		if (is.function (family)) family <- family()
-		if (!is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','",if (family$family == 'gaussian') "newton'))), or use buildgamm()" else "bfgs')))",". (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
+		if (!all(crit %in% c('deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','",if (family$family == 'gaussian') "newton'))), or use buildgamm()" else "bfgs')))",". (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 		if (inherits(family,'general.family')) {
 			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
 			p$can.use.reml <- F
@@ -504,6 +504,8 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		env=parent.frame(),
 		dots=list(...)
 	)
+
+	if (any(crit %in% c('deviance','devexp')) && ( (is.data.frame(formula) && !'1' %in% formula[is.na(formula$grouping),]) || !attr(terms(formula),'intercept') )) stop('Julia models do not currently work with the deviance-explained criterion if the intercept is suppressed')
 
 	message('Setting up Julia...')
 	p$julia <- JuliaCall::julia_setup(verbose=T)
