@@ -21,6 +21,14 @@ buildmer.fit <- function (p) {
 		p <- c(p,p$dots$p)
 		p$dots$p <- NULL
 	}
+	for (x in c('reduce.fixed','reduce.random')) {
+		p[[x]] <- T
+		if (x %in% names(p$dots)) {
+			p[[x]] <- p$dots[[x]]
+			p$dots[[x]] <- NULL
+			message(paste0("Warning: argument '",x,"' is deprecated; use 'include' instead."))
+		}
+	}
 
 	if (is.null(p$cluster)) {
 		p$parallel <- F

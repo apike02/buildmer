@@ -3,7 +3,6 @@
 #' @template data
 #' @template family
 #' @template common
-#' @template reduce
 #' @template summary
 #' @param ... Additional options to be passed to \code{mixed_model}
 #' @examples
@@ -15,7 +14,7 @@
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
 #' @template seealso
 #' @export
-buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
+buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
 	if (!requireNamespace('GLMMadaptive',quietly=T)) stop('Please install package GLMMadaptive')
 	p <- list(
 		formula=formula,
@@ -103,7 +102,6 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template formula
 #' @template data
 #' @template common
-#' @template reduce
 #' @param fit A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge
 #' @param elim A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})
 #' @param REML A logical indicating if the fitting function distinguishes between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE).
@@ -143,7 +141,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 #' @template seealso
 #' @export
-buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
+buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -316,7 +314,6 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' @template data
 #' @template family
 #' @template common
-#' @template reduce
 #' @template anova
 #' @template summary
 #' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
@@ -336,7 +333,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
+buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
 	if (!requireNamespace('gamm4',quietly=T)) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
@@ -380,7 +377,6 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @template data
 #' @template family
 #' @template common
-#' @template reduce
 #' @template summary
 #' @param ... Additional options to be passed to \code{glmmTMB}
 #' @examples
@@ -394,7 +390,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
+buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
 	if (!requireNamespace('glmmTMB',quietly=T)) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
@@ -470,7 +466,6 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @template formula
 #' @template data
 #' @template family
-#' @template reduce
 #' @param direction See the general documentation under \code{\link{buildmer-package}}
 #' @param crit See the general documentation under \code{\link{buildmer-package}}
 #' @param include See the general documentation under \code{\link{buildmer-package}}
@@ -486,7 +481,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export
-buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',reduce.fixed=TRUE,reduce.random=TRUE,...) {
+buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',...) {
 	if (!requireNamespace('JuliaCall',quietly=T)) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
@@ -523,7 +518,6 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildlme} does not use a separate \code{random} argument!)
 #' @template data
 #' @template common
-#' @template reduce
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{lme}
@@ -535,7 +529,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' Only a single grouping factor is allowed. The covariance matrix is always unstructured. If you want to use \code{nlme} covariance structures, you must (a) \emph{not} specify a \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 #' @template seealso
 #' @export
-buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,...) {
+buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
@@ -569,7 +563,6 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @template data
 #' @template family
 #' @template common
-#' @template reduce
 #' @template anova
 #' @template summary
 #' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=FALSE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
@@ -589,7 +582,7 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #'            family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 #' @importFrom stats gaussian
 #' @export
-buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
+buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -623,7 +616,6 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template data
 #' @template family
 #' @template common
-#' @template reduce
 #' @template summary
 #' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}.)
 #' @examples
@@ -638,7 +630,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' It is recommended to pass \code{joint=FALSE}, as this speeds up the fits (drastically so in the case of a generalized linear mixed model), and reduces the odds of the final \code{(g)lmer} model failing to converge or converging singularly.
 #' @importFrom stats gaussian
 #' @export
-buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='AIC',include=NULL,reduce.fixed=TRUE,reduce.random=TRUE,calc.summary=TRUE,...) {
+buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='AIC',include=NULL,calc.summary=TRUE,...) {
 	if (!requireNamespace('glmertree',quietly=T)) stop('Please install package glmertree')
 	if (!requireNamespace('partykit',quietly=T)) stop('Please install package partykit')
 	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use the raw log-likelihood instead (crit='LL') and only perform the term-ordering step (direction='order'). If you require stepwise elimination, information criteria such as AIC should be valid.")
