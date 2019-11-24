@@ -6,9 +6,12 @@
 #' @template summary
 #' @param ... Additional options to be passed to \code{mixed_model}
 #' @examples
+#' \dontshow{
+#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (1|word),family=binomial,data=vowels,nAGQ=1)
+#' }
 #' \donttest{
 #' # nonsensical model given these data
-#' model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
+#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
 #' }
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
@@ -56,12 +59,12 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' m <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+#' model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
 #' }
 #' \donttest{
 #' library(buildmer)
-#' m <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-#'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' model <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
+#'                        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -134,11 +137,10 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' }
 #' 
 #' # First, order the terms based on Wilks' Lambda
-#' m <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
+#' model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
 #' sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
 #' # Now, use the six most important terms (arbitrary choice) in the LDA
-#' library(MASS)
-#' m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
+#' if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
 #' @template seealso
 #' @export
 buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
@@ -185,12 +187,12 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' m <- buildgam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+#' model <- buildgam(f1 ~ s(timepoint,bs='cr'),data=vowels)
 #' }
 #' \donttest{
 #' library(buildmer)
-#' m <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-#'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' model <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
+#'                        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -256,12 +258,12 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' m <- buildgamm(f1 ~ s(timepoint,bs='cr') + (pdIdent(~following)|participant),data=vowels)
+#' model <- buildgamm(f1 ~ s(timepoint,bs='cr') + (pdIdent(~following)|participant),data=vowels)
 #' }
 #' \donttest{
 #' library(buildmer)
-#' m <- buildgamm(f1 ~ s(timepoint,by=following) + (pdIdent(~following)|participant) +
-#'                    s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' model <- buildgamm(f1 ~ s(timepoint,by=following) + (pdIdent(~following)|participant) +
+#'                         s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -321,12 +323,12 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' m <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' if (requireNamespace('gamm4')) model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' }
 #' \donttest{
 #' library(buildmer)
-#' m <- buildgamm4(f1 ~ s(timepoint,by=following) +
-#'                      s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' if (requireNamespace('gamm4')) model <- buildgamm4(f1 ~ s(timepoint,by=following) +
+#'                          s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
@@ -381,11 +383,11 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @param ... Additional options to be passed to \code{glmmTMB}
 #' @examples
 #' library(buildmer)
-#' m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' \dontshow{\donttest{
 #' # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
 #' vowels$event <- with(vowels,interaction(participant,word))
-#' m <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
+#' if (requireNamespace('glmmTMB')) model <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
 #' }}
 #' @template seealso
 #' @importFrom stats gaussian
@@ -428,9 +430,8 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @param ... Additional options to be passed to \code{gls}
 #' @examples
 #' library(buildmer)
-#' library(nlme)
 #' vowels$event <- with(vowels,interaction(participant,word))
-#' m <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
+#' model <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
 #' @template seealso
 #' @export
 buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
@@ -475,8 +476,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @param ... Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}
 #' @examples
 #' \donttest{
-#' library(buildmer)
-#' m <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
+#' if (requireNamespace('JuliaCall')) model <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -523,7 +523,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' @param ... Additional options to be passed to \code{lme}
 #' @examples
 #' library(buildmer)
-#' m <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' model <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts. Correlation structures can be specified as part of the \code{...} argument, and are handled appropriately.
 #' Only a single grouping factor is allowed. The covariance matrix is always unstructured. If you want to use \code{nlme} covariance structures, you must (a) \emph{not} specify a \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
@@ -569,7 +569,7 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}.)
 #' @examples
 #' library(buildmer)
-#' m <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
+#' model <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
 #' 
 #' #tests from github issue #2:
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
@@ -619,11 +619,12 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template summary
 #' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}.)
 #' @examples
-#' library(buildmer)
-#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#'                   data=lme4::sleepstudy,joint=FALSE)
-#' m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#'                   data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+#' if (requireNamespace('glmertree')) {
+#' 	m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#' 	                  data=lme4::sleepstudy,joint=FALSE)
+#' 	m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#' 	                  data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+#' }
 #' @template seealso
 #' @details
 #' Note that the likelihood-ratio test is not available for \code{glmertree} models, as it cannot be assured that the models being compared are nested. The default is thus to use AIC.
@@ -688,11 +689,11 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template summary
 #' @param ... Additional options to be passed to \code{multinom}
 #' @examples
-#' library(buildmer)
-#' options(contrasts = c("contr.treatment", "contr.poly"))
-#' library(MASS)
-#' example(birthwt)
-#' bwt.mu <- buildmultinom(low ~ age*lwt*race*smoke,bwt)
+#' if (requireNamespace('nnet') && require('MASS')) {
+#' 	options(contrasts = c("contr.treatment", "contr.poly"))
+#' 	example(birthwt)
+#' 	bwt.mu <- buildmultinom(low ~ age*lwt*race*smoke,bwt)
+#' }
 #' @template seealso
 #' @export
 buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
