@@ -127,7 +127,7 @@ setGeneric('diag')
 #' \donttest{m <- buildmer(terms,data=vowels,dep='f1')}
 #' @export
 setMethod('diag','formula',function (x) {
-	dep <- as.character(x[2])
+	dep <- if (length(x) < 3) '' else as.character(x[2])
 	tab <- tabulate.formula(x)
 	ok <- !is.na(tab$index)
 	tab$index[ok] <- 1:sum(ok)

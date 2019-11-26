@@ -10,7 +10,7 @@
 #' add.terms(form,c('many','more|terms','to|terms','(be|added)','to|test'))
 #' @export
 add.terms <- function (formula,add) {
-	dep <- as.character(formula[2])
+	dep <- if (length(formula) < 3) '' else as.character(formula[2])
 	terms <- terms(formula,keep.order=T)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
