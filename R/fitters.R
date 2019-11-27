@@ -74,31 +74,31 @@ fit.gam <- function (p,formula) {
 		dots <- p$dots[names(p$dots) %in% names(formals(mgcv::bam))]
 		if (method == 'fREML' && p$quickstart > 2 && !'discrete' %in% names(dots)) dots$discrete <- T
 		if (p$quickstart > 3) {
-			samfrac <- p$quickstart - 3
-			samfrac <- samfrac - floor(samfrac)
+			samfrac <- p$quickstart - floor(p$quickstart)
 			if (samfrac == 0) samfrac <- .1
 			n <- nrow(data)
 			data <- data[sample.int(n,n*samfrac),]
 		}
 		if (p$quickstart > 4) dots$control <- c(p$dots$control,list(epsilon=.02))
 		message(paste0('Quickstart fit with bam/',method,': ',as.character(list(formula))))
-		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=family,data=data,method=method),dots))
-		p$dots$in.out <- if (inherits(qs,'try-error')) NULL else list(sp=qs$sp,scale=qs$sig2)
-		if (qs$family$family == 'scaled t') {
-			if (utils::packageVersion('mgcv') < '1.8.32') {
-				message("mgcv version < 1.8.32, not passing starting values for scaled-t's theta parameter")
+		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=data,method=method),dots))
+		if (!inherits(qs,'try-error')) {
+			p$dots$in.out <- list(sp=unname(qs$sp),scale=qs$sig2)
+			if (startsWith(qs$family$family,'Scaled t')) {
+				if (utils::packageVersion('mgcv') < '1.8.32') {
+					message(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),', excluding scaled-t theta values as mgcv version < 1.8.32'))
+				} else {
+					# set up starting values for theta
+					th.notrans <- qs$family$getTheta(F)
+					th.trans   <- qs$family$getTheta(T)
+					# transformation undoes the logarithm and then adds min.df to the df, so:
+					min.df <- th.trans[1] - exp(th.notrans[1])
+					message(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with theta values ',paste0(th.trans,collapse=' '),' and min.df ',min.df))
+					p$family <- mgcv::scat(theta=-th.trans,link=qs$family$link,min.df=min.df)
+				}
 			} else {
-				# set up starting values for theta
-				th.notrans <- qs$family$getTheta(F)
-				th.trans   <- qs$family$getTheta(T)
-				# transformation undoes the logarithm and then adds min.df to the df, so:
-				min.df <- th.trans - exp(th.notrans)
-				theta <- -th.trans
-				message(paste0('Starting values: ',p$dots$in.out,', with theta ',theta,' and min.df ',min.df))
-				p$family <- mgcv::scat(theta=theta,link=qs$family$link,min.df=min.df)
+				message(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with scale parameter ',p$dots$in.out$scale))
 			}
-		} else {
-			message(paste0('Starting values: ',p$dots$in.out))
 		}
 	}
 	method <- if (p$reml) 'REML' else 'ML'
@@ -147,15 +147,18 @@ fit.gls <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gls, with ',method,': ',as.character(list(formula))))
 	# gls cannot handle rank-deficient fixed effects --- work around the problem
+	dep <- as.character(formula[[2]])
+	y <- p$data[[dep]]
+	y <- y[!is.na(y)]
 	X <- model.matrix(formula,p$data)
-	newform <- update(formula,.~-.+0+X)
-	newdata <- within(p$data,{ X <- X })
-	cc <- coef(lm(newform,newdata))
-	if (any(is.na(cc))) {
-		ndrop <- sum(is.na(cc))
+	newform <- y ~ 0+X
+	environment(newform) <- NULL
+	newdata <- list(y=y,X=X)
+	na <- is.na(coef(lm(newform,newdata)))
+	if (ndrop <- sum(na)) {
 		message('gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
-		formula <- newform
-		p$data <- newdata
+		newdata$X <- newdata$X[,!na]
+		return(patch.lm(p,nlme::gls,c(list(newform,data=newdata,method=method),p$dots)))
 	}
 	patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
 }

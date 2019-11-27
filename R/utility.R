@@ -154,11 +154,14 @@ conv <- function (model,singular.ok=FALSE) {
 #' @param data The data.
 #' @examples
 #' library(buildmer)
-#' re <- re2mgcv(log(Reaction) ~ Days + (Days|Subject),lme4::sleepstudy)
+#' re <- re2mgcv(temp ~ angle + (1|replicate) + (1|recipe),lme4::cake)
 #' model <- buildgam(re$formula,re$data,family=mgcv::scat)
+#' # note: the below does NOT work, as the dependent variable is looked up in the data by name!
+#' \dontshow{if (FALSE)}
+#' re <- re2mgcv(log(Reaction) ~ Days + (Days|Subject),lme4::sleepstudy)
 #' @export
 re2mgcv <- function (formula,data) {
-	dep <- formula[[2]]
+	dep <- as.character(formula[[2]])
 	data <- data[!is.na(data[[dep]]),]
 	formula <- tabulate.formula(formula)
 	fixed <- is.na(formula$grouping)
@@ -174,10 +177,14 @@ re2mgcv <- function (formula,data) {
 		terms <- model.matrix(f,data)
 		nms <- gsub('[():]','_',colnames(terms))
 		for (i in 1:ncol(terms)) {
-			nm <- paste0(g,'_',nms[i])
-			if (nm %in% org.names) stop('Error: please remove/rename ',nm,' from your data!')
-			data[[nm]] <- terms[,i]
-			term <- paste0('s(',g,',by=',nm,',bs="re")')
+			if (all(terms[,i] == 1)) {
+				term <- paste0('s(',g,',bs="re")')
+			} else {
+				nm <- paste0(g,'_',nms[i])
+				if (nm %in% org.names) stop('Error: please remove/rename ',nm,' from your data!')
+				data[[nm]] <- terms[,i]
+				term <- paste0('s(',g,',by=',nm,',bs="re")')
+			}
 			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=F)
 		}			
 	}

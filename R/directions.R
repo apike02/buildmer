@@ -290,7 +290,7 @@ order <- function (p) {
 reduce.noconv <- function (p) {
 	message('Convergence failure. Reducing terms and retrying...')
 	cands <- p$tab$block[!is.na(p$tab$block)]
-	if (!length(cands)) {
+	if (length(unique(cands)) < 2) {
 		message('No terms left for reduction, giving up')
 		return(p)
 	}
