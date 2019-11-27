@@ -489,8 +489,6 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		dots=list(...)
 	)
 
-	if (any(crit %in% c('deviance','devexp')) && ( (is.data.frame(formula) && !'1' %in% formula[is.na(formula$grouping),]) || !attr(terms(formula),'intercept') )) stop('Julia models do not currently work with the deviance-explained criterion if the intercept is suppressed')
-
 	message('Setting up Julia...')
 	p$julia <- JuliaCall::julia_setup(verbose=T)
 	p$julia$library('MixedModels')
