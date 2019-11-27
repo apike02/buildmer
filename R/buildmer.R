@@ -24,8 +24,6 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -75,8 +73,6 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -148,8 +144,6 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 		formula=formula,
 		data=data,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		include=include,
 		calc.anova=F,
@@ -204,8 +198,6 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		family=family,
 		quickstart=quickstart,
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -276,8 +268,6 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -342,8 +332,6 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -399,8 +387,6 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -428,21 +414,21 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{gls}
+#' @details
+#' A workaround is included to prevent errors when the model matrix is of less than full rank. The summary output of such a model will look a bit strange!
 #' @examples
 #' library(buildmer)
+#' library(nlme)
 #' vowels$event <- with(vowels,interaction(participant,word))
 #' model <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
 #' @template seealso
 #' @export
 buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
-	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
 		family=gaussian(),
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -492,8 +478,6 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		julia_link=substitute(julia_link),
 		julia_fun=julia_fun,
 		cl=NULL,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit.name=mkCritName(crit),
 		elim=mkElim(crit),
@@ -538,8 +522,6 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		data=data,
 		family=gaussian(),
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -590,8 +572,6 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -662,8 +642,6 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		data=data,
 		family=family,
 		cluster=cl,
-		reduce.fixed=reduce.fixed,
-		reduce.random=reduce.random,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
@@ -704,8 +682,6 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		formula=formula,
 		data=data,
 		cluster=cl,
-		reduce.fixed=T,
-		reduce.random=F,
 		direction=direction,
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),

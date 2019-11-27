@@ -1,6 +1,4 @@
 backward <- function (p) {
-	if (!(p$reduce.fixed || p$reduce.random)) return(p)
-
 	fit.references.parallel <- function (p) {
 		if (p$parallel) parallel::clusterExport(p$cl,'p',environment())
 		message('Fitting ML and REML reference models')
@@ -55,11 +53,7 @@ backward <- function (p) {
 		message('Testing terms')
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
-			out <- list(val=rep(NA,length(i)))
-			if (!p$reduce.fixed  &&  is.na(p$tab[i,]$grouping)) return(out)
-			if (!p$reduce.random && !is.na(p$tab[i,]$grouping)) return(out)
-			if (!can.remove(p$tab,i)) return(out)
-			if (any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(out)
+			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
 			p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
@@ -148,8 +142,6 @@ forward <- function (p) {
 	remove[1:length(keep)] <- F
 	remove.ok <- sapply(1:nrow(p$tab),function (i) {
 		if (is.na(p$tab[i,]$block)) return(F)
-		if (!p$reduce.fixed  &&  is.na(p$tab[i,]$grouping)) return(F)
-		if (!p$reduce.random && !is.na(p$tab[i,]$grouping)) return(F)
 		if (!can.remove(p$tab,i)) return(F)
 		T
 	})
