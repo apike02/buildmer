@@ -4,10 +4,19 @@
 \alias{buildgamm4}
 \title{Use \code{buildmer} to fit generalized additive models using package \code{gamm4}}
 \usage{
-buildgamm4(formula, data = NULL, family = gaussian(), cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, calc.anova = FALSE,
-  calc.summary = TRUE, ddf = "Wald", ...)
+buildgamm4(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.anova = FALSE,
+  calc.summary = TRUE,
+  ddf = "Wald",
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -24,15 +33,11 @@ buildgamm4(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
+\item{ddf}{The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
 
 \item{...}{Additional options to be passed to \code{gamm4}}
 }
@@ -45,12 +50,12 @@ The fixed and random effects are to be passed as a single formula in \emph{\code
 \examples{
 \dontshow{
 library(buildmer)
-m <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+if (requireNamespace('gamm4')) model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 }
 \donttest{
 library(buildmer)
-m <- buildgamm4(f1 ~ s(timepoint,by=following) +
-                     s(participant,timepoint,by=following,bs='fs'),data=vowels)
+if (requireNamespace('gamm4')) model <- buildgamm4(f1 ~ s(timepoint,by=following) +
+       s(participant,timepoint,by=following,bs='fs'),data=vowels)
 }
 }
 \seealso{

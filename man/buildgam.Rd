@@ -4,9 +4,19 @@
 \alias{buildgam}
 \title{Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}}
 \usage{
-buildgam(formula, data = NULL, family = gaussian(), quickstart = 0,
-  cl = NULL, direction = c("order", "backward"), crit = "LRT",
-  include = NULL, calc.anova = FALSE, calc.summary = TRUE, ...)
+buildgam(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  quickstart = 0,
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.anova = FALSE,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -15,7 +25,7 @@ buildgam(formula, data = NULL, family = gaussian(), quickstart = 0,
 
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{quickstart}{A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.}
+\item{quickstart}{A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.}
 
 \item{cl}{See the general documentation under \code{\link{buildmer-package}}}
 
@@ -36,19 +46,26 @@ Use \code{buildmer} to fit generalized additive models using \code{gam} from pac
 }
 \details{
 To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
-General families implemented in \code{mgcv} are supported, provided that they use normal formulae. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms. This behavior cannot currently be disabled.
 
-The quickstart function is experimental. If you desire more control (e.g. \code{discrete=FALSE} but \code{use.chol=TRUE}), additional options can be provided as extra arguments and will be passed on to \code{bam} as they are applicable. Note that \code{quickstart} needs to be larger than 0 to trigger the quickstart path at all.
+\code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
+
+If \code{gam}'s \code{optimizer} argument is not set to use outer iteration, \code{gam} fits using PQL. In this scenario, only \code{crit='deviance'} is supported.
+
+General families implemented in \code{mgcv} are supported, provided that they use normal formulas. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms.
+
+The quickstart function is experimental. If you desire more control (e.g.\ \code{discrete=FALSE} but \code{use.chol=TRUE}), additional options can be provided as extra arguments and will be passed on to \code{bam} as they are applicable. Note that \code{quickstart} needs to be larger than 0 to trigger the quickstart path at all.
+
+If scaled-t errors are used (\code{family=scat}), the quickstart path will also provide initial values for the two theta parameters (corresponding to the degrees of freedom and the scale parameter), but only if your installation of package \code{mgcv} is at least at version 1.8-32.
 }
 \examples{
 \dontshow{
 library(buildmer)
-m <- buildgam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+model <- buildgam(f1 ~ s(timepoint,bs='cr'),data=vowels)
 }
 \donttest{
 library(buildmer)
-m <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-                   s(participant,timepoint,by=following,bs='fs'),data=vowels)
+model <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
+       s(participant,timepoint,by=following,bs='fs'),data=vowels)
 }
 }
 \seealso{

@@ -291,8 +291,7 @@ reduce.noconv <- function (p) {
 	message('Convergence failure. Reducing terms and retrying...')
 	cands <- p$tab$block[!is.na(p$tab$block)]
 	if (length(unique(cands)) < 2) {
-		message('No terms left for reduction, giving up')
-		return(p)
+		stop('No terms left for reduction, giving up')
 	}
 	p$tab <- p$tab[!is.na(p$tab$block) & p$tab$block != cands[length(cands)],]
 	p$formula <- build.formula(p$dep,p$tab,p$env)

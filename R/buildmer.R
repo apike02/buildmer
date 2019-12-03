@@ -1,5 +1,5 @@
 #' Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_model} from package \code{GLMMadaptive}
-#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildGLMMadaptive} does not use a separate \code{random} argument!)
+#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike \code{mixed_model}, \code{buildGLMMadaptive} does not use a separate \code{random} argument!)
 #' @template data
 #' @template family
 #' @template common
@@ -7,11 +7,12 @@
 #' @param ... Additional options to be passed to \code{mixed_model}
 #' @examples
 #' \dontshow{
-#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (1|word),family=binomial,data=vowels,nAGQ=1)
+#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,nAGQ=1)
 #' }
 #' \donttest{
 #' # nonsensical model given these data
-#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
+#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
+#'        family=binomial,data=vowels,nAGQ=1)
 #' }
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
@@ -54,6 +55,10 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' @param ... Additional options to be passed to \code{bam}
 #' @details
 #' To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
+#' 
+#' \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
+#' 
+#' As \code{bam} uses PQL, only \code{crit='deviance'} is supported.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -62,7 +67,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' \donttest{
 #' library(buildmer)
 #' model <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-#'                        s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#'        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -133,10 +138,12 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' }
 #' 
 #' # First, order the terms based on Wilks' Lambda
-#' model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
-#' sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
+#' model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
+#'        attention+sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,
+#'        crit=crit.Wilks)
 #' # Now, use the six most important terms (arbitrary choice) in the LDA
-#' if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
+#' if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
+#'        multilingual,data=migrant)
 #' @template seealso
 #' @export
 buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
@@ -168,16 +175,23 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' @template formula
 #' @template data
 #' @template family
-#' @param quickstart A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
+#' @param quickstart A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @template common
 #' @template anova
 #' @template summary
 #' @param ... Additional options to be passed to \code{gam}
 #' @details
 #' To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
-#' General families implemented in \code{mgcv} are supported, provided that they use normal formulae. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms. This behavior cannot currently be disabled.
 #' 
-#' The quickstart function is experimental. If you desire more control (e.g. \code{discrete=FALSE} but \code{use.chol=TRUE}), additional options can be provided as extra arguments and will be passed on to \code{bam} as they are applicable. Note that \code{quickstart} needs to be larger than 0 to trigger the quickstart path at all.
+#' \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
+#' 
+#' If \code{gam}'s \code{optimizer} argument is not set to use outer iteration, \code{gam} fits using PQL. In this scenario, only \code{crit='deviance'} is supported.
+#' 
+#' General families implemented in \code{mgcv} are supported, provided that they use normal formulas. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms.
+#' 
+#' The quickstart function is experimental. If you desire more control (e.g.\ \code{discrete=FALSE} but \code{use.chol=TRUE}), additional options can be provided as extra arguments and will be passed on to \code{bam} as they are applicable. Note that \code{quickstart} needs to be larger than 0 to trigger the quickstart path at all.
+#'
+#' If scaled-t errors are used (\code{family=scat}), the quickstart path will also provide initial values for the two theta parameters (corresponding to the degrees of freedom and the scale parameter), but only if your installation of package \code{mgcv} is at least at version 1.8-32.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -186,7 +200,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 #' \donttest{
 #' library(buildmer)
 #' model <- buildgam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-#'                        s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#'        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -248,19 +262,16 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 #' @template summary
 #' @param ... Additional options to be passed to \code{gamm}
 #' @examples
-#' \dontshow{
-#' library(buildmer)
-#' model <- buildgamm(f1 ~ s(timepoint,bs='cr') + (pdIdent(~following)|participant),data=vowels)
-#' }
 #' \donttest{
 #' library(buildmer)
-#' model <- buildgamm(f1 ~ s(timepoint,by=following) + (pdIdent(~following)|participant) +
-#'                         s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#' model <- buildgamm(f1 ~ s(timepoint,by=following) + (following|participant) +
+#'        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
 #' @details
-#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+#' The fixed and random effects are to be passed as a single formula in \code{lme4} format. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+#' Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildgamm} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 #' @export
 buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
 	p <- list(
@@ -306,7 +317,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' @template common
 #' @template anova
 #' @template summary
-#' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
+#' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
 #' @param ... Additional options to be passed to \code{gamm4}
 #' @examples
 #' \dontshow{
@@ -316,7 +327,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' \donttest{
 #' library(buildmer)
 #' if (requireNamespace('gamm4')) model <- buildgamm4(f1 ~ s(timepoint,by=following) +
-#'                          s(participant,timepoint,by=following,bs='fs'),data=vowels)
+#'        s(participant,timepoint,by=following,bs='fs'),data=vowels)
 #' }
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
@@ -366,11 +377,15 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @param ... Additional options to be passed to \code{glmmTMB}
 #' @examples
 #' library(buildmer)
-#' model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject)
+#'        ,data=lme4::sleepstudy)
 #' \dontshow{\donttest{
 #' # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
 #' vowels$event <- with(vowels,interaction(participant,word))
-#' if (requireNamespace('glmmTMB')) model <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
+#' if (requireNamespace('glmmTMB')) {
+#' 	# converges with MKL, not with R default BLAS
+#' 	model <- try(buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels))
+#' }
 #' }}
 #' @template seealso
 #' @importFrom stats gaussian
@@ -410,7 +425,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template summary
 #' @param ... Additional options to be passed to \code{gls}
 #' @details
-#' A workaround is included to prevent errors when the model matrix is of less than full rank. The summary output of such a model will look a bit strange!
+#' A workaround is included to prevent an error when the model matrix is of less than full rank. The summary output of such a model will look a bit strange!
 #' @examples
 #' library(buildmer)
 #' library(nlme)
@@ -457,7 +472,8 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @param ... Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}
 #' @examples
 #' \donttest{
-#' if (requireNamespace('JuliaCall')) model <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
+#' if (requireNamespace('JuliaCall')) model <- buildjulia(f1 ~ vowel*timepoint*following +
+#'        (1|participant) + (1|word),data=vowels)
 #' }
 #' @template seealso
 #' @importFrom stats gaussian
@@ -494,7 +510,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 }
 
 #' Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}
-#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildlme} does not use a separate \code{random} argument!)
+#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike \code{lme}, \code{buildlme} does not use a separate \code{random} argument!)
 #' @template data
 #' @template common
 #' @template anova
@@ -504,8 +520,8 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' library(buildmer)
 #' model <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
 #' @details
-#' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts. Correlation structures can be specified as part of the \code{...} argument, and are handled appropriately.
-#' Only a single grouping factor is allowed. The covariance matrix is always unstructured. If you want to use \code{nlme} covariance structures, you must (a) \emph{not} specify a \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
+#' The fixed and random effects are to be passed as a single formula in \code{lme4} format. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+#' Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildlme} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 #' @template seealso
 #' @export
 buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
@@ -542,21 +558,21 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @template common
 #' @template anova
 #' @template summary
-#' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=FALSE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
-#' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}.)
+#' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
+#' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm})
 #' @examples
 #' library(buildmer)
 #' model <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
 #' 
 #' #tests from github issue #2:
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
-#'            family=binomial,data=lme4::cbpp)
+#'        family=binomial,data=lme4::cbpp)
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
-#'            family=binomial,data=lme4::cbpp,direction='forward')
+#'        family=binomial,data=lme4::cbpp,direction='forward')
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
-#'            family=binomial,data=lme4::cbpp,crit='AIC')
+#'        family=binomial,data=lme4::cbpp,crit='AIC')
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
-#'            family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
+#'        family=binomial,data=lme4::cbpp,direction='forward',crit='AIC')
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
@@ -583,27 +599,37 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
+	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=T)) {
+		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
+		message('Finalizing by converting the model to lmerTest')
+		p$model@call$data <- p$data
+		if ('subset' %in% names(p$dots)) p$model@call$subset <- p$dots$subset
+		if ('control' %in% names(p$dots)) p$model@call$control <- p$dots$control
+		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
+	}
 	buildmer.finalize(p)
 }
 
-#' Use \code{buildmer} to perform stepwise elimination for \emph{the random-effects part} of \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
+#' Use \code{buildmer} to perform stepwise elimination for \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
 #' @param formula Either a \code{glmertree} formula, looking like \code{dep ~ left | middle | right} where the \code{middle} part is an \code{lme4}-style random-effects specification, or an ordinary formula (or buildmer term list thereof) specifying only the dependent variable and the fixed and random effects for the regression part. In the latter case, the additional argument \code{partitioning} must be specified as a one-sided formula containing the partitioning part of the model.
 #' @template data
 #' @template family
 #' @template common
 #' @template summary
-#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}.)
+#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree})
 #' @examples
 #' if (requireNamespace('glmertree')) {
-#' 	m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#' 	                  data=lme4::sleepstudy,joint=FALSE)
-#' 	m <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
-#' 	                  data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+#' 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#'	        data=lme4::sleepstudy)
+#' \donttest{
+#' 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+#' 	        data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+#' }
 #' }
 #' @template seealso
 #' @details
 #' Note that the likelihood-ratio test is not available for \code{glmertree} models, as it cannot be assured that the models being compared are nested. The default is thus to use AIC.
-#' It is recommended to pass \code{joint=FALSE}, as this speeds up the fits (drastically so in the case of a generalized linear mixed model), and reduces the odds of the final \code{(g)lmer} model failing to converge or converging singularly.
+#' In the generalized case or when testing many partitioning variables, it is recommended to pass \code{joint=FALSE}, as this results in a dramatical speed gain and reduces the odds of the final \code{glmer} model failing to converge or converging singularly.
 #' @importFrom stats gaussian
 #' @export
 buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='AIC',include=NULL,calc.summary=TRUE,...) {
@@ -651,6 +677,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		env=parent.frame(),
 		dots=dots
 	)
+	if (is.null(p$data)) stop("Sorry, buildmertree() requires data to be passed via the data= argument")
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }

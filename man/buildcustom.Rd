@@ -4,11 +4,18 @@
 \alias{buildcustom}
 \title{Use \code{buildmer} to perform stepwise elimination using a custom fitting function}
 \usage{
-buildcustom(formula, data = NULL, cl = NULL, direction = c("order",
-  "backward"), crit = function(ref, alt) stop("'crit' not specified"),
-  include = NULL, reduce.fixed = TRUE, reduce.random = TRUE,
+buildcustom(
+  formula,
+  data = NULL,
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = function(ref, alt) stop("'crit' not specified"),
+  include = NULL,
   fit = function(p, formula) stop("'fit' not specified"),
-  elim = function(x) stop("'elim' not specified"), REML = FALSE, ...)
+  elim = function(x) stop("'elim' not specified"),
+  REML = FALSE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -23,10 +30,6 @@ buildcustom(formula, data = NULL, cl = NULL, direction = c("order",
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge}
 
 \item{elim}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})}
@@ -39,7 +42,7 @@ buildcustom(formula, data = NULL, cl = NULL, direction = c("order",
 Use \code{buildmer} to perform stepwise elimination using a custom fitting function
 }
 \examples{
-## Use \\code{buildmer} to do stepwise linear discriminant analysis
+## Use \code{buildmer} to do stepwise linear discriminant analysis
 library(buildmer)
 migrant[,-1] <- scale(migrant[,-1])
 flipfit <- function (p,formula) {
@@ -66,11 +69,12 @@ crit.Wilks <- function (ma,mb) {
 }
 
 # First, order the terms based on Wilks' Lambda
-m <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+attention+
-sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,crit=crit.Wilks)
+model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
+       attention+sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,
+       crit=crit.Wilks)
 # Now, use the six most important terms (arbitrary choice) in the LDA
-library(MASS)
-m <- lda(changed ~ diglossic + age + reading + friends.be + years + multilingual,data=migrant)
+if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
+       multilingual,data=migrant)
 }
 \seealso{
 \code{\link{buildmer-package}}

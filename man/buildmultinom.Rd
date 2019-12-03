@@ -4,9 +4,16 @@
 \alias{buildmultinom}
 \title{Use \code{buildmer} to perform stepwise elimination for \code{multinom} models from package \code{nnet}}
 \usage{
-buildmultinom(formula, data = NULL, cl = NULL, direction = c("order",
-  "backward"), crit = "LRT", include = NULL, calc.summary = TRUE,
-  ...)
+buildmultinom(
+  formula,
+  data = NULL,
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -29,11 +36,11 @@ buildmultinom(formula, data = NULL, cl = NULL, direction = c("order",
 Use \code{buildmer} to perform stepwise elimination for \code{multinom} models from package \code{nnet}
 }
 \examples{
-library(buildmer)
-options(contrasts = c("contr.treatment", "contr.poly"))
-library(MASS)
-example(birthwt)
-bwt.mu <- buildmultinom(low ~ age*lwt*race*smoke,bwt)
+if (requireNamespace('nnet') && require('MASS')) {
+	options(contrasts = c("contr.treatment", "contr.poly"))
+	example(birthwt)
+	bwt.mu <- buildmultinom(low ~ age*lwt*race*smoke,bwt)
+}
 }
 \seealso{
 \code{\link{buildmer-package}}

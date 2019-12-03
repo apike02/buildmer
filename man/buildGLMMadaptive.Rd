@@ -4,13 +4,20 @@
 \alias{buildGLMMadaptive}
 \title{Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_model} from package \code{GLMMadaptive}}
 \usage{
-buildGLMMadaptive(formula, data = NULL, family, cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
-  ...)
+buildGLMMadaptive(
+  formula,
+  data = NULL,
+  family,
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
-\item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike in \code{mixed_model}, \code{buildGLMMadaptive} does not use a separate \code{random} argument!)}
+\item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike \code{mixed_model}, \code{buildGLMMadaptive} does not use a separate \code{random} argument!)}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
@@ -24,10 +31,6 @@ buildGLMMadaptive(formula, data = NULL, family, cl = NULL,
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{...}{Additional options to be passed to \code{mixed_model}}
@@ -39,9 +42,13 @@ Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_mod
 The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
 }
 \examples{
+\dontshow{
+if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,nAGQ=1)
+}
 \donttest{
 # nonsensical model given these data
-model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),family=binomial,data=vowels,nAGQ=1)
+if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
+       family=binomial,data=vowels,nAGQ=1)
 }
 }
 \seealso{

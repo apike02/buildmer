@@ -4,10 +4,18 @@
 \alias{buildjulia}
 \title{Use \code{buildmer} to perform stepwise elimination on models fit with Julia package \code{MixedModels} via \code{JuliaCall}}
 \usage{
-buildjulia(formula, data = NULL, family = gaussian(), include = NULL,
-  julia_family = gaussian(), julia_link = NULL, julia_fun = NULL,
-  direction = c("order", "backward"), crit = "LRT",
-  reduce.fixed = TRUE, reduce.random = TRUE, ...)
+buildjulia(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  include = NULL,
+  julia_family = gaussian(),
+  julia_link = NULL,
+  julia_fun = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -28,10 +36,6 @@ buildjulia(formula, data = NULL, family = gaussian(), include = NULL,
 
 \item{crit}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{...}{Additional options to be passed to \code{LinearMixedModel()} or \code{GeneralizedLinearMixedModel()}}
 }
 \description{
@@ -39,8 +43,8 @@ Use \code{buildmer} to perform stepwise elimination on models fit with Julia pac
 }
 \examples{
 \donttest{
-library(buildmer)
-m <- buildjulia(f1 ~ vowel*timepoint*following + (1|participant) + (1|word),data=vowels)
+if (requireNamespace('JuliaCall')) model <- buildjulia(f1 ~ vowel*timepoint*following +
+       (1|participant) + (1|word),data=vowels)
 }
 }
 \seealso{

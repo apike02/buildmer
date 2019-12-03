@@ -4,9 +4,17 @@
 \alias{buildgls}
 \title{Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}}
 \usage{
-buildgls(formula, data = NULL, cl = NULL, direction = c("order",
-  "backward"), crit = "LRT", include = NULL, calc.anova = FALSE,
-  calc.summary = TRUE, ...)
+buildgls(
+  formula,
+  data = NULL,
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.anova = FALSE,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -30,11 +38,14 @@ buildgls(formula, data = NULL, cl = NULL, direction = c("order",
 \description{
 Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}
 }
+\details{
+A workaround is included to prevent an error when the model matrix is of less than full rank. The summary output of such a model will look a bit strange!
+}
 \examples{
 library(buildmer)
 library(nlme)
 vowels$event <- with(vowels,interaction(participant,word))
-m <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
+model <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
 }
 \seealso{
 \code{\link{buildmer-package}}

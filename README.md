@@ -1,6 +1,6 @@
 # The `buildmer` package
 
-`buildmer` is an (experimental) `R` package written to simplify the process of testing whether the terms in your `lmer` (or equivalent) models make a significant contribution to the *-2 Log Likelihood*, AIC, or BIC. The aim of the package is to **fully automate model selection**, as is already possible for non-mixed regression models and lmerTest models using the `step` function.
+`buildmer` is an (experimental) `R` package written to simplify the process of testing whether the terms in your `lmer` (or equivalent) models make a significant contribution to the *-2 Log Likelihood*, AIC, BIC, or explained deviance (the latter is not a formal statistical test, but informally tests if the model fit improved by at least an ounce of a percent). The aim of the package is to **fully automate model selection**, as is already possible for non-mixed regression models and lmerTest models using the `step` function.
 
 In addition, the package (optionally) **determines the order of your predictors** by their contribution to the model fit. This is intended to mimic the results you might get from the stepwise functions available in, e.g., *SPSS* (although *SPSS* support stepwise elimination only for fixed-effect models...). In sum, the `buildmer` package aims to take the complex and time-consuming parts of the model fitting procedure out of your hands -- all you need to do is specify your intended maximal model and your dataset, and the package will take care of the rest.
 
@@ -8,12 +8,11 @@ In addition, the package (optionally) **determines the order of your predictors*
 
 The package supports the fitting of a wide variety of models, if the relevant packages are available. The following `buildmer` functions make it possible to fit the following types of models:
  * *buildmer*: `lm`, `glm`, `lmer`, `glmer`, `gamm4` (package `gamm4`)
- * *buildgam*, *buildbam*: `gam`, `bam` (package `mgcv`)
+ * *buildbam*, *buildgam*, *buildgamm*: `bam`, `gam`, `gamm` (package `mgcv`)
  * *buildglmmTMB*: `glmmTMB` (package `glmmTMB`)
  * *buildmertree*: `lmertree`, `glmertree` (package `glmertree`)
+ * *buildlme*: `lme` (package `nlme`)
  * *buildjulia*: uses `RCall` to drive a Julia installation to fit models using Julia package `MixedModels`
-
-No support is available (or planned) for fitting generalized additive mixed models via `mgcv`'s `gamm` function; use `gamm4`'s eponymous function instead.
 
 Automatic elimination of fixed, random, and/or smooth terms, is possible and enabled by default using the backward (default) or forward stepwise method. Bi-directional elimination is also possible, by passing e.g. `direction=c('forward','backward','forward')`, although I would not want to recommend doing this.
 
@@ -30,14 +29,11 @@ If certain terms need to be added together, you can construct your own buildmer 
 
 ## Installation
 
-On normal operating systems, you should just be able to do:
+I recommend against using the GitHub version and using the official CRAN releases instead, but if you must:
 
 ```
-library(devtools)
-install_github('cvoeten/buildmer')
+remotes::install_github('cvoeten/buildmer')
 ```
-
-On Windows, however, you will not be able to install `devtools` if you don't have a few basic UNIX utilities available. In this case, it may be easier for you to just download the whole repository as a .zip file, which you can then unpack and pass to `R CMD INSTALL` (e.g. `R CMD INSTALL C:\Users\Cesko\Downloads\buildmer`).
 
 ## Known issues
 

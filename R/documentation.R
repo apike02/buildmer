@@ -1,6 +1,6 @@
 #' Construct and fit as complete a model as possible and perform stepwise elimination
 #' 
-#' The \code{buildmer} package consists of a number of functions, each designed to fit specific types of models (e.g. \code{\link{buildmer}} for mixed-effects regression, \code{\link{buildgam}} for generalized additive models, \code{\link{buildmertree}} for mixed-effects-regression trees, and so forth. The common parameters shared by all (or most of) these functions are documented here. If you are looking for a more general description of what the various \code{build...} functions do, see under `Details'. For function-specific details, see the documentation for each individual function.
+#' The \code{buildmer} package consists of a number of functions, each designed to fit specific types of models (e.g. \code{\link{buildmer}} for mixed-effects regression, \code{\link{buildgam}} for generalized additive models, \code{\link{buildmertree}} for mixed-effects-regression trees, and so forth). The common parameters shared by all (or most of) these functions are documented here. If you are looking for a more general description of what the various \code{build...} functions do, see under `Details'. For function-specific details, see the documentation for each individual function.
 #' 
 #' With the default options, all \code{buildmer} functions will do two things:
 #' \enumerate{
@@ -16,50 +16,10 @@
 #' @param family The error distribution to use
 #' @param cl An optional cluster object as returned by function \code{makeCluster} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that, if and only if using the \code{cl} functionality, the data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary. In addition, some buildmer-internal objects will be exported to the cluster nodes. These will be cleaned up afterwards, but any already-present objects with the same name (e.g. `\code{p}' will be overwritten)
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), and \code{'BIC'} (Bayesian Information Criterion)
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)
 #' @param include A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models
-#' @param reduce.fixed Logical indicating whether to reduce the fixed-effect structure
-#' @param reduce.random Logical indicating whether to reduce the random-effect structure
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination
-#' @examples
-#' \donttest{
-#' # Only finding the maximal model, with importance of effects measured by AIC, parallelizing the
-#' # model evaluations using two cores, using the bobyqa optimizer and asking for verbose output
-#' library(parallel)
-#' cl <- makeCluster(2,outfile='')
-#' control <- lme4::lmerControl(optimizer='bobyqa')
-#' clusterExport(cl,'control') #this is not done automatically for '...' arguments!
-#' m <- buildmer(f1 ~ vowel*timepoint*following + (vowel*timepoint*following|participant) +
-#'               (timepoint|word),data=vowels,cl=cl,direction='order',crit='AIC',calc.anova=FALSE,
-#'               calc.summary=FALSE,control=control,verbose=2)
-#' # The maximal model is: f1 ~ vowel + timepoint + vowel:timepoint + following +
-#' # timepoint:following +vowel:following + vowel:timepoint:following + (1 + timepoint +
-#' # following + timepoint:following | participant) + (1 + timepoint | word)
-#' # Now do backward stepwise elimination (result: f1 ~ vowel + timepoint + vowel:timepoint +
-#' # following + timepoint:following + (1 + timepoint + following + timepoint:following |
-#' # participant) + (1 + timepoint | word))
-#' buildmer(formula(m@model),data=vowels,direction='backward',crit='AIC',control=control)
-#' # Or forward (result: retains the full model)
-#' buildmer(formula(m@model),data=vowels,direction='forward',crit='AIC',control=control)
-#' # Print summary with p-values based on Satterthwaite denominator degrees of freedom
-#' summary(m,ddf='Satterthwaite')
-#' 
-#' # Example for fitting a model without correlations in the random part
-#' # (even for factor variables!)
-#' # 1. Create explicit columns for factor variables
-#' library(buildmer)
-#' vowels <- cbind(vowels,model.matrix(~vowel,vowels))
-#' # 2. Create formula with diagonal covariance structure
-#' form <- diag(f1 ~ (vowel1+vowel2+vowel3+vowel4)*timepoint*following + 
-#' 	     ((vowel1+vowel2+vowel3+vowel4)*timepoint*following | participant) +
-#' 	     (timepoint | word))
-#' # 3. Convert formula to buildmer terms list, grouping terms starting with 'vowel'
-#' terms <- tabulate.formula(form,group='vowel[^:]')
-#' # 4. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
-#' # the dependent variable
-#' m <- buildmer(terms,data=vowels,dep='f1')
-#' }
 #' @docType package
 #' @name buildmer-package
 NULL

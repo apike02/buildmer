@@ -4,9 +4,18 @@
 \alias{buildgamm}
 \title{Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}}
 \usage{
-buildgamm(formula, data = NULL, family = gaussian(), cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  calc.anova = FALSE, calc.summary = TRUE, ...)
+buildgamm(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.anova = FALSE,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -33,17 +42,14 @@ buildgamm(formula, data = NULL, family = gaussian(), cl = NULL,
 Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}
 }
 \details{
-The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+The fixed and random effects are to be passed as a single formula in \code{lme4} format. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
+Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildgamm} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 }
 \examples{
-\dontshow{
-library(buildmer)
-m <- buildgamm(f1 ~ s(timepoint,bs='cr') + (pdIdent(~following)|participant),data=vowels)
-}
 \donttest{
 library(buildmer)
-m <- buildgamm(f1 ~ s(timepoint,by=following) + (pdIdent(~following)|participant) +
-                   s(participant,timepoint,by=following,bs='fs'),data=vowels)
+model <- buildgamm(f1 ~ s(timepoint,by=following) + (following|participant) +
+       s(participant,timepoint,by=following,bs='fs'),data=vowels)
 }
 }
 \seealso{

@@ -4,9 +4,18 @@
 \alias{buildbam}
 \title{Use \code{buildmer} to fit big generalized additive models using \code{bam} from package \code{mgcv}}
 \usage{
-buildbam(formula, data = NULL, family = gaussian(), cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  calc.anova = FALSE, calc.summary = TRUE, ...)
+buildbam(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "deviance",
+  include = NULL,
+  calc.anova = FALSE,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -34,16 +43,20 @@ Use \code{buildmer} to fit big generalized additive models using \code{bam} from
 }
 \details{
 To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
+
+\code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
+
+As \code{bam} uses PQL, only \code{crit='deviance'} is supported.
 }
 \examples{
 \dontshow{
 library(buildmer)
-m <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
 }
 \donttest{
 library(buildmer)
-m <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
-                   s(participant,timepoint,by=following,bs='fs'),data=vowels)
+model <- buildbam(f1 ~ s(timepoint,by=following) + s(participant,by=following,bs='re') +
+       s(participant,timepoint,by=following,bs='fs'),data=vowels)
 }
 }
 \seealso{

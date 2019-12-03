@@ -147,7 +147,7 @@ setMethod('diag','formula',function (x) {
 coef.buildmer <- function (object,...) coef(object=object@model,...)
 #' @method confint buildmer
 #' @export
-confint.buildmer <- function (object,parm,level,...) confint(object=object@model,parm,level,...)
+confint.buildmer <- function (object,...) confint(object=object@model,...)
 #' @method family buildmer
 #' @export
 family.buildmer <- function (object,...) family(object=object@model,...)
@@ -188,7 +188,7 @@ ranef.buildmer <- function (object,...) ranef(object=object@model,...)
 residuals.buildmer <- function (object,...) residuals(object=object@model,...)
 #' @method simulate buildmer
 #' @export
-simulate.buildmer <- function (object,nsim,seed,...) simulate(object=object@model,nsim,seed,...)
+simulate.buildmer <- function (object,...) simulate(object=object@model,...)
 #' @method terms buildmer
 #' @export
 terms.buildmer <- function (x,...) terms(x=x@model,...)
@@ -202,23 +202,24 @@ cooks.distance.buildmer <- function (model,...) cooks.distance(model=model@model
 #' @export
 influence.buildmer <- function (model,...) influence(model=model@model,...)
 #' @method plot buildmer
+#' @importFrom graphics plot
 #' @export
-plot.buildmer <- function (x,y,...) plot(x=x@model,y,...)
+plot.buildmer <- function (x,...) plot(x=x@model,...)
 #' @method add1 buildmer
 #' @export
-add1.buildmer <- function (object,scope,...) add1(object=object@model,scope,...)
+add1.buildmer <- function (object,...) add1(object=object@model,...)
 #' @method deviance buildmer
 #' @export
 deviance.buildmer <- function (object,...) deviance(object=object@model,...)
 #' @method drop1 buildmer
 #' @export
-drop1.buildmer <- function (object,scope,...) drop1(object=object@model,scope,...)
+drop1.buildmer <- function (object,...) drop1(object=object@model,...)
 #' @method effects buildmer
 #' @export
 effects.buildmer <- function (object,...) effects(object=object@model,...)
 #' @method extractAIC buildmer
 #' @export
-extractAIC.buildmer <- function (fit,scale,k,...) extractAIC(fit=fit@model,scale,k,...)
+extractAIC.buildmer <- function (fit,...) extractAIC(fit=fit@model,...)
 #' @method profile buildmer
 #' @export
 profile.buildmer <- function (fitted,...) profile(fitted=fitted@model,...)
@@ -231,64 +232,78 @@ rstudent.buildmer <- function (model,...) rstudent(model=model@model,...)
 #' @method weights buildmer
 #' @export
 weights.buildmer <- function (object,...) weights(object=object@model,...)
+#' @import stats
 #' @method alias buildmer
 #' @export
 alias.buildmer <- function (object,...) alias(object=object@model,...)
+#' @import stats
 #' @method case.names buildmer
 #' @export
 case.names.buildmer <- function (object,...) case.names(object=object@model,...)
+#' @import stats
 #' @method dfbeta buildmer
 #' @export
 dfbeta.buildmer <- function (model,...) dfbeta(model=model@model,...)
+#' @import stats
 #' @method dfbetas buildmer
 #' @export
 dfbetas.buildmer <- function (model,...) dfbetas(model=model@model,...)
+#' @import stats
 #' @method dummy.coef buildmer
 #' @export
 dummy.coef.buildmer <- function (object,...) dummy.coef(object=object@model,...)
+#' @import stats
 #' @method hatvalues buildmer
 #' @export
 hatvalues.buildmer <- function (model,...) hatvalues(model=model@model,...)
+#' @import stats
 #' @method kappa buildmer
 #' @export
 kappa.buildmer <- function (z,...) kappa(z=z@model,...)
+#' @import stats
 #' @method labels buildmer
 #' @export
 labels.buildmer <- function (object,...) labels(object=object@model,...)
+#' @import stats
 #' @method proj buildmer
 #' @export
 proj.buildmer <- function (object,...) proj(object=object@model,...)
+#' @import stats
 #' @method qqnorm buildmer
 #' @export
 qqnorm.buildmer <- function (y,...) qqnorm(y=y@model,...)
+#' @import stats
 #' @method qr buildmer
 #' @export
 qr.buildmer <- function (x,...) qr(x=x@model,...)
+#' @import stats
 #' @method variable.names buildmer
 #' @export
 variable.names.buildmer <- function (object,...) variable.names(object=object@model,...)
+#' @import stats
 #' @method df.residual buildmer
 #' @export
 df.residual.buildmer <- function (object,...) df.residual(object=object@model,...)
+#' @import stats
 #' @method sigma buildmer
 #' @export
 sigma.buildmer <- function (object,...) sigma(object=object@model,...)
 #' @method VarCorr buildmer
 #' @importFrom nlme VarCorr
 #' @export
-VarCorr.buildmer <- function (x,sigma,...) VarCorr(x=x@model,sigma,...)
+VarCorr.buildmer <- function (x,...) VarCorr(x=x@model,...)
 #' @method ACF buildmer
 #' @importFrom nlme ACF
 #' @export
-ACF.buildmer <- function (object,maxLag,...) ACF(object=object@model,maxLag,...)
+ACF.buildmer <- function (object,...) ACF(object=object@model,...)
 #' @method augPred buildmer
 #' @importFrom nlme augPred
 #' @export
-augPred.buildmer <- function (object,primary,minimum,maximum,length.out,...) augPred(object=object@model,primary,minimum,maximum,length.out,...)
+augPred.buildmer <- function (object,...) augPred(object=object@model,...)
 #' @method comparePred buildmer
 #' @importFrom nlme comparePred
 #' @export
-comparePred.buildmer <- function (object1,object2,primary,minimum,maximum,length.out,level,...) comparePred(object1=object1@model,object2,primary,minimum,maximum,length.out,level,...)
+comparePred.buildmer <- function (object1,...) comparePred(object1=object1@model,...)
 #' @method getData buildmer
 #' @importFrom nlme getData
 #' @export
@@ -312,52 +327,30 @@ getVarCov.buildmer <- function (obj,...) getVarCov(obj=obj@model,...)
 #' @method intervals buildmer
 #' @importFrom nlme intervals
 #' @export
-intervals.buildmer <- function (object,level,...) intervals(object=object@model,level,...)
+intervals.buildmer <- function (object,...) intervals(object=object@model,...)
 #' @method update buildmer
 #' @export
 update.buildmer <- function (object,...) update(object=object@model,...)
 #' @method Variogram buildmer
 #' @importFrom nlme Variogram
 #' @export
-Variogram.buildmer <- function (object,distance,...) Variogram(object=object@model,distance,...)
+Variogram.buildmer <- function (object,...) Variogram(object=object@model,...)
 #' @method pairs buildmer
+#' @importFrom graphics pairs
 #' @export
 pairs.buildmer <- function (x,...) pairs(x=x@model,...)
 #' @method step buildmer
 #' @export
 step.buildmer <- function (object,...) step(object=object@model,...)
-
-#GLMMadaptive
-VIF.buildmer <- function (object,...) VIF(object=object@model,...)
-effectPlotData.buildmer <- function (object,newdata,level,...) effectPlotData(object=object@model,newdata,level,...)
-marginal_coefs.buildmer <- function (object,...) marginal_coefs(object=object@model,...)
-#MASS
-addterm.buildmer <- function (object,...) addterm(object=object@model,...)
-boxcox.buildmer <- function (object,...) boxcox(object=object@model,...)
-dropterm.buildmer <- function (object,...) dropterm(object=object@model,...)
-gamma.shape.buildmer <- function (object,...) gamma.shape(object=object@model,...)
-logtrans.buildmer <- function (object,...) logtrans(object=object@model,...)
-#lmerTest
-contest.buildmer <- function (model,L,...) contest(model=model@model,L,...)
-contest1D.buildmer <- function (model,L,...) contest1D(model=model@model,L,...)
-contestMD.buildmer <- function (model,L,...) contestMD(model=model@model,L,...)
-difflsmeans.buildmer <- function (model,...) difflsmeans(model=model@model,...)
-ls_means.buildmer <- function (model,...) ls_means(model=model@model,...)
-lsmeansLT.buildmer <- function (model,...) lsmeansLT(model=model@model,...)
-#lme4
-getME.buildmer <- function (object,name,...) getME(object=object@model,name,...)
+#' @method getME buildmer
+#' @importFrom lme4 getME
+#' @export
+getME.buildmer <- function (object,...) getME(object=object@model,...)
+#' @method isLMM buildmer
+#' @importFrom lme4 isLMM
+#' @export
 isLMM.buildmer <- function (x,...) isLMM(x=x@model,...)
-refit.buildmer <- function (object,newresp,...) refit(object=object@model,newresp,...)
-.onLoad <- function (libname,pkgname) {
-	# registerS3method is not sufficient: the package may be loaded later
-	wrap <- function (pkg,funs) {
-		register <- function (pkgname,pkgpath) for (x in funs) registerS3method(x,'buildmer',get(paste0(x,'.buildmer')))
-		if (isNamespaceLoaded(pkg)) register(NULL,NULL)
-		# and if not loaded, install hook for it
-		setHook(packageEvent(pkg,'attach'),register)
-	}
-	wrap('GLMMadaptive',c('VIF','effectPlotData','marginal_coefs'))
-	wrap('MASS',c('addterm','boxcox','dropterm','gamma.shape','logtrans'))
-	wrap('lmerTest',c('contest','contest1D','contestMD','difflsmeans','ls_means','lsmeansLT'))
-	wrap('lme4',c('getME','isLMM','refit'))
-}
+#' @method refit buildmer
+#' @importFrom lme4 refit
+#' @export
+refit.buildmer <- function (object,...) refit(object=object@model,...)

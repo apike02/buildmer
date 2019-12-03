@@ -4,10 +4,17 @@
 \alias{buildglmmTMB}
 \title{Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models}
 \usage{
-buildglmmTMB(formula, data = NULL, family = gaussian(), cl = NULL,
-  direction = c("order", "backward"), crit = "LRT", include = NULL,
-  reduce.fixed = TRUE, reduce.random = TRUE, calc.summary = TRUE,
-  ...)
+buildglmmTMB(
+  formula,
+  data = NULL,
+  family = gaussian(),
+  cl = NULL,
+  direction = c("order", "backward"),
+  crit = "LRT",
+  include = NULL,
+  calc.summary = TRUE,
+  ...
+)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -24,10 +31,6 @@ buildglmmTMB(formula, data = NULL, family = gaussian(), cl = NULL,
 
 \item{include}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{reduce.fixed}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{reduce.random}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{...}{Additional options to be passed to \code{glmmTMB}}
@@ -37,11 +40,15 @@ Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models
 }
 \examples{
 library(buildmer)
-m <- buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject)
+       ,data=lme4::sleepstudy)
 \dontshow{\donttest{
 # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
 vowels$event <- with(vowels,interaction(participant,word))
-m <- buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels)
+if (requireNamespace('glmmTMB')) {
+	# converges with MKL, not with R default BLAS
+	model <- try(buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels))
+}
 }}
 }
 \seealso{
