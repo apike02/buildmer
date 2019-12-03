@@ -24,15 +24,6 @@ fit.bam <- function (p,formula) {
 
 fit.buildmer <- function (p,formula) {
 	reml <- p$reml && is.gaussian(p$family)
-	if (has.smooth.terms(formula)) {
-		fixed <- lme4::nobars(formula)
-		bars <- lme4::findbars(formula)
-		random <- if (length(bars)) mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
-		if (!requireNamespace('gamm4',quietly=T)) stop('A smooth term was detected. Please install the gamm4 package to fit this model, or alternatively use buildgam() or buildbam().')
-		message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
-		model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
-		return(if (inherits(model,'try-error')) model else model$mer)
-	}
 	if (is.null(lme4::findbars(formula))) {
 		p$dots$control <- NULL
 		if (reml) {
@@ -124,7 +115,18 @@ fit.gamm <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
 	message(paste0('Fitting via gamm, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
 	m <- patch.lm(p,mgcv::gamm,c(list(formula=fixed,random=random,family=p$family,data=p$data,method=method),p$dots))
-	if (inherits(m,'try-error')) m else m$lme
+	if (inherits(m,'try-error') || p$finalize) m else m$lme
+}
+
+fit.gamm4 <- function (p,formula) {
+	reml <- p$reml && is.gaussian(p$family)
+	fixed <- lme4::nobars(formula)
+	bars <- lme4::findbars(formula)
+	random <- if (length(bars)) mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
+	if (is.null(random) && !has.smooth.terms(formula)) return(fit.buildmer(p,formula))
+	message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
+	if (inherits(model,'try-error') || p$finalize) model else model$mer
 }
 
 fit.glmmTMB <- function (p,formula) {

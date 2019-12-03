@@ -283,6 +283,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 		control.name=substitute(control),
 		can.use.reml=T,
 		env=parent.frame(),
+		finalize=F,
 		dots=list(...)
 	)
 	if (!is.gaussian(family)) {
@@ -291,12 +292,9 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 	}
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
-		# gamm models need a final refit because p$model will only be model$mer...
 		message('Fitting final gamm model')
-		fixed <- lme4::nobars(p$formula)
-		bars <- lme4::findbars(p$formula)
-		random <- if (is.null(bars)) NULL else mkForm(as.character(bars),p$env)
-		patch.gamm(p,mgcv::gamm,c(list(formula=formula,random=random,family=p$family,data=p$data,method='REML'),p$dots))
+		p$reml <- p$finalize <- T
+		p$model <- fit.gamm(p,p$formula)
 	}
 	buildmer.finalize(p)
 }
@@ -336,7 +334,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		crit=mkCrit(crit),
 		crit.name=mkCritName(crit),
 		elim=mkElim(crit),
-		fit=fit.buildmer,
+		fit=fit.gamm4,
 		include=include,
 		calc.anova=calc.anova,
 		calc.summary=calc.summary,
@@ -347,17 +345,14 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		control.name=substitute(control),
 		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
+		finalize=F,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
-		# gamm4 models need a final refit because p$model will only be model$mer...
 		message('Fitting final gamm4 model')
-		fixed <- lme4::nobars(p$formula)
-		bars <- lme4::findbars(p$formula)
-		random <- if (length(bars)) stats::as.formula(paste0('~',paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '))) else NULL
-		reml <- is.gaussian(family)
-		p$model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
+		p$reml <- p$finalize <- T
+		p$model <- fit.gamm4(p,p$formula)
 	}
 	buildmer.finalize(p)
 }

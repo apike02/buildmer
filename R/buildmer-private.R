@@ -49,22 +49,14 @@ buildmer.fit <- function (p) {
 		if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
 		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
 	}
-	p
-}
-
-buildmer.finalize <- function (p) {
 	if (is.null(p$model)) {
 		message('Fitting the final model')
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
-	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=T)) {
-		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
-		message('Finalizing by converting the model to lmerTest')
-		p$model@call$data <- p$data
-		if ('subset' %in% names(p$dots)) p$model@call$subset <- p$dots$subset
-		if ('control' %in% names(p$dots)) p$model@call$control <- p$dots$control
-		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
-	}
+	p
+}
+
+buildmer.finalize <- function (p) {
 	ret <- mkBuildmer(model=p$model,p=p)
 	ret@p$in.buildmer <- T
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
