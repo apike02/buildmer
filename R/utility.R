@@ -183,7 +183,7 @@ re2mgcv <- function (formula,data) {
 				nm <- paste0(g,'_',nms[i])
 				if (nm %in% org.names) stop('Error: please remove/rename ',nm,' from your data!')
 				data[[nm]] <- terms[,i]
-				term <- paste0('s(',g,',by=',nm,',bs="re")')
+				term <- paste0('s(',g,',',nm,',bs="re")')
 			}
 			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=F)
 		}			
