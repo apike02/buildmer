@@ -114,53 +114,51 @@ build.formula <- function (dep,terms,env=parent.frame()) {
 #' sapply(c(good1,good2,bad),conv)
 #' @export
 conv <- function (model,singular.ok=FALSE) {
-	setattr <- function (val,msg) {
-		function (msg) {
-			x <- val
-			attr(x,'reason') <- msg
-			x
-		}
+	setattr <- function (x,msg,err=NULL) {
+		if (!is.null(err)) msg <- paste0(msg,' (',err,')')
+		attr(x,'reason') <- msg
+		x
 	}
-	fail <- setattr(F)
-	success <- setattr(T)
-	if (inherits(model,'try-error')) return(fail(model))
+	failure <- function (msg,err=NULL) setattr(F,msg,err)
+	success <- function (msg,err=NULL) setattr(T,msg,err)
+	if (inherits(model,'try-error')) return(failure(model))
 	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info)) {
-			if (!is.null(model$outer.info$conv) && model$outer.info$conv != 'full convergence') return(fail('mgcv outer convergence failed'))
-			if (!all(abs(model$outer.info$grad) < .002)) return(fail('Absolute gradient contains values >0.002'))
+			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv outer convergence failureed',err))
+			if ((err <- max(abs(model$outer.info$grad))) > .002) return(failure('Absolute gradient contains values >0.002',err))
 			ev <- try(eigen(model$outer.info$hess)$values,silent=T)
-			if (inherits(ev,'try-error')) return(fail('Eigenvalue decomposition of Hessian failed'))
-			if (min(ev) < -1e-8) return(fail('Hessian contains negative eigenvalues <-1e-8'))
+			if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
+			if ((err <- min(ev)) < -1e-8) return(failure('Hessian contains negative eigenvalues <-1e-8',err))
 		} else {
 			if (!length(model$sp)) return(success('No smoothing parameters to optimize'))
-			if (!model$mgcv.conv$fully.converged) return(fail('mgcv reports outer convergence failed'))
-			if (!model$mgcv.conv$rms.grad < .002) return(fail('mgcv reports absolute gradient with values >0.002'))
-			if (!model$mgcv.conv$hess.pos.def) return(fail('mgcv reports non-positive-definite Hessian'))
+			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports outer convergence failed'))
+			if (!(err <- model$mgcv.conv$rms.grad) <= .002) return(failure('mgcv reports absolute gradient containing values >0.002',err))
+			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
 		}
-		return(success('All checks passed'))
+		return(success('All checks passed (gam)'))
 	}
 	if (inherits(model,'merMod')) {
-		if (model@optinfo$conv$opt != 0) return(fail('Optimizer reports not having finished'))
-		if (!length(model@optinfo$conv$lme4)) return(T)
-		if (is.null(model@optinfo$conv$lme4$code)) return(if (singular.ok) T else fail('Singular fit'))
-		if (any(model@optinfo$conv$lme4$code != 0)) return(fail('lme4 reports not having converged'))
-		return(success('All checks passed'))
+		if ((err <- model@optinfo$conv$opt) != 0) return(failure('Optimizer reports not having finished',err))
+		if (!length(model@optinfo$conv$lme4)) return(success('No lme4 info available -- succeeding by default (dangerous)'))
+		if (is.null(model@optinfo$conv$lme4$code)) return(setattr(singular.ok,'Singular fit'))
+		if (any((err <- model@optinfo$conv$lme4$code) != 0)) return(failure('lme4 reports not having converged',err))
+		return(success('All checks passed (merMod)'))
 	}
 	if (inherits(model,'glmmTMB')) {
-		if (!is.null(model$fit$convergence) && model$fit$convergence != 0) return(fail('glmmTMB reports nonconvergence'))
+		if (!is.null(model$fit$convergence) && (err <- model$fit$convergence) != 0) return(failure('glmmTMB reports nonconvergence',err))
 		if (!is.null(model$sdr$pdHess)) {
-			if (!model$sdr$pdHess) return(fail('glmmTMB reports non-positive-definite Hessian'))
+			if (!model$sdr$pdHess) return(failure('glmmTMB reports non-positive-definite Hessian'))
 			if (sum(dim(model$sdr$cov.fixed))) {
 				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
-				if (inherits(ev,'try-error')) return(fail('Eigenvalue decomposition of Hessian failed'))
-				if (min(ev) < -1e-8) return(fail('Hessian contains negative eigenvalues < -1e-8'))
+				if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
+				if ((err <- min(ev)) < -1e-8) return(failure('Hessian contains negative eigenvalues < -1e-8',err))
 			}
 		}
-		return(success('All checks passed'))
+		return(success('All checks passed (glmmTMB)'))
 	}
-	if (inherits(model,'nnet')) return(if (model$convergence == 0) success('All checks passed') else fail('nnet reports nonconvergence'))
-	if (inherits(model,'MixMod')) return(if (model$converged) success('All checks passed') else fail('GLMMadaptive reports nonconvergence'))
-	success('No checks needed or known for this model type')
+	if (inherits(model,'nnet'))   return(if (model$convergence == 0) success('All checks passed (nnet)'  ) else failure('nnet reports nonconvergence',model$convergence))
+	if (inherits(model,'MixMod')) return(if (model$converged       ) success('All checks passed (MixMod)') else failure('GLMMadaptive reports nonconvergence'))
+	success('No checks needed or known for this model type',class(model))
 }
 
 #' Convert lme4 random-effect terms to mgcv 're' smooths
