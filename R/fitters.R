@@ -63,7 +63,7 @@ fit.gam <- function (p,formula) {
 		data <- p$data
 		method <- if (p$reml || p$quickstart > 1) 'fREML' else 'ML'
 		dots <- p$dots[names(p$dots) %in% names(formals(mgcv::bam))]
-		if (method == 'fREML' && p$quickstart > 2 && !'discrete' %in% names(dots)) dots$discrete <- T
+		if (method == 'fREML' && p$quickstart > 2 && !'discrete' %in% names(dots)) dots$discrete <- TRUE
 		if (p$quickstart > 3) {
 			samfrac <- p$quickstart - floor(p$quickstart)
 			if (samfrac == 0) samfrac <- .1
@@ -80,8 +80,8 @@ fit.gam <- function (p,formula) {
 					message(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),', excluding scaled-t theta values as mgcv version < 1.8.32'))
 				} else {
 					# set up starting values for theta
-					th.notrans <- qs$family$getTheta(F)
-					th.trans   <- qs$family$getTheta(T)
+					th.notrans <- qs$family$getTheta(FALSE)
+					th.trans   <- qs$family$getTheta(TRUE)
 					# transformation undoes the logarithm and then adds min.df to the df, so:
 					min.df <- th.trans[1] - exp(th.notrans[1])
 					message(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with theta values ',paste0(th.trans,collapse=' '),' and min.df ',min.df))

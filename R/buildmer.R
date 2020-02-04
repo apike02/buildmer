@@ -19,7 +19,7 @@
 #' @template seealso
 #' @export
 buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
-	if (!requireNamespace('GLMMadaptive',quietly=T)) stop('Please install package GLMMadaptive')
+	if (!requireNamespace('GLMMadaptive',quietly=TRUE)) stop('Please install package GLMMadaptive')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -31,13 +31,13 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 		elim=mkElim(crit),
 		fit=fit.GLMMadaptive,
 		include=include,
-		calc.anova=F,
+		calc.anova=FALSE,
 		calc.summary=calc.summary,
 		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=F,
+		can.use.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -91,7 +91,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -153,8 +153,8 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 		cluster=cl,
 		direction=direction,
 		include=include,
-		calc.anova=F,
-		calc.summary=F,
+		calc.anova=FALSE,
+		calc.summary=FALSE,
 		ddf=NULL,
 		data.name=substitute(data),
 		subset.name=substitute(subset),
@@ -225,7 +225,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -237,9 +237,9 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		if (!all(crit %in% c('deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer' && !is.gaussian(p$family)) stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test), or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		if (inherits(family,'general.family')) {
 			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
-			p$can.use.reml <- F
+			p$can.use.reml <- FALSE
 			warning(progress('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects"))
-			p$dots$select <- T
+			p$dots$select <- TRUE
 			if (!is.data.frame(p$formula)) {
 				p$dots$dep <- as.character(p$formula[2])
 				p$formula <- tabulate.formula(p$formula)
@@ -292,9 +292,9 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
-		finalize=F,
+		finalize=FALSE,
 		dots=list(...)
 	)
 	if (!is.gaussian(family)) {
@@ -304,7 +304,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
 		message('Fitting final gamm model')
-		p$reml <- p$finalize <- T
+		p$reml <- p$finalize <- TRUE
 		p$model <- fit.gamm(p,p$formula)
 	}
 	buildmer.finalize(p)
@@ -335,7 +335,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 #' @importFrom stats gaussian
 #' @export
 buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,ddf='Wald',...) {
-	if (!requireNamespace('gamm4',quietly=T)) stop('Please install package gamm4')
+	if (!requireNamespace('gamm4',quietly=TRUE)) stop('Please install package gamm4')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -356,13 +356,13 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		control.name=substitute(control),
 		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
-		finalize=F,
+		finalize=FALSE,
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
 		message('Fitting final gamm4 model')
-		p$reml <- p$finalize <- T
+		p$reml <- p$finalize <- TRUE
 		p$model <- fit.gamm4(p,p$formula)
 	}
 	buildmer.finalize(p)
@@ -391,7 +391,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' @importFrom stats gaussian
 #' @export
 buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
-	if (!requireNamespace('glmmTMB',quietly=T)) stop('Please install package glmmTMB')
+	if (!requireNamespace('glmmTMB',quietly=TRUE)) stop('Please install package glmmTMB')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -403,13 +403,13 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		elim=mkElim(crit),
 		fit=fit.glmmTMB,
 		include=include,
-		calc.anova=F,
+		calc.anova=FALSE,
 		calc.summary=calc.summary,
 		family.name=substitute(family),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -451,7 +451,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -480,7 +480,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @export
 buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',...) {
 	warning(progress("buildjulia() is deprecated and will be removed in a future version of buildmer! There is no replacement, but you should be able to cook one up yourself using buildcustom() (note that the various julia-specific functions such as AIC.julia will also be removed). Sorry, the maintenance cost/benefit trade-off is just too negative!"))
-	if (!requireNamespace('JuliaCall',quietly=T)) stop('Please install package JuliaCall')
+	if (!requireNamespace('JuliaCall',quietly=TRUE)) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -494,15 +494,15 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		crit.name=mkCritName(crit),
 		elim=mkElim(crit),
 		fit=fit.julia,
-		calc.anova=F,
-		calc.summary=F,
+		calc.anova=FALSE,
+		calc.summary=FALSE,
 		can.use.reml=is.gaussian(family),
 		env=parent.frame(),
 		dots=list(...)
 	)
 
 	message('Setting up Julia...')
-	p$julia <- JuliaCall::julia_setup(verbose=T)
+	p$julia <- JuliaCall::julia_setup(verbose=TRUE)
 	p$julia$library('MixedModels')
 	p$crit <- function (ref,alt) mkCrit(paste0(crit,'.julia'))(p$julia,ref,alt)
 
@@ -526,7 +526,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 #' @template seealso
 #' @export
 buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.anova=FALSE,calc.summary=TRUE,...) {
-	if (!requireNamespace('nlme',quietly=T)) stop('Please install package nlme')
+	if (!requireNamespace('nlme',quietly=TRUE)) stop('Please install package nlme')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -544,7 +544,7 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=T,
+		can.use.reml=TRUE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -600,7 +600,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		dots=list(...)
 	)
 	p <- buildmer.fit(p)
-	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=T)) {
+	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=TRUE)) {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		message('Finalizing by converting the model to lmerTest')
 		p$model@call$data <- p$data
@@ -634,8 +634,8 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @importFrom stats gaussian
 #' @export
 buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('order','backward'),crit='AIC',include=NULL,calc.summary=TRUE,...) {
-	if (!requireNamespace('glmertree',quietly=T)) stop('Please install package glmertree')
-	if (!requireNamespace('partykit',quietly=T)) stop('Please install package partykit')
+	if (!requireNamespace('glmertree',quietly=TRUE)) stop('Please install package glmertree')
+	if (!requireNamespace('partykit',quietly=TRUE)) stop('Please install package partykit')
 	if (any( (is.character(crit) & crit == 'LRT') | (!is.character(crit) & isTRUE(all.equal(crit,crit.LRT))) )) stop("The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use the raw log-likelihood instead (crit='LL') and only perform the term-ordering step (direction='order'). If you require stepwise elimination, information criteria such as AIC should be valid.")
 
 	dots <- list(...)
@@ -668,13 +668,13 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		elim=mkElim(crit),
 		fit=fit.mertree,
 		include=include,
-		calc.anova=F,
+		calc.anova=FALSE,
 		calc.summary=calc.summary,
 		ddf=NULL,
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
-		can.use.reml=F,
+		can.use.reml=FALSE,
 		env=parent.frame(),
 		dots=dots
 	)
@@ -698,7 +698,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 #' @template seealso
 #' @export
 buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
-	if (!requireNamespace('nnet',quietly=T)) stop('Please install package nnet')
+	if (!requireNamespace('nnet',quietly=TRUE)) stop('Please install package nnet')
 	p <- list(
 		formula=formula,
 		data=data,
@@ -709,13 +709,13 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		elim=mkElim(crit),
 		fit=fit.multinom,
 		include=include,
-		calc.anova=F,
+		calc.anova=FALSE,
 		calc.summary=calc.summary,
 		ddf=NULL,
 		data.name=substitute(data),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
-		can.use.reml=F,
+		can.use.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)

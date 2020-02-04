@@ -39,7 +39,7 @@ crit.LRT <- function (ref,alt) {
 		chdf <- getdf(alt) - getdf(ref)
 	}
 	if (chdf <= 0) return(0)
-	stats::pchisq(chLL,chdf,lower.tail=F,log.p=T)
+	stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
 }
 crit.2LL <- function (ref,alt) if (is.null(ref)) get2LL(alt) else get2LL(alt) - get2LL(ref)
 crit.LL <- crit.2LL
@@ -59,7 +59,7 @@ crit.LRT.julia <- function (julia,ref,alt) {
 		chdf <- getdf.julia(julia,alt) - getdf.julia(julia,ref)
 	}
 	if (chdf <= 0) return(0)
-	stats::pchisq(chLL,chdf,lower.tail=F,log.p=T)
+	stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
 }
 crit.2LL.julia <- function (julia,ref,alt) if (is.null(ref)) get2LL.julia(julia,alt) else get2LL.julia(julia,alt) - get2LL.julia(julia,ref)
 crit.LL.julia <- crit.2LL.julia

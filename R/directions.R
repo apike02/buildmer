@@ -3,7 +3,7 @@ backward <- function (p) {
 		if (p$parallel) parallel::clusterExport(p$cl,'p',environment())
 		message('Fitting ML and REML reference models')
 		repeat {
-			res <- p$parply(c(T,F),function (x) {
+			res <- p$parply(c(TRUE,FALSE),function (x) {
 				p$reml <- x
 				p$fit(p,p$formula)
 			})
@@ -27,7 +27,7 @@ backward <- function (p) {
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
 			message('Fitting ML reference model')
-			p$reml <- F
+			p$reml <- FALSE
 			p$cur.ml <- p$fit(p,p$formula)
 			if (!conv(p$cur.ml)) {
 				p <- reduce.noconv(p)
@@ -37,7 +37,7 @@ backward <- function (p) {
 		}
 		if (need.reml && is.null(p$cur.reml)) {
 			message('Fitting REML reference model')
-			p$reml <- T
+			p$reml <- TRUE
 			p$cur.reml <- p$fit(p,p$formula)
 			if (!conv(p$cur.reml)) {
 				p <- reduce.noconv(p)
@@ -107,13 +107,13 @@ can.remove <- function (tab,i) {
 
 	if ('1' %in% t) {
 		# If fixed intercept: never remove it
-		if (any(is.na(g))) return(F)
+		if (any(is.na(g))) return(FALSE)
 		# If random intercept: do not remove if there are subsequent terms
-		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(F)
+		for (x in g) if (x %in% tab[-c(fx,i),'grouping']) return(FALSE)
 	}
 
 	# Do not remove fixed effects that have corresponding random effects
-	if (any(tfx %in% tab$term[-fx])) return(F)
+	if (any(tfx %in% tab$term[-fx])) return(FALSE)
 
 	for (x in g) {
 		# Do not remove effects participating in interactions
@@ -121,11 +121,11 @@ can.remove <- function (tab,i) {
 		scope <- scope[!scope %in% i]
 		for (t in tab[i,'term']) {
 			t <- unravel2(t)
-			if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(F)
+			if (any(sapply(tab[scope,'term'],function (x) all(t %in% unravel2(x))))) return(FALSE)
 		}
 	}
 
-	T
+	TRUE
 }
 
 forward <- function (p) {
@@ -139,11 +139,11 @@ forward <- function (p) {
 	# Retain all terms up to the last significant one, even if they were not significant themselves
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
 	keep <- which(!remove)
-	remove[1:length(keep)] <- F
+	remove[1:length(keep)] <- FALSE
 	remove.ok <- sapply(1:nrow(p$tab),function (i) {
-		if (is.na(p$tab[i,]$block)) return(F)
-		if (!can.remove(p$tab,i)) return(F)
-		T
+		if (is.na(p$tab[i,]$block)) return(FALSE)
+		if (!can.remove(p$tab,i)) return(FALSE)
+		TRUE
 	})
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
@@ -159,7 +159,7 @@ order <- function (p) {
 		# Test for marginality
 		can.eval <- function (tab) {
 			# 0. Initialize
-			tab$ok <- T
+			tab$ok <- TRUE
 			# 1. If there are random effects, evaluate them as a group
 			mine <- is.na(tab$grouping)
 			my <- tab[mine,]
@@ -188,10 +188,10 @@ order <- function (p) {
 					check <- function (i) {
 						test <- all.components[[i]]
 						for (x in all.components[-i]) { #walk all other terms' components
-							if (any(x == '1')) return(F) #intercept should always come first
-							if (all(x %in% test)) return(F)
+							if (any(x == '1')) return(FALSE) #intercept should always come first
+							if (all(x %in% test)) return(FALSE)
 						}
-						T
+						TRUE
 					}
 					my[my$ok,'ok'] <- sapply(1:length(all.components),check)
 				}
@@ -199,7 +199,7 @@ order <- function (p) {
 			}
 
 			# 4. If any term belonging to a single block could not be selected, disqualify the whole block
-			tab <- plyr::ddply(tab,~block,within,{ if (!all(ok)) ok <- F })
+			tab <- plyr::ddply(tab,~block,within,{ if (!all(ok)) ok <- FALSE })
 
 			tab
 		}
@@ -236,7 +236,7 @@ order <- function (p) {
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
-			mods <- unlist(mods,recursive=F)
+			mods <- unlist(mods,recursive=FALSE)
 			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(cur,mod) else NaN)
 			if (p$crit.name == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
@@ -270,14 +270,14 @@ order <- function (p) {
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) {
 		where <- tab$block == tab[fxd & tab$term == '1',]$block
-		p$tab <- cbind(tab[where,],ok=T,score=NA)
+		p$tab <- cbind(tab[where,],ok=TRUE,score=NA)
 		tab <- tab[!where,]
 		fxd <- is.na(tab$grouping)
 	}
 	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
-	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=T,score=NA))
+	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=TRUE,score=NA))
 
-	p$reml <- F
+	p$reml <- FALSE
 	if (any( fxd)) p <- reorder(p,tab[fxd,])
 	if (any(!fxd)) {
 		p$reml <- p$can.use.reml

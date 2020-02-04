@@ -11,7 +11,7 @@
 #' @export
 add.terms <- function (formula,add) {
 	dep <- if (length(formula) < 3) '' else as.character(formula[2])
-	terms <- terms(formula,keep.order=T)
+	terms <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	fixed.terms <- Filter(Negate(is.random.term),terms)
@@ -36,7 +36,7 @@ add.terms <- function (formula,add) {
 					grouping <- as.character(bar[3])
 					terms <- as.character(bar[2])
 					form <- mkForm(terms)
-					terms <- terms(form,keep.order=T)
+					terms <- terms(form,keep.order=TRUE)
 					intercept <- attr(terms,'intercept')
 					terms <- attr(terms,'term.labels')
 					terms <- c(terms,bar.terms)
@@ -119,14 +119,14 @@ conv <- function (model,singular.ok=FALSE) {
 		attr(x,'reason') <- msg
 		x
 	}
-	failure <- function (msg,err=NULL) setattr(F,msg,err)
-	success <- function (msg,err=NULL) setattr(T,msg,err)
+	failure <- function (msg,err=NULL) setattr(FALSE,msg,err)
+	success <- function (msg,err=NULL) setattr(TRUE,msg,err)
 	if (inherits(model,'try-error')) return(failure(model))
 	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info)) {
 			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv outer convergence failed',err))
 			if ((err <- max(abs(model$outer.info$grad))) > .002) return(failure('Absolute gradient contains values >0.002',err))
-			ev <- try(eigen(model$outer.info$hess)$values,silent=T)
+			ev <- try(eigen(model$outer.info$hess)$values,silent=TRUE)
 			if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 			if ((err <- min(ev)) < -.002) return(failure('Hessian contains negative eigenvalues <-.002',err))
 		} else {
@@ -149,7 +149,7 @@ conv <- function (model,singular.ok=FALSE) {
 		if (!is.null(model$sdr$pdHess)) {
 			if (!model$sdr$pdHess) return(failure('glmmTMB reports non-positive-definite Hessian'))
 			if (sum(dim(model$sdr$cov.fixed))) {
-				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=T)
+				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=TRUE)
 				if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 				if ((err <- min(ev)) < -.002) return(failure('Hessian contains negative eigenvalues < -.002',err))
 			}
@@ -197,7 +197,7 @@ re2mgcv <- function (formula,data) {
 				data[[nm]] <- terms[,i]
 				term <- paste0('s(',g,',',nm,',bs="re")')
 			}
-			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=F)
+			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=FALSE)
 		}			
 	}
 	formula <- build.formula(dep,formula)
@@ -220,13 +220,13 @@ re2mgcv <- function (formula,data) {
 remove.terms <- function (formula,remove) {
 	decompose.random.terms <- function (terms) {
 		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=T)
+			x <- unwrap.terms(x,inner=TRUE)
 			g <- unwrap.terms(x[3])
 			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=T)
-			sapply(g,function (g) terms,simplify=F)
+			terms <- unwrap.terms(terms,intercept=TRUE)
+			sapply(g,function (g) terms,simplify=FALSE)
 		})
-		unlist(terms,recursive=F)
+		unlist(terms,recursive=FALSE)
 	}
 	get.random.list <- function (formula) {
 		bars <- lme4::findbars(formula)
@@ -250,9 +250,9 @@ remove.terms <- function (formula,remove) {
 		}
 		!remove %in% forbidden
 	}
-	unwrap.terms <- function (terms,inner=F,intercept=F) {
+	unwrap.terms <- function (terms,inner=FALSE,intercept=FALSE) {
 		form <- stats::as.formula(paste0('~',terms))
-		terms <- terms(form,keep.order=T)
+		terms <- terms(form,keep.order=TRUE)
 		if (intercept) intercept <- attr(terms,'intercept')
 		if (inner) return(terms[[2]])
 		terms <- attr(terms,'term.labels')
@@ -261,7 +261,7 @@ remove.terms <- function (formula,remove) {
 	}
 
 	dep <- as.character(formula[2])
-	terms <- terms(formula,keep.order=T)
+	terms <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	if (intercept) terms <- c('1',terms)
@@ -335,13 +335,13 @@ remove.terms <- function (formula,remove) {
 tabulate.formula <- function (formula,group=NULL) {
 	decompose.random.terms <- function (terms) {
 		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=T)
+			x <- unwrap.terms(x,inner=TRUE)
 			g <- unwrap.terms(x[3])
 			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=T)
-			sapply(g,function (g) terms,simplify=F)
+			terms <- unwrap.terms(terms,intercept=TRUE)
+			sapply(g,function (g) terms,simplify=FALSE)
 		})
-		unlist(terms,recursive=F)
+		unlist(terms,recursive=FALSE)
 	}
 	get.random.list <- function (formula) {
 		bars <- lme4::findbars(formula)
@@ -357,12 +357,12 @@ tabulate.formula <- function (formula,group=NULL) {
 		randoms
 	}
 	mkGroups <- function (t) {
-		for (x in group) t <- gsub(x,x,t,perl=T)
+		for (x in group) t <- gsub(x,x,t,perl=TRUE)
 		t
 	}
 
 	dep <- as.character(formula[2])
-	terms <- terms(formula,keep.order=T)
+	terms <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
 	if (intercept) terms <- c('1',terms)
@@ -381,12 +381,12 @@ tabulate.formula <- function (formula,group=NULL) {
 				terms <- terms[[j]]
 				if (!length(terms)) return(NULL)
 				ix <- paste(i,j)
-				data.frame(index=ix,grouping=g,term=terms,code=paste(ix,g,terms),block=paste(NA,g,mkGroups(terms)),stringsAsFactors=F)
+				data.frame(index=ix,grouping=g,term=terms,code=paste(ix,g,terms),block=paste(NA,g,mkGroups(terms)),stringsAsFactors=FALSE)
 			})
 			terms <- Filter(Negate(is.null),terms)
 			if (!length(terms)) return(NULL)
 			do.call(rbind,terms)
-		} else data.frame(index=NA,grouping=NA,term=term,code=term,block=paste(NA,NA,mkGroups(term)),stringsAsFactors=F)
+		} else data.frame(index=NA,grouping=NA,term=term,code=term,block=paste(NA,NA,mkGroups(term)),stringsAsFactors=FALSE)
 	})
 	terms <- Filter(Negate(is.null),terms)
 	do.call(rbind,terms)
