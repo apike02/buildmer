@@ -58,7 +58,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 #' 
 #' \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 #' 
-#' As \code{bam} uses PQL, only \code{crit='deviance'} is supported.
+#' As \code{bam} uses PQL, only \code{crit='deviance'} is supported for non-Gaussian errors.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -97,7 +97,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-	else if (!all(crit == 'deviance') || !(is.gaussian(family)) && is.null(lme4::findbars(formula)) && !has.smooth.terms(formula)) stop("bam() uses PQL, which means that likelihood-based model comparisons are not valid. Try using buildgam() instead, or use crit='deviance'.")
+	else if (!all(crit == 'deviance') || !is.gaussian(family)) stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, or use crit='deviance' (note that this is not a formal  test). Alternatively, find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE)"))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -229,16 +229,16 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		env=parent.frame(),
 		dots=list(...)
 	)
-	if (is.null(p$data)) stop("Sorry, buildgam() requires data to be passed via the data= argument")
+	if (is.null(p$data)) stop('Sorry, buildgam() requires data to be passed via the data= argument')
 	if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL else {
 		if (is.character(family)) family <- get(family)
 		if (is.function (family)) family <- family()
-		if (!all(crit %in% c('deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') stop("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','",if (family$family == 'gaussian') "newton'))), or use buildgamm()" else "bfgs')))",". (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
+		if (!all(crit %in% c('deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer' && !is.gaussian(p$family)) stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test), or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		if (inherits(family,'general.family')) {
 			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
 			p$can.use.reml <- F
-			warning('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects")
+			warning(progress('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects"))
 			p$dots$select <- T
 			if (!is.data.frame(p$formula)) {
 				p$dots$dep <- as.character(p$formula[2])
@@ -479,6 +479,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 #' @importFrom stats gaussian
 #' @export
 buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_family=gaussian(),julia_link=NULL,julia_fun=NULL,direction=c('order','backward'),crit='LRT',...) {
+	warning(progress("buildjulia() is deprecated and will be removed in a future version of buildmer! There is no replacement, but you should be able to cook one up yourself using buildcustom() (note that the various julia-specific functions such as AIC.julia will also be removed). Sorry, the maintenance cost/benefit trade-off is just too negative!"))
 	if (!requireNamespace('JuliaCall',quietly=T)) stop('Please install package JuliaCall')
 	p <- list(
 		formula=formula,

@@ -1,6 +1,7 @@
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
 getdf  <- function (m) attr(stats::logLik(m),'df')
 getdev <- function (m) {
+	warning('The deviance-explained criterion is deprecated and will be removed eventually!')
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	if (!is.null(summary(m)$r.squared)) return(1-summary(m)$r.squared)
 	ff <- fitted(m)
