@@ -4,7 +4,7 @@ fit.GLMMadaptive <- function (p,formula) {
 	if (is.null(bars)) return(fit.buildmer(p,formula))
 	if (length(bars) != 1) stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
 	random <- mkForm(as.character(bars),p$env)
-	message(paste0('Fitting via mixed_model: ',as.character(list(fixed)),', random=',as.character(list(random))))
+	progress('Fitting via mixed_model: ',fixed,', random=',random)
 	patch.GLMMadaptive(p,GLMMadaptive::mixed_model,c(list(fixed=fixed,random=random,data=p$data,family=p$family),p$dots))
 }
 
@@ -18,7 +18,7 @@ fit.bam <- function (p,formula) {
 		p$data$intercept <- 1
 	}
 	method <- if (p$reml) 'fREML' else 'ML'
-	message(paste0('Fitting via bam, with ',method,': ',as.character(list(formula))))
+	progress('Fitting via bam, with ',method,': ',formula)
 	patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
@@ -32,19 +32,19 @@ fit.buildmer <- function (p,formula) {
 		}
 		if (is.gaussian(p$family)) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
-			message(paste0('Fitting via lm: ',as.character(list(formula))))
+			progress('Fitting via lm: ',formula)
 			patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
 		} else {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::glm))]
-			message(paste0('Fitting via glm: ',as.character(list(formula))))
+			progress('Fitting via glm: ',formula)
 			patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 		}
 	} else {
 		if (is.gaussian(p$family)) {
-			message(paste0('Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',as.character(list(formula))))
+			progress('Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',formula)
 			patch.lmer(p,lme4::lmer,c(list(formula=formula,data=p$data,REML=reml),p$dots))
 		} else {
-			message(paste0('Fitting via glmer: ',as.character(list(formula))))
+			progress('Fitting via glmer, with ',ifelse(reml,'REML','ML'),': ',formula)
 			patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots))
 		}
 	}
@@ -71,7 +71,7 @@ fit.gam <- function (p,formula) {
 			data <- data[sample.int(n,n*samfrac),]
 		}
 		if (p$quickstart > 4) dots$control <- c(p$dots$control,list(epsilon=.02))
-		message(paste0('Quickstart fit with bam/',method,': ',as.character(list(formula))))
+		progress('Quickstart fit with bam/',method,': ',formula)
 		qs <- patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=data,method=method),dots))
 		if (!inherits(qs,'try-error')) {
 			p$dots$in.out <- list(sp=unname(qs$sp),scale=qs$sig2)
@@ -94,7 +94,7 @@ fit.gam <- function (p,formula) {
 	}
 	method <- if (p$reml) 'REML' else 'ML'
 	p$dots <- p$dots[names(p$dots) %in% names(formals(mgcv::gam))]
-	message(paste0('Fitting via gam, with ',method,': ',as.character(list(formula))))
+	progress('Fitting via gam, with ',method,': ',formula)
 	patch.lm(p,mgcv::gam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
@@ -113,7 +113,7 @@ fit.gamm <- function (p,formula) {
 		names(random) <- sapply(bars,function (x) as.character(x[[3]]))
 	}
 	method <- if (p$reml) 'REML' else 'ML'
-	message(paste0('Fitting via gamm, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	progress('Fitting via gamm, with ',method,': ',fixed,', random=',random)
 	m <- patch.lm(p,mgcv::gamm,c(list(formula=fixed,random=random,family=p$family,data=p$data,method=method),p$dots))
 	if (inherits(m,'try-error') || p$finalize) m else m$lme
 }
@@ -124,7 +124,7 @@ fit.gamm4 <- function (p,formula) {
 	bars <- lme4::findbars(formula)
 	random <- if (length(bars)) mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
 	if (is.null(random) && !has.smooth.terms(formula)) return(fit.buildmer(p,formula))
-	message(paste0('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	progress('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',fixed,', random=',random)
 	model <- patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	if (inherits(model,'try-error') || p$finalize) model else model$mer
 }
@@ -141,13 +141,13 @@ fit.glmmTMB <- function (p,formula) {
 			return(fit.gam(p,formula))
 		}
 	}
-	message(paste0('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',as.character(list(formula))))
+	progress('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',formula)
 	patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
 }
 
 fit.gls <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
-	message(paste0('Fitting via gls, with ',method,': ',as.character(list(formula))))
+	progress('Fitting via gls, with ',method,': ',formula)
 	# gls cannot handle rank-deficient fixed effects --- work around the problem
 	dep <- as.character(formula[[2]])
 	y <- p$data[[dep]]
@@ -167,7 +167,7 @@ fit.gls <- function (p,formula) {
 
 fit.julia <- function (p,formula) {
 	if (is.null(lme4::findbars(formula))) return(fit.buildmer(p,formula))
-	message(paste0('Fitting via Julia: ',as.character(list(formula))))
+	progress('Fitting via Julia: ',formula)
 	.fit <- function (p) {
 		if (is.gaussian(p$family)) {
 			mod <- p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
@@ -205,7 +205,7 @@ fit.lme <- function (p,formula) {
 		}
 	}
 	method <- if (p$reml) 'REML' else 'ML'
-	message(paste0('Fitting via lme, with ',method,': ',as.character(list(fixed)),', random=',as.character(list(random))))
+	progress('Fitting via lme, with ',method,': ',fixed,', random=',random)
 	patch.lm(p,nlme::lme,c(list(fixed,data=p$data,random=random,method=method),p$dots))
 }
 
@@ -216,12 +216,12 @@ fit.mertree <- function (p,formula) {
 		ftext <- paste0(as.character(list(fixed)),' | ',p$partitioning,sep='',collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
 		if (is.gaussian(p$family)) {
-			message(paste0('Fitting via lmtree: ',ftext))
+			progress('Fitting via lmtree: ',f)
 			p$dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::lmertree)) & !names(p$dots) %in% names(formals(partykit::lmtree)))]
 			p$dots$lmer.control <- p$dots$glmer.control <- NULL
 			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			message(paste0('Fitting via glmtree: ',ftext))
+			progress('Fitting via glmtree: ',f))
 			p$dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
 			p$dots$control <- NULL
 			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),p$dots))
@@ -231,16 +231,16 @@ fit.mertree <- function (p,formula) {
 		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
 		if (is.gaussian(p$family)) {
-			message(paste0('Fitting via lmertree: ',ftext))
+			progress('Fitting via lmertree: ',f))
 			patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			message(paste0('Fitting via glmertree: ',ftext))
+			progress('Fitting via glmertree: ',f))
 			patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
 	}
 }
 
 fit.multinom <- function (p,formula) {
-	message(paste0('Fitting via multinom: ',as.character(list(formula))))
+	progress('Fitting via multinom: ',formula)
 	patch.lm(p,nnet::multinom,c(list(formula=formula,data=p$data),p$dots))
 }

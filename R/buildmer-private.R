@@ -122,6 +122,15 @@ mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),
 mkTerm <- function (term) mkForm(term)[[2]]
 privates <- c('p','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')
 
+progress <- function (...) {
+	text <- sapply(...,function (x) as.character(list(x)))
+	text <- paste0(text,collapse='')
+	text <- strwrap(text,indent=4)
+	text <- paste0(text,collapse='\n')
+	message(text)
+	text
+}
+
 unpack.smooth.terms <- function (x) {
 	fm <- stats::as.formula(paste0('~',list(x)))
 	if (!has.smooth.terms(fm)) return(as.character(list(x)))
