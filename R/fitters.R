@@ -221,7 +221,7 @@ fit.mertree <- function (p,formula) {
 			p$dots$lmer.control <- p$dots$glmer.control <- NULL
 			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			progress('Fitting via glmtree: ',f))
+			progress('Fitting via glmtree: ',f)
 			p$dots <- p$dots[!(names(p$dots) %in% names(formals(glmertree::glmertree)) & !names(p$dots) %in% names(formals(partykit::glmtree)))]
 			p$dots$control <- NULL
 			patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),p$dots))
@@ -231,10 +231,10 @@ fit.mertree <- function (p,formula) {
 		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
 		if (is.gaussian(p$family)) {
-			progress('Fitting via lmertree: ',f))
+			progress('Fitting via lmertree: ',f)
 			patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			progress('Fitting via glmertree: ',f))
+			progress('Fitting via glmertree: ',f)
 			patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
 	}
