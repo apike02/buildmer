@@ -74,7 +74,7 @@ backward <- function (p) {
 		}
 		progrep <- p$tab
 		progrep$index <- progrep$code <- progrep$ok <- NULL
-		if (p$crit.name == 'LRT') progrep$LRT <- exp(results)
+		if (p$crit.name %in% c('LRT','LRT2')) progrep[[p$crit.name]] <- exp(results)
 		if (p$crit.name %in% c('deviance','devexp')) progrep[,p$crit.name] <- -progrep[,p$crit.name]
 		print(progrep)
 		remove <- p$elim(results)
@@ -132,7 +132,7 @@ forward <- function (p) {
 	if (p$ordered != p$crit.name) p <- order(p) else if (p$ordered == 'custom') warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
 	progrep <- p$tab
 	progrep$index <- progrep$code <- progrep$ok <- NULL
-	if (p$crit.name == 'LRT') progrep$score <- exp(progrep$score)
+	if (p$crit.name %in% c('LRT','LRT2')) progrep$score <- exp(progrep$score)
 	if (p$crit.name %in% c('deviance','devexp')) progrep[,p$crit.name] <- -progrep[,p$crit.name]
 	print(progrep)
 	remove <- p$elim(p$tab$score)

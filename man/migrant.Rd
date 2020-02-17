@@ -3,12 +3,12 @@
 \docType{data}
 \name{migrant}
 \alias{migrant}
-\title{A very small data set from a pilot study on sound change.}
+\title{A very small dataset from a pilot study on sound change.}
 \format{A standard data frame.}
 \usage{
 data(migrant)
 }
 \description{
-A very small data set from a pilot study on sound change.
+A very small dataset from a pilot study on sound change.
 }
 \keyword{datasets}

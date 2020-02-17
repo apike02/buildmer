@@ -16,7 +16,7 @@
 #' @param family The error distribution to use
 #' @param cl An optional cluster object as returned by function \code{makeCluster} from package \code{parallel} to use for parallelizing the evaluation of terms. Note that, if and only if using the \code{cl} functionality, the data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary. In addition, some buildmer-internal objects will be exported to the cluster nodes. These will be cleaned up afterwards, but any already-present objects with the same name (e.g. `\code{p}' will be overwritten)
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed
-#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)
+#' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LRT2'} (previous version of likelihood-ratio test always dividing random-effect p-values by 2 following Baayen 2008), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)
 #' @param include A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination
@@ -24,7 +24,7 @@
 #' @name buildmer-package
 NULL
 
-#' A very small data set from a pilot study on sound change.
+#' A very small dataset from a pilot study on sound change.
 #' @docType data
 #' @usage data(migrant)
 #' @format A standard data frame.

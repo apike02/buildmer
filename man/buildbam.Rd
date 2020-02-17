@@ -10,7 +10,7 @@ buildbam(
   family = gaussian(),
   cl = NULL,
   direction = c("order", "backward"),
-  crit = "deviance",
+  crit = "LRT",
   include = NULL,
   calc.anova = FALSE,
   calc.summary = TRUE,
@@ -46,7 +46,7 @@ To work around an issue in \code{bam()}, you must make sure that your data do no
 
 \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 
-As \code{bam} uses PQL, only \code{crit='deviance'} is supported.
+As \code{bam} uses PQL, only \code{crit='deviance'} is supported for non-Gaussian errors.
 }
 \examples{
 \dontshow{
