@@ -504,7 +504,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 	message('Setting up Julia...')
 	p$julia <- JuliaCall::julia_setup(verbose=TRUE)
 	p$julia$library('MixedModels')
-	p$crit <- function (ref,alt) mkCrit(paste0(crit,'.julia'))(p$julia,ref,alt)
+	p$crit <- function (p,ref,alt) mkCrit(paste0(crit,'.julia'))(p,ref,alt)
 
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)

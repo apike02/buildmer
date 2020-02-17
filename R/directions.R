@@ -58,7 +58,7 @@ backward <- function (p) {
 			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
-			val <- if (conv(m.alt)) p$crit(m.alt,m.cur) else NaN
+			val <- if (conv(m.alt)) p$crit(p,m.alt,m.cur) else NaN
 			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
@@ -237,7 +237,7 @@ order <- function (p) {
 				rep(mod,nrow(check))
 			})
 			mods <- unlist(mods,recursive=FALSE)
-			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(cur,mod) else NaN)
+			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(p,cur,mod) else NaN)
 			if (p$crit.name == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
