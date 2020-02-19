@@ -54,12 +54,11 @@ backward <- function (p) {
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
 			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
-			p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
-			m.cur <- if (p$reml) p$cur.reml else p$cur.ml
+			p$reml <- all(!is.na(p$tab[i,]$grouping))
+			m.cur <- if (need.reml && p$reml) p$cur.reml else p$cur.ml
 			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
 			val <- if (conv(m.alt)) p$crit(p,m.alt,m.cur) else NaN
-			if (p$crit.name == 'LRT' && p$reml) val <- val - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
@@ -74,7 +73,7 @@ backward <- function (p) {
 		}
 		progrep <- p$tab
 		progrep$index <- progrep$code <- progrep$ok <- NULL
-		if (p$crit.name %in% c('LRT','LRT2')) progrep[[p$crit.name]] <- exp(results)
+		if (p$crit.name %in% c('LRT','LRT2')) progrep[,p$crit.name] <- exp(results)
 		if (p$crit.name %in% c('deviance','devexp')) progrep[,p$crit.name] <- -progrep[,p$crit.name]
 		print(progrep)
 		remove <- p$elim(results)
@@ -129,7 +128,11 @@ can.remove <- function (tab,i) {
 }
 
 forward <- function (p) {
-	if (p$ordered != p$crit.name) p <- order(p) else if (p$ordered == 'custom') warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
+	if (p$ordered != p$crit.name) {
+		p <- order(p)
+	} else if (p$ordered == 'custom') {
+		warning("Assuming, but not checking, that direction='order' had used the same elimination criterion as requested for forward stepwise. If this is not the case, add an explicit 'order' step before the 'forward' step using the desired criterion.")
+	}
 	progrep <- p$tab
 	progrep$index <- progrep$code <- progrep$ok <- NULL
 	if (p$crit.name %in% c('LRT','LRT2')) progrep$score <- exp(progrep$score)
@@ -238,7 +241,6 @@ order <- function (p) {
 			})
 			mods <- unlist(mods,recursive=FALSE)
 			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(p,cur,mod) else NaN)
-			if (p$crit.name == 'LRT' && p$reml) check$score <- check$score - log(2) #divide by 2 per Pinheiro & Bates 2000; remember that we are on the log scale
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
 				message('None of the models converged - giving up ordering attempt.')
@@ -280,7 +282,7 @@ order <- function (p) {
 	p$reml <- FALSE
 	if (any( fxd)) p <- reorder(p,tab[fxd,])
 	if (any(!fxd)) {
-		p$reml <- p$can.use.reml
+		p$reml <- TRUE
 		p <- reorder(p,tab[!fxd,])
 	}
 	p$formula <- build.formula(p$dep,p$tab,p$env)

@@ -123,7 +123,7 @@ mkTerm <- function (term) mkForm(term)[[2]]
 privates <- c('p','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')
 
 progress <- function (...) {
-	text <- sapply(...,function (x) as.character(list(x)))
+	text <- sapply(list(...),function (x) as.character(list(x)))
 	text <- paste0(text,collapse='')
 	text <- strwrap(text,indent=4)
 	text <- paste0(text,collapse='\n')

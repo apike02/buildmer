@@ -22,6 +22,7 @@ getdev.julia <- function (p,m) {
 elim.AIC <- function (diff) diff > -.001
 elim.BIC <- elim.AIC
 elim.LRT <- function (logp) exp(logp) >= .05
+elim.LRT2<- elim.LRT
 elim.2LL <- elim.AIC
 elim.LL  <- elim.AIC
 elim.devexp <- elim.AIC
@@ -38,9 +39,9 @@ crit.LRT2 <- function (p,ref,alt) {
 		chdf <- getdf(alt) - getdf(ref)
 	}
 	if (chdf <= 0) return(0)
-	p <- stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
-	if (p$reml) p <- p - log(2) #Baayen (2008); amounts to Stram & Lee (1994) in the chdf=1 case
-	p
+	pval <- stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
+	if (p$reml) pval <- pval - log(2) #Baayen (2008); amounts to Stram & Lee (1994) in the chdf=1 case
+	pval
 }
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
@@ -56,10 +57,12 @@ crit.LRT <- function (p,ref,alt) {
 		# Stram & Lee (1994): mixture of chisq(chdf) and chisq(chdf-1)
 		p1 <- stats::pchisq(chLL,chdf  ,lower.tail=FALSE,log.p=TRUE) - log(2)
 		p2 <- stats::pchisq(chLL,chdf-1,lower.tail=FALSE,log.p=TRUE) - log(2)
-		p <- log(exp(p1) + exp(p2))
+		pval <- log(exp(p1) + exp(p2))
+	} else {
+		pval <- stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
 	}
 
-	p
+	pval
 }
 crit.2LL <- function (p,ref,alt) if (is.null(ref)) get2LL(alt) else get2LL(alt) - get2LL(ref)
 crit.LL <- crit.2LL
