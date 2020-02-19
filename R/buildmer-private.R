@@ -125,7 +125,7 @@ privates <- c('p','build.formula','can.remove','fit.buildmer','has.smooth.terms'
 progress <- function (...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
 	text <- paste0(text,collapse='')
-	text <- strwrap(text,indent=4)
+	text <- strwrap(text,exdent=4)
 	text <- paste0(text,collapse='\n')
 	message(text)
 	text

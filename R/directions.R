@@ -1,7 +1,7 @@
 backward <- function (p) {
 	fit.references.parallel <- function (p) {
 		if (p$parallel) parallel::clusterExport(p$cl,'p',environment())
-		message('Fitting ML and REML reference models')
+		progress('Fitting ML and REML reference models')
 		repeat {
 			res <- p$parply(c(TRUE,FALSE),function (x) {
 				p$reml <- x
@@ -26,7 +26,7 @@ backward <- function (p) {
 		}))
 		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
 		if (is.null(p$cur.ml)) {
-			message('Fitting ML reference model')
+			progress('Fitting ML reference model')
 			p$reml <- FALSE
 			p$cur.ml <- p$fit(p,p$formula)
 			if (!conv(p$cur.ml)) {
@@ -36,7 +36,7 @@ backward <- function (p) {
 			}
 		}
 		if (need.reml && is.null(p$cur.reml)) {
-			message('Fitting REML reference model')
+			progress('Fitting REML reference model')
 			p$reml <- TRUE
 			p$cur.reml <- p$fit(p,p$formula)
 			if (!conv(p$cur.reml)) {
@@ -47,10 +47,10 @@ backward <- function (p) {
 		}
 
 		if (!nrow(p$tab)) {
-			message("There's nothing left!")
+			progress("There's nothing left!")
 			return(p)
 		}
-		message('Testing terms')
+		progress('Testing terms')
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
 			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
@@ -79,7 +79,7 @@ backward <- function (p) {
 		remove <- p$elim(results)
 		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
 		if (length(remove) == 0) {
-			message('All terms are significant')
+			progress('All terms are significant')
 			p$model <- if (need.reml) p$cur.reml else p$cur.ml
 			return(p)
 		}
@@ -93,7 +93,7 @@ backward <- function (p) {
 			# Recycle the current model as the next reference model
 			p[[ifelse(p$reml,'cur.reml','cur.ml')]] <- results[[remove]]$model
 		}
-		message('Updating formula: ',as.character(list(p$formula)))
+		progress('Updating formula: ',p$formula)
 	}
 }
 
@@ -225,12 +225,12 @@ order <- function (p) {
 			check <- can.eval(check)
 			check <- check[check$ok,]
 			if (!nrow(check)) {
-				message('Could not proceed ordering terms')
+				progress('Could not proceed ordering terms')
 				p$tab <- have
 				p$model <- cur
 				return(p)
 			}
-			message(paste0('Currently evaluating ',p$crit.name,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
+			progress(paste0('Currently evaluating ',p$crit.name,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
 			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','p'),environment())
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
@@ -243,7 +243,7 @@ order <- function (p) {
 			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(p,cur,mod) else NaN)
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
-				message('None of the models converged - giving up ordering attempt.')
+				progress('None of the models converged - giving up ordering attempt.')
 				p$tab <- have
 				p$model <- cur
 				return(p)
@@ -258,15 +258,15 @@ order <- function (p) {
 				form <- build.formula(p$dep,have,p$env)
 				cur <- p$fit(p,form)
 				if (!conv(cur)) {
-					message('The reference model for the next step failed to converge - giving up ordering attempt.')
+					progress('The reference model for the next step failed to converge - giving up ordering attempt.')
 					return(p)
 				}
 			}
-			message(paste0('Updating formula: ',as.character(list(build.formula(p$dep,have)))))
+			progress('Updating formula: ',build.formula(p$dep,have))
 		}
 	}
 
-	message('Determining predictor order')
+	progress('Determining predictor order')
 	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula) else p$tab$ok <- p$tab$score <- NULL
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)
@@ -290,7 +290,7 @@ order <- function (p) {
 }
 
 reduce.noconv <- function (p) {
-	message('Convergence failure. Reducing terms and retrying...')
+	progress('Convergence failure. Reducing terms and retrying...')
 	cands <- p$tab$block[!is.na(p$tab$block)]
 	if (length(unique(cands)) < 2) {
 		stop('No terms left for reduction, giving up')
