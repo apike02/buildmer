@@ -125,14 +125,14 @@ conv <- function (model,singular.ok=FALSE) {
 	if (inherits(model,'gam')) {
 		if (!is.null(model$outer.info)) {
 			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv outer convergence failed',err))
-			if ((err <- max(abs(model$outer.info$grad))) > .002) return(failure('Absolute gradient contains values >0.002',err))
+			if ((err <- max(abs(model$outer.info$grad))) > .01) return(failure('Absolute gradient contains values >0.01',err))
 			ev <- try(eigen(model$outer.info$hess)$values,silent=TRUE)
 			if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 			if ((err <- min(ev)) < -.002) return(failure('Hessian contains negative eigenvalues <-.002',err))
 		} else {
 			if (!length(model$sp)) return(success('No smoothing parameters to optimize'))
 			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports outer convergence failed'))
-			if (!(err <- model$mgcv.conv$rms.grad) <= .002) return(failure('mgcv reports absolute gradient containing values >0.002',err))
+			if ((err <- model$mgcv.conv$rms.grad) > .01) return(failure('mgcv reports absolute gradient containing values >0.01',err))
 			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
 		}
 		return(success('All checks passed (gam)'))
