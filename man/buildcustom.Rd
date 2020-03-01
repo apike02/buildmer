@@ -9,7 +9,7 @@ buildcustom(
   data = NULL,
   cl = NULL,
   direction = c("order", "backward"),
-  crit = function(ref, alt) stop("'crit' not specified"),
+  crit = function(p, ref, alt) stop("'crit' not specified"),
   include = NULL,
   fit = function(p, formula) stop("'fit' not specified"),
   elim = function(x) stop("'elim' not specified"),
@@ -54,14 +54,14 @@ flipfit <- function (p,formula) {
     test <- try(anova(m))
     if (inherits(test,'try-error')) test else m
 }
-crit.F <- function (ma,mb) { # use whole-model F
-    pvals <- anova(mb)$'Pr(>F)' # not valid for backward!
+crit.F <- function (p,a,b) { # use whole-model F
+    pvals <- anova(b)$'Pr(>F)' # not valid for backward!
     pvals[length(pvals)-1]
 }
-crit.Wilks <- function (ma,mb) {
-    if (is.null(ma)) return(crit.F(ma,mb)) #not completely correct, but close as F approximates X2
-    Lambda <- anova(mb,test='Wilks')$Wilks[1]
-    p <- length(coef(mb))
+crit.Wilks <- function (p,a,b) {
+    if (is.null(a)) return(crit.F(p,a,b)) #not completely correct, but close as F approximates X2
+    Lambda <- anova(b,test='Wilks')$Wilks[1]
+    p <- length(coef(b))
     n <- 1
     m <- nrow(migrant)
     Bartlett <- ((p-n+1)/2-m)*log(Lambda)

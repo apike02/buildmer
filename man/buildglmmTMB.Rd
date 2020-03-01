@@ -42,14 +42,6 @@ Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models
 library(buildmer)
 model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject)
        ,data=lme4::sleepstudy)
-\dontshow{\donttest{
-# What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
-vowels$event <- with(vowels,interaction(participant,word))
-if (requireNamespace('glmmTMB')) {
-	# converges with MKL, not with R default BLAS
-	model <- try(buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels))
-}
-}}
 }
 \seealso{
 \code{\link{buildmer-package}}

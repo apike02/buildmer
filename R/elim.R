@@ -22,7 +22,6 @@ getdev.julia <- function (p,m) {
 elim.AIC <- function (diff) diff > -.001
 elim.BIC <- elim.AIC
 elim.LRT <- function (logp) exp(logp) >= .05
-elim.LRT2<- elim.LRT
 elim.2LL <- elim.AIC
 elim.LL  <- elim.AIC
 elim.devexp <- elim.AIC
@@ -30,19 +29,6 @@ elim.deviance <- elim.AIC
 
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
-crit.LRT2 <- function (p,ref,alt) {
-	if (is.null(ref)) {
-		chLL <- get2LL(alt)
-		chdf <- getdf(alt)
-	} else {
-		chLL <- get2LL(ref) - get2LL(alt)
-		chdf <- getdf(alt) - getdf(ref)
-	}
-	if (chdf <= 0) return(0)
-	pval <- stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
-	if (p$reml) pval <- pval - log(2) #Baayen (2008); amounts to Stram & Lee (1994) in the chdf=1 case
-	pval
-}
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
 		chLL <- get2LL(alt)

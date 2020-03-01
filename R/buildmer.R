@@ -97,7 +97,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-	else if (!all(crit %in% c('deviance','devexp')) || !is.gaussian(family)) stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, or use crit='deviance' (note that this is not a formal test). Alternatively, find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE)"))
+	else if (!all(p$crit.name %in% c('custom','deviance','devexp')) && !is.gaussian(p$family)) stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, or use crit='deviance' (note that this is not a formal test). Alternatively, find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE)"))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -123,14 +123,14 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #'     test <- try(anova(m))
 #'     if (inherits(test,'try-error')) test else m
 #' }
-#' crit.F <- function (ma,mb) { # use whole-model F
-#'     pvals <- anova(mb)$'Pr(>F)' # not valid for backward!
+#' crit.F <- function (p,a,b) { # use whole-model F
+#'     pvals <- anova(b)$'Pr(>F)' # not valid for backward!
 #'     pvals[length(pvals)-1]
 #' }
-#' crit.Wilks <- function (ma,mb) {
-#'     if (is.null(ma)) return(crit.F(ma,mb)) #not completely correct, but close as F approximates X2
-#'     Lambda <- anova(mb,test='Wilks')$Wilks[1]
-#'     p <- length(coef(mb))
+#' crit.Wilks <- function (p,a,b) {
+#'     if (is.null(a)) return(crit.F(p,a,b)) #not completely correct, but close as F approximates X2
+#'     Lambda <- anova(b,test='Wilks')$Wilks[1]
+#'     p <- length(coef(b))
 #'     n <- 1
 #'     m <- nrow(migrant)
 #'     Bartlett <- ((p-n+1)/2-m)*log(Lambda)
@@ -146,7 +146,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #'        multilingual,data=migrant)
 #' @template seealso
 #' @export
-buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (ref,alt) stop("'crit' not specified"),include=NULL,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
+buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit=function (p,ref,alt) stop("'crit' not specified"),include=NULL,fit=function (p,formula) stop("'fit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,...) {
 	p <- list(
 		formula=formula,
 		data=data,
@@ -234,7 +234,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL else {
 		if (is.character(family)) family <- get(family)
 		if (is.function (family)) family <- family()
-		if (!all(crit %in% c('deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer' && !is.gaussian(p$family)) stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test), or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
+		if (!all(p$crit.name %in% c('custom','deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer' && !is.gaussian(p$family)) stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test), or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		if (inherits(family,'general.family')) {
 			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
 			p$can.use.reml <- FALSE
@@ -379,14 +379,6 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 #' library(buildmer)
 #' model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject)
 #'        ,data=lme4::sleepstudy)
-#' \dontshow{\donttest{
-#' # What's the point of both \dontshow and \donttest, you ask? I want this to be tested when checking my package with --run-donttest, but the model is statistically nonsensical, so no good in showing it to the user!
-#' vowels$event <- with(vowels,interaction(participant,word))
-#' if (requireNamespace('glmmTMB')) {
-#' 	# converges with MKL, not with R default BLAS
-#' 	model <- try(buildglmmTMB(f1 ~ timepoint,include=~ar1(0+participant|event),data=vowels))
-#' }
-#' }}
 #' @template seealso
 #' @importFrom stats gaussian
 #' @export

@@ -3,14 +3,40 @@
 '*' denotes minor changes visible to the user
 '.' denotes minor bug fixes
 
+Deprecated and liable to be removed in a future version:
+ * 'reduce.fixed' and 'reduce.random' arguments (as of 2019-11-27)
+ * buildjulia and assorted functions (as of 2020-02-04)
+
+1.5
+
+*** API change to the 'crit' function, which now has a new function signature
+    (p,cur,alt)
+*** Deprecate buildjulia due to the maintenance cost of duplicating all the
+    important likelihood functions. You can code these yourself using
+    buildcustom().
+** Likelihood-ratio tests for random effects are now modeled as a mixture of
+   chi squares (Stram & Lee 1994), rather than by dividing the p-value by 2.
+   This makes a difference only for model terms with >1 change in df.
+** PQL is okay with Gaussian errors (Breslow & Clayton 1993); this is now
+   known to buildbam(), buildgam(), and buildgamm(). These now default to LRT,
+   and give an error message with advice if errors are not Gaussian.
+* Relax convergence tolerances for negative eigenvalues to -0.002 (mgcv and
+  glmmTMB models only)
+* Relax convergence tolerance for gradients to 0.04 (mgcv models only)
+* Convergence messages are now more informative due to an added human-readable
+  'reason' attribute
+. re2mgcv no longer uses 'by', to possibly work around segmentation faults
+. Progress messages are now word-wrapped properly
+. Fix incorrect filtering of '...' for (g)lmtree models
+
 1.4
 
 *** The 'reduce.fixed' and 'reduce.random' arguments have been deprecated; use
     the 'include' argument instead
 ** Add new criterion 'devexp' (alias: 'deviance') based on the explained
-   deviance. Modify buildbam() so that it only accepts this criterion. bam()
-   and gam() with non-outer optimization use PQL, which was incorrectly
-   permitted by the previous version of the PQL guard
+   deviance. Modify buildbam() so that, in the generalized case, it only
+   accepts this criterion. bam() and gam() with non-outer optimization use PQL,
+   which was incorrectly permitted by the previous version of the PQL guard
 ** S3 and S4 method passthrough support
 ** gamm support
 ** buildgam() has gained an experimental 'quickstart' argument that prefits
@@ -101,3 +127,7 @@
 . Make calcWald respect numerator df in anova table
 . Remove incorrect gradient check for mgcv models in conv(), instead check for
   'full convergence' string
+
+1.0
+
+*** First public release
