@@ -1,4 +1,5 @@
 buildmer.fit <- function (p) {
+	# Formula
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
 		if (is.null(p$dots$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
@@ -9,12 +10,29 @@ buildmer.fit <- function (p) {
 		p$dep <- as.character(p$formula[2])
 		p$tab <- tabulate.formula(p$formula)
 	}
-	if (!is.null(p$dots$REML)) {
-		if (isFALSE(p$dots$REML)) p$can.use.reml <- FALSE
-		p$dots$REML <- NULL
-	}
+
+	# Include
 	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
 
+	# REML
+	if (!is.null(p$dots$REML)) {
+		if (isTRUE(p$dots$REML)) {
+			# Force on
+			p$force.reml <- TRUE
+		} else if (isFALSE(p$dots$REML)) {
+			# Force off
+			p$can.use.reml <- FALSE
+		}
+		p$dots$REML <- NULL
+	} else {
+		# Default case, in which case one optimization can be applied:
+		if (all(p$crit.name %in% c('deviance','devexp'))) {
+			    p$can.use.reml <- FALSE
+			    p$force.reml <- TRUE
+		}
+	}
+
+	# Deprecated things
 	for (x in c('reduce.fixed','reduce.random')) {
 		p[[x]] <- TRUE
 		if (x %in% names(p$dots)) {
@@ -24,13 +42,14 @@ buildmer.fit <- function (p) {
 		}
 	}
 
-	# the below comment will be found even if just printing the parsed R code:
+	# For user debugging. The below comment will be found even if just printing the parsed R code:
 	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'
 	if ('p' %in% names(p$dots)) {
 		p <- c(p,p$dots$p)
 		p$dots$p <- NULL
 	}
 
+	# Parallel
 	if (is.null(p$cluster)) {
 		p$parallel <- FALSE
 		p$parply <- lapply
@@ -41,7 +60,8 @@ buildmer.fit <- function (p) {
 		parallel::clusterExport(p$cluster,privates,environment())
 	}
 
-	p$reml <- p$can.use.reml
+	# Let's go
+	p$reml <- p$can.use.reml || p$force.reml
 	p$ordered <- ''
 	crits <- p$crit
 	if (length(crits) == 1) crits <- sapply(1:length(p$direction),function (i) crits)

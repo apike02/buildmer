@@ -17,32 +17,40 @@ backward <- function (p) {
 		}
 	}
 
-	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula)
-	if (p$parallel) parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
+	if (is.null(p$tab)) {
+		p$tab <- tabulate.formula(p$formula)
+	}
+	if (p$parallel) {
+		parallel::clusterExport(p$cl,c('conv','build.formula','unravel','can.remove','get2LL','getdf'),environment())
+	}
 	repeat {
-		need.reml <- p$can.use.reml && p$reduce.random && any(sapply(unique(p$tab$block),function (b) {
+		need.ml <- !p$force.reml
+		need.reml <- p$force.reml || (p$can.use.reml && p$reduce.random && any(sapply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
 			any(!is.na(p$tab[i,'grouping']))
-		}))
-		if (need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) p <- fit.references.parallel(p)
-		if (is.null(p$cur.ml)) {
-			progress('Fitting ML reference model')
-			p$reml <- FALSE
-			p$cur.ml <- p$fit(p,p$formula)
-			if (!conv(p$cur.ml)) {
-				p <- reduce.noconv(p)
-				if (!any(!is.na(p$tab$block))) return(p)
-				p <- fit.references.parallel(p)
+		})))
+		if (need.ml && need.reml && is.null(p$cur.ml) && is.null(p$cur.reml)) {
+			p <- fit.references.parallel(p)
+		} else {
+			if (need.ml && is.null(p$cur.ml)) {
+				progress('Fitting ML reference model')
+				p$reml <- FALSE
+				p$cur.ml <- p$fit(p,p$formula)
+				if (!conv(p$cur.ml)) {
+					p <- reduce.noconv(p)
+					if (!any(!is.na(p$tab$block))) return(p)
+					p <- fit.references.parallel(p)
+				}
 			}
-		}
-		if (need.reml && is.null(p$cur.reml)) {
-			progress('Fitting REML reference model')
-			p$reml <- TRUE
-			p$cur.reml <- p$fit(p,p$formula)
-			if (!conv(p$cur.reml)) {
-				p <- reduce.noconv(p)
-				if (!any(!is.na(p$tab$block))) return(p)
-				p <- fit.references.parallel(p)
+			if (need.reml && is.null(p$cur.reml)) {
+				progress('Fitting REML reference model')
+				p$reml <- TRUE
+				p$cur.reml <- p$fit(p,p$formula)
+				if (!conv(p$cur.reml)) {
+					p <- reduce.noconv(p)
+					if (!any(!is.na(p$tab$block))) return(p)
+					p <- fit.references.parallel(p)
+				}
 			}
 		}
 
@@ -53,9 +61,17 @@ backward <- function (p) {
 		progress('Testing terms')
 		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) return(list(val=rep(NA,length(i))))
-			p$reml <- all(!is.na(p$tab[i,]$grouping))
-			m.cur <- if (need.reml && p$reml) p$cur.reml else p$cur.ml
+			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) {
+				# cannot remove term due to marginality
+				return(list(val=rep(NA,length(i))))
+			}
+			if (p$force.reml) {
+				p$reml <- TRUE
+				m.cur <- p$cur.reml
+			} else {
+				p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
+				m.cur <- if (need.reml && p$reml) p$cur.reml else p$cur.ml
+			}
 			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
 			val <- if (conv(m.alt)) p$crit(p,m.alt,m.cur) else NaN
@@ -91,7 +107,7 @@ backward <- function (p) {
 		p$cur.ml <- p$cur.reml <- NULL
 		if (length(results) == 1) {
 			# Recycle the current model as the next reference model
-			p[[ifelse(p$reml,'cur.reml','cur.ml')]] <- results[[remove]]$model
+			p[[if (p$reml) 'cur.reml' else 'cur.ml']] <- results[[remove]]$model
 		}
 		progress('Updating formula: ',p$formula)
 	}
@@ -279,10 +295,10 @@ order <- function (p) {
 	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
 	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=TRUE,score=NA))
 
-	p$reml <- FALSE
+	p$reml <- p$force.reml
 	if (any( fxd)) p <- reorder(p,tab[fxd,])
 	if (any(!fxd)) {
-		p$reml <- TRUE
+		p$reml <- p$can.use.reml
 		p <- reorder(p,tab[!fxd,])
 	}
 	p$formula <- build.formula(p$dep,p$tab,p$env)

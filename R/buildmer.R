@@ -38,6 +38,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,cl=NULL,direction=c('ord
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=FALSE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -92,6 +93,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -108,7 +110,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 #' @template common
 #' @param fit A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge
 #' @param elim A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})
-#' @param REML A logical indicating if the fitting function distinguishes between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE).
+#' @param REML A logical indicating if the fitting function wishes to distinguish between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE). Note that this ignores the usual semantics of buildmer's optional \code{REML} argument, because they are redundant: if you wish to force REML on or off, simply code it so in your custom fitting function.
 #' @param ... Additional options to be passed to the fitting function, such as perhaps a \code{data} argument
 #' @examples
 #' ## Use \code{buildmer} to do stepwise linear discriminant analysis
@@ -164,6 +166,7 @@ buildcustom <- function (formula,data=NULL,cl=NULL,direction=c('order','backward
 		crit.name='custom criterion',
 		elim=elim,
 		can.use.reml=REML,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -226,6 +229,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -237,8 +241,8 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,cl=NULL,d
 		if (!all(p$crit.name %in% c('custom','deviance','devexp')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer' && !is.gaussian(p$family)) stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test), or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		if (inherits(family,'general.family')) {
 			if (p$quickstart) stop('Quickstart is not possible with the ',family$family,' family')
-			p$can.use.reml <- FALSE
 			warning(progress('The ',family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects"))
+			p$force.reml <- TRUE
 			p$dots$select <- TRUE
 			if (!is.data.frame(p$formula)) {
 				p$dots$dep <- as.character(p$formula[2])
@@ -293,6 +297,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		finalize=FALSE,
 		dots=list(...)
@@ -355,6 +360,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c(
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=is.gaussian(family),
+		force.reml=FALSE,
 		env=parent.frame(),
 		finalize=FALSE,
 		dots=list(...)
@@ -402,6 +408,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -444,6 +451,7 @@ buildgls <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -489,6 +497,7 @@ buildjulia <- function (formula,data=NULL,family=gaussian(),include=NULL,julia_f
 		calc.anova=FALSE,
 		calc.summary=FALSE,
 		can.use.reml=is.gaussian(family),
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -537,6 +546,7 @@ buildlme <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=TRUE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -588,6 +598,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=is.gaussian(family),
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
@@ -667,6 +678,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=
 		subset.name=substitute(subset),
 		control.name=if (is.gaussian(family)) substitute(lmer.control) else substitute(glmer.control),
 		can.use.reml=FALSE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=dots
 	)
@@ -708,6 +720,7 @@ buildmultinom <- function (formula,data=NULL,cl=NULL,direction=c('order','backwa
 		subset.name=substitute(subset),
 		control.name=substitute(control),
 		can.use.reml=FALSE,
+		force.reml=FALSE,
 		env=parent.frame(),
 		dots=list(...)
 	)
