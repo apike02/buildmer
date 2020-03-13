@@ -91,7 +91,7 @@ calcWald <- function (table,col.ef,col.df=0) {
 	ef <- table[,col.ef]
 	if (col.df) {
 		df <- table[,col.df]
-		p <- matrix(stats::pchisq(ef,df,lower.tail=FALSE))
+		p <- matrix(stats::pchisq(df*ef,df,lower.tail=FALSE))
 		colnames(p) <- 'Pr(>F)'
 	} else {
 		p <- matrix(stats::pnorm(abs(ef),lower.tail=FALSE)*2)
