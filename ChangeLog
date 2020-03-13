@@ -19,6 +19,7 @@ Deprecated and liable to be removed in a future version:
   behavior remains as the new behavior doesn't make much sense if the user is
   specifying their own fitting function anyway.
 . Fix an error in calculating Wald p-values for ANOVA F scores affecting ndf >1
+. Allow ddf='KR' as an abbreviation for ddf='Kenward-Roger'
 
 1.5
 

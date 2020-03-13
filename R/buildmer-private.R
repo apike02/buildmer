@@ -102,7 +102,7 @@ calcWald <- function (table,col.ef,col.df=0) {
 
 check.ddf <- function (ddf) {
 	if (is.null(ddf)) return('Wald')
-	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger')
+	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger','KR')
 	i <- pmatch(ddf,valid)
 	if (is.na(i)) {
 		warning("Invalid ddf specification, possible options are 'Wald', 'lme4', 'Satterthwaite', 'Kenward-Roger'")
@@ -113,6 +113,9 @@ check.ddf <- function (ddf) {
 	if (!requireNamespace('lmerTest',quietly=TRUE)) {
 		warning('lmerTest package is not available, could not calculate requested denominator degrees of freedom')
 		return('lme4')
+	}
+	if (ddf == 'KR') {
+		ddf <- 'Kenward-Roger'
 	}
 	if (ddf == 'Kenward-Roger' && !requireNamespace('pbkrtest',quietly=TRUE)) {
 		warning('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
