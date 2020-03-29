@@ -32,16 +32,6 @@ buildmer.fit <- function (p) {
 		}
 	}
 
-	# Deprecated things
-	for (x in c('reduce.fixed','reduce.random')) {
-		p[[x]] <- TRUE
-		if (x %in% names(p$dots)) {
-			p[[x]] <- p$dots[[x]]
-			p$dots[[x]] <- NULL
-			message(paste0("Warning: argument '",x,"' is deprecated; use 'include' instead."))
-		}
-	}
-
 	# For user debugging. The below comment will be found even if just printing the parsed R code:
 	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'
 	if ('p' %in% names(p$dots)) {

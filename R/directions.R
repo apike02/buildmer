@@ -25,7 +25,7 @@ backward <- function (p) {
 	}
 	repeat {
 		need.ml <- !p$force.reml
-		need.reml <- p$force.reml || (p$can.use.reml && p$reduce.random && any(sapply(unique(p$tab$block),function (b) {
+		need.reml <- p$force.reml || (p$can.use.reml && any(sapply(unique(p$tab$block),function (b) {
 			i <- which(p$tab$block == b)
 			any(!is.na(p$tab[i,'grouping']))
 		})))
@@ -100,7 +100,7 @@ backward <- function (p) {
 			return(p)
 		}
 
-		# 4. Remove the worst offender(s) and continue
+		# Remove the worst offender(s) and continue
 		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
 		p$formula <- build.formula(p$dep,p$tab,p$env)
