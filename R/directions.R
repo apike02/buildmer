@@ -7,12 +7,13 @@ backward <- function (p) {
 				p$reml <- x
 				p$fit(p,p$formula)
 			})
-			if (all(sapply(res,conv))) {
+			converged <- lapply(res,conv)
+			if (all(unlist(converged))) {
 				p$cur.reml <- res[[1]]
 				p$cur.ml <- res[[2]]
 				return(p)
 			}
-			p <- reduce.noconv(p)
+			p <- reduce.noconv(p,converged)
 			if (!any(!is.na(p$tab$block))) return(p)
 		}
 	}
@@ -36,8 +37,9 @@ backward <- function (p) {
 				progress('Fitting ML reference model')
 				p$reml <- FALSE
 				p$cur.ml <- p$fit(p,p$formula)
-				if (!conv(p$cur.ml)) {
-					p <- reduce.noconv(p)
+				converged <- conv(p$cur.ml)
+				if (!converged) {
+					p <- reduce.noconv(p,converged)
 					if (!any(!is.na(p$tab$block))) return(p)
 					p <- fit.references.parallel(p)
 				}
@@ -46,8 +48,9 @@ backward <- function (p) {
 				progress('Fitting REML reference model')
 				p$reml <- TRUE
 				p$cur.reml <- p$fit(p,p$formula)
-				if (!conv(p$cur.reml)) {
-					p <- reduce.noconv(p)
+				converged <- conv(p$cur.reml)
+				if (!converged) {
+					p <- reduce.noconv(p,converged)
 					if (!any(!is.na(p$tab$block))) return(p)
 					p <- fit.references.parallel(p)
 				}
@@ -227,8 +230,9 @@ order <- function (p) {
 		repeat {
 			have <- p$tab
 			cur <- p$fit(p,build.formula(p$dep,have,p$env))
-			if (conv(cur)) break
-			p <- reduce.noconv(p)
+			converged <- conv(cur)
+			if (converged) break
+			p <- reduce.noconv(p,converged)
 			if (!any(!is.na(p$tab$block))) return(p)
 		}
 		repeat {
@@ -259,7 +263,9 @@ order <- function (p) {
 			check$score <- sapply(mods,function (mod) if (conv(mod)) p$crit(p,cur,mod) else NaN)
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
-				progress('None of the models converged - giving up ordering attempt.')
+				statuses <- sapply(mods,function (mod) attr(conv(mod),'reason'))
+				statuses <- statuses[!is.na(statuses)]
+				progress('None of the models converged - giving up ordering attempt. The types of convergence failure are:\n',paste(unique(statuses),collapse='\n    '))
 				p$tab <- have
 				p$model <- cur
 				return(p)
@@ -273,8 +279,9 @@ order <- function (p) {
 				# needs an extra fit to obtain the new 'current' model.
 				form <- build.formula(p$dep,have,p$env)
 				cur <- p$fit(p,form)
-				if (!conv(cur)) {
-					progress('The reference model for the next step failed to converge - giving up ordering attempt.')
+				converged <- converged(cur)
+				if (!converged) {
+					progress('The reference model for the next step failed to converge - giving up ordering attempt.\nThe failure was: ',attr(converged,'reason'))
 					return(p)
 				}
 			}
@@ -305,8 +312,13 @@ order <- function (p) {
 	p
 }
 
-reduce.noconv <- function (p) {
-	progress('Convergence failure. Reducing terms and retrying...')
+reduce.noconv <- function (p,converged) {
+	if (length(converged) == 1) {
+		progress('Convergence failure. Reducing terms and retrying...\nThe failure was: ',attr(converged,'reason'))
+	} else {
+		statuses <- sapply(converged,function (x) attr(x,'reason'))
+		progress('Convergence failure. Reducing terms and retrying...\nThe failures were: ',paste(unique(statuses),collapse='\n    '))
+	}
 	cands <- p$tab$block[!is.na(p$tab$block)]
 	if (length(unique(cands)) < 2) {
 		stop('No terms left for reduction, giving up')
