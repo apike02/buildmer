@@ -63,7 +63,7 @@ patch.mertree <- function (p,eltname,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
 	if (inherits(model,'try-error')) return(model)
-	if (!conv(model[[eltname]])) return(model[[eltname]])
+	if (!converged(model[[eltname]])) return(model[[eltname]])
 	model$call$data <- p$data.name
 	ctrl <- paste0(eltname,'.control')
 	if (!is.null(model$call$family))  model$call$family  <- p$family.name
