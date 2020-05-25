@@ -23,12 +23,13 @@ buildmer.fit <- function (p) {
 			# Force off
 			p$can.use.reml <- FALSE
 		}
+		# else: it's NA --> use default:
 		p$dots$REML <- NULL
 	} else {
 		# Default case, in which case one optimization can be applied:
 		if (all(p$crit.name %in% c('deviance','devexp'))) {
-			    p$can.use.reml <- FALSE
-			    p$force.reml <- TRUE
+			p$can.use.reml <- FALSE
+			p$force.reml <- TRUE
 		}
 	}
 
@@ -56,9 +57,17 @@ buildmer.fit <- function (p) {
 	crits <- p$crit
 	if (length(crits) == 1) crits <- sapply(1:length(p$direction),function (i) crits)
 	if (length(p$direction)) {
-		if (length(crits) != length(p$direction)) stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
-		if (length(p$direction)) for (i in 1:length(p$direction)) p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
-		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) p$results$LRT <- exp(p$results$LRT)
+		if (length(crits) != length(p$direction)) {
+			stop("Arguments for 'crit' and 'direction' don't make sense together -- they should have the same lengths!")
+		}
+		if (length(p$direction)) {
+			for (i in 1:length(p$direction)) {
+				p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
+			}
+		}
+		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) {
+			p$results$LRT <- exp(p$results$LRT)
+		}
 	}
 	if (is.null(p$model)) {
 		message('Fitting the final model')
@@ -68,7 +77,7 @@ buildmer.fit <- function (p) {
 }
 
 buildmer.finalize <- function (p) {
-	ret <- mkBuildmer(model=p$model,p=p)
+	ret <- mkBuildmer(p$model,p)
 	ret@p$in.buildmer <- TRUE
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)

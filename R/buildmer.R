@@ -99,7 +99,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	)
 	if ('intercept' %in% names(p$data)) stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	if (isTRUE(p$dots$I_KNOW_WHAT_I_AM_DOING)) p$dots$I_KNOW_WHAT_I_AM_DOING <- NULL
-	else if (!all(p$crit.name %in% c('custom','deviance','devexp')) && !is.gaussian(p$family)) stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, or use crit='deviance' (note that this is not a formal test). Alternatively, find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE)"))
+	else if (!all(p$crit.name %in% c('custom','deviance','devexp')) && !is.gaussian(p$family)) stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, or use crit='deviance' (note that this is not a formal test) or crit='F'. Alternatively, find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE)"))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
