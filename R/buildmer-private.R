@@ -44,10 +44,17 @@ buildmer.fit <- function (p) {
 	if (is.null(p$cluster)) {
 		p$parallel <- FALSE
 		p$parply <- lapply
+		cleanup.cluster <- FALSE
 	} else {
 		p$parallel <- TRUE
 		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
 		p$env <- .GlobalEnv
+		if (is.numeric(p$cluster)) {
+			p$cluster <- parallel::makeCluster(p$cluster,outfile='')
+			cleanup.cluster <- TRUE
+		} else {
+			cleanup.cluster <- FALSE
+		}
 		parallel::clusterExport(p$cluster,privates,environment())
 	}
 
@@ -72,6 +79,9 @@ buildmer.fit <- function (p) {
 	if (is.null(p$model)) {
 		message('Fitting the final model')
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
+	}
+	if (cleanup.cluster) {
+		stopCluster(p$cluster)
 	}
 	p
 }
