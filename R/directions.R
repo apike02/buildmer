@@ -21,9 +21,17 @@ backward <- function (p) {
 	if (is.null(p$tab)) {
 		p$tab <- tabulate.formula(p$formula)
 	}
+	if (!p$crit.name %in% colnames(p$tab)) {
+		if (nrow(p$tab)) {
+			p$tab$Iteration <- 0
+			p$tab[,p$crit.name] <- rep(NA,nrow(p$tab))
+		}
+	}
 	if (p$parallel) {
 		parallel::clusterExport(p$cl,c('converged','build.formula','unravel','can.remove','get2LL','getdf'),environment())
 	}
+
+	iter <- 0
 	repeat {
 		need.ml <- !p$force.reml
 		need.reml <- p$force.reml || (p$can.use.reml && any(sapply(unique(p$tab$block),function (b) {
@@ -62,7 +70,11 @@ backward <- function (p) {
 			return(p)
 		}
 		progress('Testing terms')
-		results <- p$parply(unique(p$tab$block[!is.na(p$tab$block)]),function (b) {
+		results <- p$parply(unique(p$tab$block),function (b) {
+			if (is.na(b)) {
+				# cannot remove term because of 'include'
+				return(list(val=rep(NA,sum(is.na(p$tab$block)))))
+			}
 			i <- which(p$tab$block == b)
 			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) {
 				# cannot remove term due to marginality
@@ -83,13 +95,8 @@ backward <- function (p) {
 		})
 		results <- unlist(sapply(results,`[[`,1))
 		p$tab[,p$crit.name] <- results
-		if (is.null(p$results)) {
-			p$tab$Iteration <- 1
-			p$results <- p$tab
-		} else {
-			p$tab$Iteration <- p$results$Iteration[nrow(p$results)] + 1
-			p$results <- rbind(p$results,p$tab)
-		}
+		p$tab$Iteration <- iter <- iter+1
+		p$results <- rbind(p$results,p$tab)
 		progrep <- p$tab
 		progrep$index <- progrep$code <- progrep$ok <- NULL
 		if (p$crit.name %in% c('LRT','LRT2')) progrep[,p$crit.name] <- exp(results)
