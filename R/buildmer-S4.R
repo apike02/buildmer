@@ -136,13 +136,14 @@ setMethod('diag','formula',function (x) {
 	build.formula(dep,tab)
 })
 
-#sapply(c('MixMod','bam','gam','glm','lm','glmmTMB','gls','JuliaCall','lme','nlme','lmerMod','glmerMod','lmerModLmerTest','lmertree','glmertree','lmtree','glmtree','multinom','nnet'),function (x) methods(class=x)) %>% unlist %>% sapply(. %>% strsplit('.',fixed=T) %>% .[[1]] %>% .[1:(length(.)-1)] %>% paste0(collapse='.')) %>% unique %>% .[!endsWith(.,'-method')] %>% .[!. %in% c('anova','summary','show')] %>% sapply(function (x) {
+#sapply(c('MixMod','bam','clm','clmm','gam','glm','lm','glmmTMB','gls','JuliaCall','lme','nlme','lmerMod','glmerMod','lmerModLmerTest','lmertree','glmertree','lmtree','glmtree','multinom','nnet'),function (x) methods(class=x)) %>% unlist %>% sapply(. %>% strsplit('.',fixed=T) %>% .[[1]] %>% .[1:(length(.)-1)] %>% paste0(collapse='.')) %>% unique %>% .[!endsWith(.,'-method')] %>% .[!. %in% c('anova','summary','show')] %>% sapply(function (x) {
 #	forms <- names(formals(x))
 #	forms2 <- paste0(forms[-1],collapse=',')
 #	formsfull <- paste0(forms,collapse=',')
 #	cat("#' @method",x,'buildmer\n')
 #	cat("#' @export\n")
 #	cat(paste0(x,'.buildmer <- function(',formsfull,') ',x,'(',forms[1],'=',forms[1],'@model,',forms2,')\n'))
+#	x
 #}) -> x
 #' @method coef buildmer
 #' @export
@@ -356,3 +357,28 @@ isLMM.buildmer <- function (x,...) isLMM(x=x@model,...)
 #' @importFrom lme4 refit
 #' @export
 refit.buildmer <- function (object,...) refit(object=object@model,...)
+
+# Package ordinal is in Suggests rather than Depends, so:
+
+setGeneric('convergence',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
+#' @method convergence buildmer
+#' @export
+convergence.buildmer <- function(object,...)
+	if (requireNamespace('ordinal')) {
+		ordinal::convergence(object=object@model,...)
+	} else stop("This method requires the package 'ordinal' to be installed")
+setGeneric('nominal_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
+#' @method nominal_test buildmer
+#' @export
+nominal_test.buildmer <- function(object,...)
+	if (requireNamespace('ordinal')) {
+		ordinal::nominal_test(object=object@model,...)
+	} else stop("This method requires the package 'ordinal' to be installed")
+setGeneric('scale_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
+#' @method scale_test buildmer
+#' @export
+scale_test.buildmer <- function(object,...)
+	if (requireNamespace('ordinal')) {
+		ordinal::scale_test(object=object@model,...)
+	} else stop("This method requires the package 'ordinal' to be installed")
+# the 'slice' and 'condVar' methods have been omitted on purpose

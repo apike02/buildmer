@@ -135,14 +135,14 @@ converged <- function (model,singular.ok=FALSE) {
 			if ((err <- model$mgcv.conv$rms.grad) > .04) return(failure('mgcv reports absolute gradient containing values >0.04',err))
 			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
 		}
-		return(success('All checks passed (gam)'))
+		return(success('All buildmer checks passed (gam)'))
 	}
 	if (inherits(model,'merMod')) {
 		if ((err <- model@optinfo$conv$opt) != 0) return(failure('Optimizer reports not having finished',err))
 		if (!length(model@optinfo$conv$lme4)) return(success('No lme4 info available -- succeeding by default (dangerous)'))
 		if (is.null(model@optinfo$conv$lme4$code)) return(setattr(singular.ok,'Singular fit'))
 		if (any((err <- model@optinfo$conv$lme4$code) != 0)) return(failure('lme4 reports not having converged',err))
-		return(success('All checks passed (merMod)'))
+		return(success('All buildmer checks passed (merMod)'))
 	}
 	if (inherits(model,'glmmTMB')) {
 		if (!is.null(model$fit$convergence) && (err <- model$fit$convergence) != 0) return(failure('glmmTMB reports nonconvergence',err))
@@ -154,10 +154,24 @@ converged <- function (model,singular.ok=FALSE) {
 				if ((err <- min(ev)) < -.002) return(failure('Hessian contains negative eigenvalues <-0.002',err))
 			}
 		}
-		return(success('All checks passed (glmmTMB)'))
+		return(success('All buildmer checks passed (glmmTMB)'))
 	}
-	if (inherits(model,'nnet'))   return(if (model$convergence == 0) success('All checks passed (nnet)'  ) else failure('nnet reports nonconvergence',model$convergence))
-	if (inherits(model,'MixMod')) return(if (model$converged       ) success('All checks passed (MixMod)') else failure('GLMMadaptive reports nonconvergence'))
+	if (inherits(model,'nnet'))   return(if (model$convergence == 0) success('All buildmer checks passed (nnet)'  ) else failure('nnet reports nonconvergence',model$convergence))
+	if (inherits(model,'MixMod')) return(if (model$converged)        success('All buildmer checks passed (MixMod)') else failure('GLMMadaptive reports nonconvergence'))
+	if (inherits(model,'clm') || inherits(model,'clmm')) {
+		if (inherits(model,'clm')) {
+			if (model$convergence$code != 0) return(failure('clm reports nonconvergence',model$messages))
+			if (model$maxGradient > .04)     return(failure('Absolute gradient contains values > .04',model$maxGradient))
+		}
+		if (inherits(model,'clmm')) {
+			if (model$optRes$convergence != 0)           return(failure('clmm reports nonconvergence',model$optRes$message))
+			if ((err <- max(abs(model$gradient))) > .04) return(failure('Absolute gradient contains values > .04',err))
+		}
+		ev <- try(eigen(model$Hessian)$values,silent=TRUE)
+		if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
+		if ((err <- min(ev)) < -.002) return(failure('Hessian contains negative eigenvalues <-0.002',err))
+		return(success('All buildmer checks passed (clm/clmm)'))
+	}
 	success('No checks needed or known for this model type',class(model))
 }
 

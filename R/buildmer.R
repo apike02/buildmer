@@ -104,6 +104,62 @@ buildbam <- function (formula,data=NULL,family=gaussian(),cl=NULL,direction=c('o
 	buildmer.finalize(p)
 }
 
+#' Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}
+#' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax
+#' @template data
+#' @template common
+#' @template summary
+#' @param ... Additional options to be passed to \code{clmm}
+#' @examples
+#' if (requireNamespace('ordinal')) {
+#' model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,link='probit',
+#' 	threshold='equidistant')
+#' }
+#' @template seealso
+#' @details
+#' \code{buildclmm} tries to guess which of \code{...} are intended for \code{clm} and which are for \code{clmm}. If this goes wrong, this behavior can be suppressed by passing explicit \code{clm.control} and \code{clmm.control} arguments. If one of these is specified, any \code{control} argument is interpreted to be intended for the other one; if both are specified in conjunction with a third \code{control} argument, an error is raised.
+#' @export
+buildclmm <- function (formula,data=NULL,cl=NULL,direction=c('order','backward'),crit='LRT',include=NULL,calc.summary=TRUE,...) {
+	if (!requireNamespace('ordinal',quietly=TRUE)) stop('Please install package ordinal')
+	p <- list(
+		formula=formula,
+		data=data,
+		family=family,
+		cluster=cl,
+		direction=direction,
+		crit=mkCrit(crit),
+		crit.name=mkCritName(crit),
+		elim=mkElim(crit),
+		fit=fit.clmm,
+		include=include,
+		calc.anova=FALSE,
+		calc.summary=calc.summary,
+		data.name=substitute(data),
+		subset.name=substitute(subset),
+		can.use.reml=FALSE,
+		force.reml=FALSE,
+		env=parent.frame(),
+		dots=list(...)
+	)
+	ctrls <- intersect(names(p$dots),c('control','clm.control','clmm.control'))
+	if (length(ctrls) > 2) {
+		stop("Three 'control' arguments were specified---please remove one of them, as it is not clear what you want!")
+	}
+	p$control.names <- list(clm=substitute(clm.control),clmm=substitute(clmm.control))
+	if (is.element('control',ctrls)) {
+		have <- setdiff(ctrls,'control')
+		for (x in c('clm.control','clmm.control')) {
+			if (!is.element(x,ctrls)) {
+				p$dots[[x]] <- p$dots$control
+				p$control.names[[x]] <- substitute(control)
+			}
+		}
+		p$dots$control <- NULL
+	}
+	p <- buildmer.fit(p)
+	buildmer.finalize(p)
+}
+
 #' Use \code{buildmer} to perform stepwise elimination using a custom fitting function
 #' @template formula
 #' @template data

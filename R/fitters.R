@@ -50,6 +50,23 @@ fit.buildmer <- function (p,formula) {
 	}
 }
 
+fit.clmm <- function (p,formula) {
+	clm.control <- p$dots$clm.control
+	clmm.control <- p$dots$clmm.control
+	p$dots$clm.control <- p$dots$clmm.control <- NULL
+	if (is.null(lme4::findbars(formula))) {
+		p$dots <- p$dots[names(p$dots) %in% names(formals(ordinal::clm))]
+		p$dots$control <- clm.control
+		p$control.name <- p$control.names$clm
+		patch.lm(p,ordinal::clm,c(list(formula=formula,data=p$data),p$dots))
+	} else {
+		p$dots <- p$dots[names(p$dots) %in% names(formals(ordinal::clmm))]
+		p$dots$control <- clmm.control
+		p$control.name <- p$control.names$clmm
+		patch.lm(p,ordinal::clmm,c(list(formula=formula,data=p$data),p$dots))
+	}
+}
+
 fit.gam <- function (p,formula) {
 	re <- re2mgcv(formula,p$data)
 	formula <- re$formula
