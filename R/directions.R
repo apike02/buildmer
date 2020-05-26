@@ -272,7 +272,7 @@ order <- function (p) {
 			if (!length(ok)) {
 				statuses <- sapply(mods,function (mod) attr(converged(mod),'reason'))
 				statuses <- statuses[!is.na(statuses)]
-				progress('None of the models converged - giving up ordering attempt. The types of convergedergence failure are:\n',paste(unique(statuses),collapse='\n    '))
+				progress('None of the models converged - giving up ordering attempt. The types of convergence failure are:\n',paste(unique(statuses),collapse='\n    '))
 				p$tab <- have
 				p$model <- cur
 				return(p)

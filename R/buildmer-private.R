@@ -81,13 +81,13 @@ buildmer.fit <- function (p) {
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
 	if (cleanup.cluster) {
-		stopCluster(p$cluster)
+		parallel::stopCluster(p$cluster)
 	}
 	p
 }
 
 buildmer.finalize <- function (p) {
-	ret <- mkBuildmer(p$model,p)
+	ret <- mkBuildmer(model=p$model,p=p)
 	ret@p$in.buildmer <- TRUE
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)

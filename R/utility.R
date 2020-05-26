@@ -111,7 +111,7 @@ build.formula <- function (dep,terms,env=parent.frame()) {
 #' good2 <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy)
 #' bad <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy,control=lmerControl(
 #'             optimizer='bobyqa',optCtrl=list(maxfun=1)))
-#' sapply(c(good1,good2,bad),converged)
+#' sapply(list(good1,good2,bad),converged)
 #' @export
 converged <- function (model,singular.ok=FALSE) {
 	setattr <- function (x,msg,err=NULL) {
