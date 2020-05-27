@@ -4,7 +4,9 @@
 \name{migrant}
 \alias{migrant}
 \title{A very small dataset from a pilot study on sound change.}
-\format{A standard data frame.}
+\format{
+A standard data frame.
+}
 \usage{
 data(migrant)
 }

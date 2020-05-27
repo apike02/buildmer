@@ -4,7 +4,9 @@
 \name{vowels}
 \alias{vowels}
 \title{Vowel data from a pilot study.}
-\format{A standard data frame.}
+\format{
+A standard data frame.
+}
 \usage{
 data(vowels)
 }

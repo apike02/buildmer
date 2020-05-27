@@ -4,10 +4,16 @@
 '.' denotes minor bug fixes
 
 Deprecated and liable to be removed in a future version:
- * buildjulia and assorted functions (as of 2020-02-04)
+ * buildjulia() and assorted functions (as of 2020-02-04)
+ * conv() has been renamed to converged() (as of 2020-02-05)
 
 1.6
 
+*** Function conv() has been renamed to converged(). Of course, an alias
+    remains, but it is now deprecated and will be removed in a future release.
+** clm and clmm support
+* Argument 'cl' now accepts an integer argument, in which case buildmer will
+  create and manage a cluster for you
 * REML can now be forced on by passing REML=TRUE. As an optimization, REML is
   forced on if the deviance-explained criterion is used. This can be disabled
   by passing REML=NA, which will fall back to the default behavior of
@@ -19,10 +25,13 @@ Deprecated and liable to be removed in a future version:
   specifying their own fitting function anyway.
 * Remove deprecated 'reduce.fixed' and 'reduce.random' arguments (deprecated
   since 2019-11-27)
-. Fix an error in calculating Wald p-values for ANOVA F scores affecting ndf >1
+* Print the failure details when convergence failures cause order() or
+  backward() to exit early
+. Fix a bug combining backward() with the 'include' argument (GH issue #3)
+. Fix a bug in calculating Wald p-values for ANOVA F scores affecting ndf >1
 . Allow ddf='KR' as an abbreviation for ddf='Kenward-Roger'
 
-1.5
+1.5 (2020-03-01)
 
 *** API change to the 'crit' function, which now has a new function signature
     (p,cur,alt)
@@ -44,7 +53,7 @@ Deprecated and liable to be removed in a future version:
 . Progress messages are now word-wrapped properly
 . Fix incorrect filtering of '...' for (g)lmtree models
 
-1.4
+1.4 (2019-12-03)
 
 *** The 'reduce.fixed' and 'reduce.random' arguments have been deprecated; use
     the 'include' argument instead
@@ -85,7 +94,7 @@ Deprecated and liable to be removed in a future version:
   transitioning from fixed to random effects in lme4 models.
 . Fix diag() and add.terms() for one-sided formulas
 
-1.3
+1.3 (2019-09-28)
 
 ** GLMMadaptive support
 * lme models (package nlme) now have full support for the random part as well
@@ -102,7 +111,7 @@ Deprecated and liable to be removed in a future version:
 . The 'include' argument was not being processed correctly when a cluster was
   provided. This is now fixed.
 
-1.2.1
+1.2.1 (2019-09-03)
 
 . Avoid the use of reformulate(), as its env= argument is only available on R
   >= 3.6 (bug reported by Willemijn Heeren)
@@ -112,7 +121,7 @@ Deprecated and liable to be removed in a future version:
 . Remove terms by block when a reference model fails to converge and detect
   empty models
 
-1.2
+1.2 (2019-08-27)
 
 ** Proper environment support
 ** glmertree support
@@ -130,7 +139,7 @@ Deprecated and liable to be removed in a future version:
 . Rework add.terms and related random-effects detection to fix obscure bug
   when tabulating non-r.e. terms that fool lme4::findbars (e.g. 'ar1(x|g)')
 
-1.1
+1.1 (2019-05-18)
 
 ** Large rewrite of internal code organization. You can now specify arbitrary
    fitting functions, criteria, and elimination functions.
@@ -143,6 +152,6 @@ Deprecated and liable to be removed in a future version:
 . Remove incorrect gradient check for mgcv models in conv(), instead check for
   'full convergence' string
 
-1.0
+1.0 (2019-03-31)
 
 *** First public release
