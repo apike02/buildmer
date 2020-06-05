@@ -14,13 +14,13 @@ add.terms <- function (formula,add) {
 	terms <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
-	fixed.terms <- Filter(Negate(is.random.term),terms)
-	random.terms <- Filter(is.random.term,terms)
-	if (length(random.terms)) random.terms <- sapply(random.terms,function (x) if (mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
+	fixed.terms <- Filter(Negate(buildmer:::is.random.term),terms)
+	random.terms <- Filter(buildmer:::is.random.term,terms)
+	if (length(random.terms)) random.terms <- sapply(random.terms,function (x) if (buildmer:::mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
 
 	for (term in add) {
 		if (is.random.term(term)) {
-			bar <- mkTerm(term)
+			bar <- buildmer:::mkTerm(term)
 			if (bar[[1]] == '(') {
 				# independent term: tack it on at the end
 				random.terms <- c(random.terms,term)
@@ -29,13 +29,13 @@ add.terms <- function (formula,add) {
 			bar.grouping <- as.character(bar[3])
 			bar.terms <- bar[[2]]
 			# Find suitable terms for 'intruding', i.e.: can we add the term requested to a pre-existing term group?
-			suitable <- if (length(random.terms)) which(sapply(random.terms,function (term) mkTerm(term)[[2]][[3]] == bar.grouping)) else NULL
+			suitable <- if (length(random.terms)) which(sapply(random.terms,function (term) buildmer:::mkTerm(term)[[2]][[3]] == bar.grouping)) else NULL
 			if (length(suitable)) {
 				random.terms[[suitable[1]]] <- sapply(random.terms[[suitable[1]]],function (x) {
-					bar <- mkTerm(x)[[2]]
+					bar <- buildmer:::mkTerm(x)[[2]]
 					grouping <- as.character(bar[3])
 					terms <- as.character(bar[2])
-					form <- mkForm(terms)
+					form <- buildmer:::mkForm(terms)
 					terms <- terms(form,keep.order=TRUE)
 					intercept <- attr(terms,'intercept')
 					terms <- attr(terms,'term.labels')
@@ -48,10 +48,14 @@ add.terms <- function (formula,add) {
 			} else {
 				#still have to tack it on at the end in the end...
 				term <- paste(bar.terms,collapse=' + ')
-				if (!any(bar.terms == '1')) term <- paste0('0 + ',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
+				if (!any(bar.terms == '1')) {
+					term <- paste0('0 + ',term) #for some reason, "!'1' %in% bar.terms" complains about requiring vector arguments... well duh?
+				}
 				random.terms <- c(random.terms,paste0('(',term,' | ',bar.grouping,')'))
 			}
-		} else fixed.terms <- c(fixed.terms,term)
+		} else {
+			fixed.terms <- c(fixed.terms,term)
+		}
 	}
 	terms <- c(as.numeric(intercept),fixed.terms,random.terms)
 	stats::as.formula(paste0(dep,'~',paste0(terms,collapse='+')),environment(formula))
@@ -94,7 +98,7 @@ build.formula <- function (dep,terms,env=parent.frame()) {
 			cur <- paste0('(',paste0(termlist,'|',unique(cur$grouping)),')')
 			terms <- terms[!ii,]
 		}
-		form <- add.terms(form,cur)
+		form <- buildmer:::add.terms(form,cur)
 	}
 	environment(form) <- env
 	form
@@ -194,17 +198,19 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 re2mgcv <- function (formula,data) {
 	dep <- as.character(formula[[2]])
 	data <- data[!is.na(data[[dep]]),]
-	formula <- tabulate.formula(formula)
+	formula <- buildmer:::tabulate.formula(formula)
 	fixed <- is.na(formula$grouping)
 	random <- formula[!fixed,]
 	formula <- formula[fixed,]
 	org.names <- names(data)
 	for (g in unique(random$grouping)) {
-		if (!g %in% names(data)) stop('No factor named "',g,'" in your data')
+		if (!g %in% names(data)) {
+			stop('No factor named "',g,'" in your data')
+		}
 		data[[g]] <- factor(data[[g]])
 		tab <- random[random$grouping == g,]
 		tab$index <- tab$grouping <- NA
-		f <- build.formula(dep,tab)
+		f <- buildmer:::build.formula(dep,tab)
 		terms <- model.matrix(f,data)
 		nms <- gsub('[():]','_',colnames(terms))
 		for (i in 1:ncol(terms)) {
@@ -212,14 +218,16 @@ re2mgcv <- function (formula,data) {
 				term <- paste0('s(',g,',bs="re")')
 			} else {
 				nm <- paste0(g,'_',nms[i])
-				if (nm %in% org.names) stop('Error: please remove/rename ',nm,' from your data!')
+				if (nm %in% org.names) {
+					stop('Error: please remove/rename ',nm,' from your data!')
+				}
 				data[[nm]] <- terms[,i]
 				term <- paste0('s(',g,',',nm,',bs="re")')
 			}
 			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=FALSE)
 		}			
 	}
-	formula <- build.formula(dep,formula)
+	formula <- buildmer:::build.formula(dep,formula)
 	list(formula=formula,data=data)
 }
 
@@ -354,10 +362,10 @@ remove.terms <- function (formula,remove) {
 tabulate.formula <- function (formula,group=NULL) {
 	decompose.random.terms <- function (terms) {
 		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=TRUE)
-			g <- unwrap.terms(x[3])
+			x <- buildmer:::unwrap.terms(x,inner=TRUE)
+			g <- buildmer:::unwrap.terms(x[3])
 			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=TRUE)
+			terms <- buildmer:::unwrap.terms(terms,intercept=TRUE)
 			sapply(g,function (g) terms,simplify=FALSE)
 		})
 		unlist(terms,recursive=FALSE)
@@ -368,7 +376,7 @@ tabulate.formula <- function (formula,group=NULL) {
 		randoms <- lapply(groups,function (g) {
 			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
 			terms <- lapply(terms,function (x) x[[2]])
-			terms <- lapply(terms,function (x) unravel(x,'+'))
+			terms <- lapply(terms,function (x) buildmer:::unravel(x,'+'))
 			terms <- unique(sapply(terms,as.character))
 			unique(unlist(terms))
 		})
@@ -376,7 +384,9 @@ tabulate.formula <- function (formula,group=NULL) {
 		randoms
 	}
 	mkGroups <- function (t) {
-		for (x in group) t <- gsub(x,x,t,perl=TRUE)
+		for (x in group) {
+			t <- gsub(x,x,t,perl=TRUE)
+		}
 		t
 	}
 
@@ -384,11 +394,13 @@ tabulate.formula <- function (formula,group=NULL) {
 	terms <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
 	terms <- attr(terms,'term.labels')
-	if (intercept) terms <- c('1',terms)
+	if (intercept) {
+		terms <- c('1',terms)
+	}
 
 	# Build lists to check which terms are currently present.
-	fixed.terms  <- Filter(Negate(is.random.term),terms)
-	random.terms <- Filter(is.random.term,terms)
+	fixed.terms  <- Filter(Negate(buildmer:::is.random.term),terms)
+	random.terms <- Filter(buildmer:::is.random.term,terms)
 	random.terms <- decompose.random.terms(random.terms)
 
 	terms <- lapply(1:length(terms),function (i) {

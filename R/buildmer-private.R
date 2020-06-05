@@ -48,7 +48,6 @@ buildmer.fit <- function (p) {
 		} else {
 			cleanup.cluster <- FALSE
 		}
-		parallel::clusterExport(p$cluster,privates,environment())
 	}
 
 	# Let's go
@@ -85,7 +84,6 @@ buildmer.finalize <- function (p) {
 	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
 	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	ret@p$in.buildmer <- FALSE
-	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=privates),silent=TRUE)
 	ret
 }
 
@@ -129,15 +127,14 @@ check.ddf <- function (ddf) {
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {
-	term <- mkTerm(term)
+	term <- buildmer:::mkTerm(term)
 	if (is.name(term)) return(FALSE)
 	if (term[[1]] == '|') return(TRUE)
 	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(TRUE)
 	FALSE
 }
 mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),env=env)
-mkTerm <- function (term) mkForm(term)[[2]]
-privates <- c('add.terms','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')
+mkTerm <- function (term) buildmer:::mkForm(term)[[2]]
 
 progress <- function (...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
@@ -167,9 +164,15 @@ unravel <- function (x,sym=c(':','interaction')) {
 unwrap.terms <- function (terms,inner=FALSE,intercept=FALSE) {
 	form <- stats::as.formula(paste0('~',terms))
 	terms <- terms(form,keep.order=TRUE)
-	if (intercept) intercept <- attr(terms,'intercept')
-	if (inner) return(terms[[2]])
+	if (intercept) {
+		intercept <- attr(terms,'intercept')
+	}
+	if (inner) {
+		return(terms[[2]])
+	}
 	terms <- attr(terms,'term.labels')
-	if (intercept) terms <- c('1',terms)
+	if (intercept) {
+		terms <- c('1',terms)
+	}
 	terms
 }
