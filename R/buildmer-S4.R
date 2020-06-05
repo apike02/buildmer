@@ -16,8 +16,8 @@
 #' @export mkBuildmer
 mkBuildmer <- setClass('buildmer',slots=list(model='ANY',p='list',anova='ANY',summary='ANY'))
 
-#' @import methods
 #' @method show buildmer
+#' @importFrom methods show
 #' @export
 show.buildmer <- function (object) {
 	methods::show(object@model)
@@ -29,6 +29,7 @@ show.buildmer <- function (object) {
 setMethod('show','buildmer',show.buildmer)
 
 #' @method anova buildmer
+#' @importFrom stats anova
 #' @export
 anova.buildmer <- function (object,...) try({
 	if (length(object@p$messages)) warning(object@p$messages)
@@ -235,60 +236,60 @@ rstudent.buildmer <- function (model,...) rstudent(model=model@model,...)
 #' @method weights buildmer
 #' @export
 weights.buildmer <- function (object,...) weights(object=object@model,...)
-#' @import stats
 #' @method alias buildmer
+#' @importFrom stats alias
 #' @export
 alias.buildmer <- function (object,...) alias(object=object@model,...)
-#' @import stats
 #' @method case.names buildmer
+#' @importFrom stats case.names
 #' @export
 case.names.buildmer <- function (object,...) case.names(object=object@model,...)
-#' @import stats
 #' @method dfbeta buildmer
+#' @importFrom stats dfbeta
 #' @export
 dfbeta.buildmer <- function (model,...) dfbeta(model=model@model,...)
-#' @import stats
 #' @method dfbetas buildmer
+#' @importFrom stats dfbetas
 #' @export
 dfbetas.buildmer <- function (model,...) dfbetas(model=model@model,...)
-#' @import stats
 #' @method dummy.coef buildmer
+#' @importFrom stats dummy.coef
 #' @export
 dummy.coef.buildmer <- function (object,...) dummy.coef(object=object@model,...)
-#' @import stats
 #' @method hatvalues buildmer
+#' @importFrom stats hatvalues
 #' @export
 hatvalues.buildmer <- function (model,...) hatvalues(model=model@model,...)
-#' @import stats
 #' @method kappa buildmer
+#' @importFrom stats kappa
 #' @export
 kappa.buildmer <- function (z,...) kappa(z=z@model,...)
-#' @import stats
 #' @method labels buildmer
+#' @importFrom stats labels
 #' @export
 labels.buildmer <- function (object,...) labels(object=object@model,...)
-#' @import stats
 #' @method proj buildmer
+#' @importFrom stats proj
 #' @export
 proj.buildmer <- function (object,...) proj(object=object@model,...)
-#' @import stats
 #' @method qqnorm buildmer
+#' @importFrom stats qqnorm
 #' @export
 qqnorm.buildmer <- function (y,...) qqnorm(y=y@model,...)
-#' @import stats
 #' @method qr buildmer
+#' @importFrom stats qr
 #' @export
 qr.buildmer <- function (x,...) qr(x=x@model,...)
-#' @import stats
 #' @method variable.names buildmer
+#' @importFrom stats variable.names
 #' @export
 variable.names.buildmer <- function (object,...) variable.names(object=object@model,...)
-#' @import stats
 #' @method df.residual buildmer
+#' @importFrom stats df.residual
 #' @export
 df.residual.buildmer <- function (object,...) df.residual(object=object@model,...)
-#' @import stats
 #' @method sigma buildmer
+#' @importFrom stats sigma
 #' @export
 sigma.buildmer <- function (object,...) sigma(object=object@model,...)
 #' @method VarCorr buildmer
@@ -363,22 +364,25 @@ refit.buildmer <- function (object,...) refit(object=object@model,...)
 setGeneric('convergence',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
 #' @method convergence buildmer
 #' @export
-convergence.buildmer <- function(object,...)
+convergence.buildmer <- function(object,...) {
 	if (requireNamespace('ordinal')) {
 		ordinal::convergence(object=object@model,...)
 	} else stop("This method requires the package 'ordinal' to be installed")
 setGeneric('nominal_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
+}
 #' @method nominal_test buildmer
 #' @export
-nominal_test.buildmer <- function(object,...)
+nominal_test.buildmer <- function(object,...) {
 	if (requireNamespace('ordinal')) {
 		ordinal::nominal_test(object=object@model,...)
 	} else stop("This method requires the package 'ordinal' to be installed")
+}
 setGeneric('scale_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
 #' @method scale_test buildmer
 #' @export
-scale_test.buildmer <- function(object,...)
+scale_test.buildmer <- function(object,...) {
 	if (requireNamespace('ordinal')) {
 		ordinal::scale_test(object=object@model,...)
 	} else stop("This method requires the package 'ordinal' to be installed")
+}
 # the 'slice' and 'condVar' methods have been omitted on purpose
