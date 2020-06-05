@@ -71,12 +71,13 @@ backward <- function (p) {
 		}
 		progress('Testing terms')
 		results <- p$parply(unique(p$tab$block),function (b) {
+			# This function could be run on cluster nodes, hence why all buildmer-internal functions need to be prefixed!
 			if (is.na(b)) {
 				# cannot remove term because of 'include'
 				return(list(val=rep(NA,sum(is.na(p$tab$block)))))
 			}
 			i <- which(p$tab$block == b)
-			if (!can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) {
+			if (!buildmer:::can.remove(p$tab,i) || any(paste(p$tab[i,'term'],p$tab[i,]$grouping) %in% paste(p$include$term,p$include$grouping))) {
 				# cannot remove term due to marginality
 				return(list(val=rep(NA,length(i))))
 			}
@@ -87,9 +88,9 @@ backward <- function (p) {
 				p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
 				m.cur <- if (need.reml && p$reml) p$cur.reml else p$cur.ml
 			}
-			f.alt <- build.formula(p$dep,p$tab[-i,],p$env)
+			f.alt <- buildmer:::build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
-			val <- if (converged(m.alt)) p$crit(p,m.alt,m.cur) else NaN
+			val <- if (buildmer:::converged(m.alt)) p$crit(p,m.alt,m.cur) else NaN
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
@@ -262,7 +263,7 @@ order <- function (p) {
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
-				form <- build.formula(p$dep,tab,p$env)
+				form <- buildmer:::build.formula(p$dep,tab,p$env)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})

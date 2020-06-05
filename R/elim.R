@@ -1,3 +1,5 @@
+# The crit.* functions could all be being run on cluster nodes, and hence need explicit buildmer::: prefixation for buildmer-internal functions!
+
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
 getdf  <- function (m) attr(stats::logLik(m),'df')
 getdev <- function (m) {
@@ -9,30 +11,27 @@ getdev <- function (m) {
 	1 - sum(ff^2)/(sum(ff^2)+sum(rr^2))
 }
 
-elim.AIC <- function (diff) diff > -.001
-elim.BIC <- elim.AIC
-elim.F   <- function (logp) exp(logp) >= .05
-elim.LRT <- elim.F
-elim.2LL <- elim.AIC
-elim.LL  <- elim.AIC
-elim.devexp <- elim.AIC
-elim.deviance <- elim.AIC
-
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
 crit.F <- function (p,ref,alt) {
-	if (!inherits(alt,'gam')) stop('crit.F currently only works with gam/bam models')
+	if (!inherits(alt,'gam')) {
+		stop('crit.F currently only works with gam/bam models')
+	}
 	r2_alt <- summary(alt,re.test=FALSE)$r.sq
 	df_alt <- df.residual(alt)
 	if (is.null(ref)) {
 		r2_ref <- 0
 		df_ref <- 0
 	} else {
-		if (!inherits(ref,'gam')) stop('crit.F currently only works with gam/bam models')
+		if (!inherits(ref,'gam')) {
+			stop('crit.F currently only works with gam/bam models')
+		}
 		r2_ref <- summary(ref,re.test=FALSE)$r.sq
 		df_ref <- df.residual(ref)
 	}
-	if (is.null(r2_alt) || is.null(r2_ref)) stop('r^2 not available for this family, cannot compute the F criterion!')
+	if (is.null(r2_alt) || is.null(r2_ref)) {
+		stop('r^2 not available for this family, cannot compute the F criterion!')
+	}
 	ndf <- df_alt - df_ref
 	ddf <- nobs(alt) - df_alt - alt$scale.estimated
 	num <- (r2_alt - r2_ref) / ndf
@@ -52,11 +51,11 @@ crit.F <- function (p,ref,alt) {
 }
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
-		chLL <- get2LL(alt)
-		chdf <- getdf(alt)
+		chLL <- buildmer:::get2LL(alt)
+		chdf <- buildmer:::getdf(alt)
 	} else {
-		chLL <- get2LL(ref) - get2LL(alt)
-		chdf <- getdf(alt) - getdf(ref)
+		chLL <- buildmer:::get2LL(ref) - buildmer:::get2LL(alt)
+		chdf <- buildmer:::getdf(alt)  - buildmer:::getdf(ref)
 	}
 	if (chdf <= 0) {
 		return(0)
@@ -71,7 +70,16 @@ crit.LRT <- function (p,ref,alt) {
 		stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
 	}
 }
-crit.2LL <- function (p,ref,alt) if (is.null(ref)) get2LL(alt) else get2LL(alt) - get2LL(ref)
+crit.2LL <- function (p,ref,alt) if (is.null(ref)) buildmer:::get2LL(alt) else buildmer:::get2LL(alt) - buildmer:::get2LL(ref)
 crit.LL <- crit.2LL
-crit.devexp <- function (p,ref,alt) if (is.null(ref)) getdev(alt) else getdev(alt) - getdev(ref)
+crit.devexp <- function (p,ref,alt) if (is.null(ref)) buildmer:::getdev(alt) else buildmer:::getdev(alt) - buildmer:::getdev(ref)
 crit.deviance <- crit.devexp
+
+elim.AIC <- function (diff) diff > -.001
+elim.BIC <- elim.AIC
+elim.F   <- function (logp) exp(logp) >= .05
+elim.LRT <- elim.F
+elim.2LL <- elim.AIC
+elim.LL  <- elim.AIC
+elim.devexp <- elim.AIC
+elim.deviance <- elim.AIC
