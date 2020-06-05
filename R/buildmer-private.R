@@ -2,17 +2,17 @@ buildmer.fit <- function (p) {
 	# Formula
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
-		if (is.null(p$dots$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
-		p$dep <- p$dots$dep
+		if (is.null(p$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
 		p$formula <- build.formula(p$dep,p$tab,p$env)
-		p$dots$dep <- NULL
 	} else {
 		p$dep <- as.character(p$formula[2])
 		p$tab <- tabulate.formula(p$formula)
 	}
 
 	# Include
-	if (!is.null(p$include) && 'formula' %in% class(p$include)) p$include <- tabulate.formula(p$include)
+	if (!is.null(p$include) && 'formula' %in% class(p$include)) {
+		p$include <- tabulate.formula(p$include)
+	}
 
 	# REML
 	if (!is.null(p$dots$REML)) {
@@ -33,15 +33,8 @@ buildmer.fit <- function (p) {
 		}
 	}
 
-	# For user debugging. The below comment will be found even if just printing the parsed R code:
-	'If you found this piece of code, congratulations: you can now override the internal buildmer parameter list!'
-	if ('p' %in% names(p$dots)) {
-		p <- c(p,p$dots$p)
-		p$dots$p <- NULL
-	}
-
 	# Parallel
-	if (is.null(p$cluster)) {
+	if (is.null(p$cl)) {
 		p$parallel <- FALSE
 		p$parply <- lapply
 		cleanup.cluster <- FALSE
@@ -134,11 +127,6 @@ check.ddf <- function (ddf) {
 }
 
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
-is.gaussian <- function (family) {
-	if (is.character(family)) family <- get(family)
-	if (is.function (family)) family <- family()
-	family$family == 'gaussian' && family$link == 'identity'
-}
 is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {
 	term <- mkTerm(term)
@@ -147,9 +135,6 @@ is.random.term <- function (term) {
 	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(TRUE)
 	FALSE
 }
-mkCrit <- function (crit) if (is.function(crit)) crit else get(paste0('crit.',crit))
-mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
-mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
 mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),env=env)
 mkTerm <- function (term) mkForm(term)[[2]]
 privates <- c('add.terms','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')

@@ -23,14 +23,14 @@ fit.bam <- function (p,formula) {
 }
 
 fit.buildmer <- function (p,formula) {
-	reml <- p$reml && is.gaussian(p$family)
+	reml <- p$reml && p$is.gaussian
 	if (is.null(lme4::findbars(formula))) {
 		p$dots$control <- NULL
 		if (reml) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
 			return(fit.gls(p,formula))
 		}
-		if (is.gaussian(p$family)) {
+		if (p$is.gaussian) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
 			progress('Fitting via lm: ',formula)
 			patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
@@ -40,7 +40,7 @@ fit.buildmer <- function (p,formula) {
 			patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 		}
 	} else {
-		if (is.gaussian(p$family)) {
+		if (p$is.gaussian) {
 			progress('Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',formula)
 			patch.lmer(p,lme4::lmer,c(list(formula=formula,data=p$data,REML=reml),p$dots))
 		} else {
@@ -136,7 +136,7 @@ fit.gamm <- function (p,formula) {
 }
 
 fit.gamm4 <- function (p,formula) {
-	reml <- p$reml && is.gaussian(p$family)
+	reml <- p$reml && p$is.gaussian
 	fixed <- lme4::nobars(formula)
 	bars <- lme4::findbars(formula)
 	random <- if (length(bars)) mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
@@ -182,27 +182,6 @@ fit.gls <- function (p,formula) {
 	patch.lm(p,nlme::gls,c(list(formula,data=p$data,method=method),p$dots))
 }
 
-fit.julia <- function (p,formula) {
-	if (is.null(lme4::findbars(formula))) return(fit.buildmer(p,formula))
-	progress('Fitting via Julia: ',formula)
-	.fit <- function (p) {
-		if (is.gaussian(p$family)) {
-			mod <- p$julia$call('LinearMixedModel',formula,p$data,need_return='Julia')
-		} else {
-			fam <- p$julia$call(p$julia_family,need_return='Julia')
-			if (is.null(p$julia_link)) {
-				mod <- p$julia$call('GeneralizedLinearMixedModel',formula,p$data,fam,need_return='Julia')
-			} else {
-				link <- p$julia$call(p$julia_link,need_return='Julia')
-				mod <- p$julia$call('GeneralizedLinearMixedModel',formula,p$data,fam,link,need_return='Julia')
-			}
-		}
-		if (!is.null(p$julia_fun)) mod <- p$julia_fun(p$julia,mod)
-		do.call(p$julia$call,c(list('fit!',mod),p$dots))
-	}
-	run(.fit,list(p))
-}
-
 fit.lme <- function (p,formula) {
 	fixed <- lme4::nobars(formula)
 	bars <- lme4::findbars(formula)
@@ -232,7 +211,7 @@ fit.mertree <- function (p,formula) {
 	if (is.null(bars)) {
 		ftext <- paste0(as.character(list(fixed)),' | ',p$partitioning,sep='',collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
-		if (is.gaussian(p$family)) {
+		if (p$is.gaussian) {
 			progress('Fitting via lmtree: ',f)
 			p$dots <- p$dots[names(p$dots) %in% names(formals(partykit::lmtree))]
 			patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
@@ -245,7 +224,7 @@ fit.mertree <- function (p,formula) {
 		random <- paste0('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + ')
 		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
-		if (is.gaussian(p$family)) {
+		if (p$is.gaussian) {
 			progress('Fitting via lmertree: ',f)
 			patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		} else {
