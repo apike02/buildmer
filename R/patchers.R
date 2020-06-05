@@ -3,75 +3,89 @@ run <- function (fun,args) withCallingHandlers(try(do.call(fun,args)),warning=fu
 patch.GLMMadaptive <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
 	model$call[[1]] <- name
-	model$call$data <- p$data.name
-	model$call$family <- p$family.name
-	if (!is.null(model$call$control)) model$call$control <- p$control.name
+	model$call$data <- p$names$data
+	model$call$family <- p$names$family
+	model$call$control <- p$names$control
 	model
 }
 
 patch.gamm <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
 	model$lme$call[[1]] <- name
-	model$lme$call$data <- p$data.name
-	if (!is.null(model$lme$call$family))  model$lme$call$family  <- p$family.name
-	if (!is.null(model$lme$call$subset))  model$lme$call$subset  <- p$subset.name
-	if (!is.null(model$lme$call$control)) model$lme$call$control <- p$control.name
+	model$lme$call$data <- p$names$data
+	model$lme$call$family  <- p$names$family
+	model$lme$call$subset  <- p$names$subset
+	model$lme$call$control <- p$names$control
 	model
 }
 
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
 	model$mer@call[[1]] <- name
 	model$mer@call$data <- p$data
-	if (!is.null(model$mer@call$family))  model$mer@call$family  <- p$family.name
-	if (!is.null(model$mer@call$subset))  model$mer@call$subset  <- p$subset.name
-	if (!is.null(model$mer@call$control)) model$mer@call$control <- p$control.name
+	model$mer@call$family  <- p$names$family
+	model$mer@call$subset  <- p$names$subset
+	model$mer@call$control <- p$names$control
 	model
 }
 
 patch.lm <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
 	model$call[[1]] <- name
-	model$call$data <- p$data.name
-	if (!is.null(model$call$family))  model$call$family  <- p$family.name
-	if (!is.null(model$call$subset))  model$call$subset  <- p$subset.name
-	if (!is.null(model$call$control)) model$call$control <- p$control.name
+	model$call$data <- p$names$data
+	model$call$family  <- p$names$family
+	model$call$subset  <- p$names$subset
+	model$call$control <- p$names$control
 	model
 }
 
 patch.lmer <- function (p,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
 	model@call[[1]] <- name
-	model@call$data <- p$data.name
-	if (!is.null(model@call$family))  model@call$family  <- p$family.name
-	if (!is.null(model@call$subset))  model@call$subset  <- p$subset.name
-	if (!is.null(model@call$control)) model@call$control <- p$control.name
+	model@call$data <- p$names$data
+	model@call$family  <- p$names$family
+	model@call$subset  <- p$names$subset
+	model@call$control <- p$names$control
 	model
 }
 
 patch.mertree <- function (p,eltname,fun,args) {
 	name <- substitute(fun)
 	model <- run(fun,args)
-	if (inherits(model,'try-error')) return(model)
-	if (!converged(model[[eltname]])) return(model[[eltname]])
-	model$call$data <- p$data.name
+	if (inherits(model,'try-error')) {
+		return(model)
+	}
+	if (!converged(model[[eltname]])) {
+		return(model[[eltname]])
+	}
+	model$call$data <- p$names$data
 	ctrl <- paste0(eltname,'.control')
-	if (!is.null(model$call$family))  model$call$family  <- p$family.name
-	if (!is.null(model$call$subset))  model$call$subset  <- p$subset.name
-	if (!is.null(model$call[[ctrl]])) model$call[[ctrl]] <- p$control.name
-	model[[eltname]]@call$data <- p$data.name
-	if (!is.null(model[[eltname]]@call$family))  model[[eltname]]@call$family  <- p$family.name
-	if (!is.null(model[[eltname]]@call$subset))  model[[eltname]]@call$subset  <- p$subset.name
-	if (!is.null(model[[eltname]]@call$control)) model[[eltname]]@call$control <- p$control.name
+	model$call$family <- p$names$family
+	model$call$subset <- p$names$subset
+	model$call$ctrl   <- p$names$control
+	model[[eltname]]@call$data    <- p$names$data
+	model[[eltname]]@call$family  <- p$names$family
+	model[[eltname]]@call$subset  <- p$names$subset
+	model[[eltname]]@call$control <- p$names$control
 	model
 }
