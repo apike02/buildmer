@@ -152,7 +152,7 @@ mkCritName <- function (crit) if (is.function(crit)) 'custom' else crit
 mkElim <- function (crit) if (is.function(crit)) crit else get(paste0('elim.',crit))
 mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),env=env)
 mkTerm <- function (term) mkForm(term)[[2]]
-privates <- c('p','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')
+privates <- c('add.terms','build.formula','can.remove','fit.buildmer','has.smooth.terms','is.gaussian','patch.gamm4','patch.lm','patch.lmer','patch.mertree','re2mgcv','run','tabulate.formula')
 
 progress <- function (...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
