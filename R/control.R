@@ -14,7 +14,7 @@
 #' @param formula The model formula for the maximal model you would like to fit. Alternatively, a buildmer term list as obtained from \code{\link{tabulate.formula}}. In the latter formulation, you also need to specify a \code{dep='...'} argument specifying the dependent variable to go along with the term list. See \code{\link{tabulate.formula}} for an example of where this is useful
 #' @param data The data to fit the model(s) to
 #' @param family The error distribution to use
-#' @param cl Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes. Note that, if and only if using the \code{cl} functionality, the data and other arguments will be searched for in the global environment only, so you should manually set up the cluster's environments using \code{clusterExport()} if necessary. In addition, some buildmer-internal objects will be exported to the cluster nodes. These will be cleaned up afterwards, but any already-present objects with the same name (e.g. `\code{p}' will be overwritten)
+#' @param cl Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed
 #' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)
 #' @param include A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models
@@ -38,7 +38,7 @@ buildmerControl <- function (
 	cl=NULL,
 	crit='LRT',
 	elim='LRT',
-	fit=stop('No fitting function specified'),
+	fit=function (...) stop('No fitting function specified'),
 	include=NULL,
 	ddf='Wald',
 	calc.anova=FALSE,
@@ -46,19 +46,30 @@ buildmerControl <- function (
 	dep=NULL,
 	can.use.reml=TRUE,
 	force.reml=FALSE,
-	tol.grad=formals(converged)$tol.grad,
-	tol.hess=formals(converged)$tol.hess,
+	tol.grad=formals(buildmer:::converged)$grad.tol, #::: needed in case buildmer isn't loaded
+	tol.hess=formals(buildmer:::converged)$hess.tol,
 	I_KNOW_WHAT_I_AM_DOING=FALSE,
 	...
 ) {
-	match.call()[-1]
+	mc <- match.call(expand.dots=FALSE)
+	mc <- mc[-1]
+	mc <- lapply(mc,eval,parent.frame())
+	fm <- formals(buildmerControl)
+	fm <- fm[-length(fm)]
+	fm <- fm[!names(fm) %in% names(mc)]
+	fm <- lapply(fm,eval) #these are all defaults, so no need for env
+	c(mc,fm)
 }
 
 buildmer.prep <- function (mc,add,banned) {
+	# Override legacy specifications with the new buildmerControl specification, if given
+	if ('buildmerControl' %in% names(mc)) {
+		mc[names(mc$buildmerControl)] <- mc$buildmerControl
+		mc$buildmerControl <- NULL
+	}
+
 	# Check arguments
-	ctl <- buildmerControl()
-	add <- intersect(names(mc),formals(buildmerControl))
-	notok <- intersect(add,banned)
+	notok <- intersect(names(mc),names(banned))
 	if (length(notok)) {
 		if (length(notok) > 1) {
 			stop('Arguments ',notok,' are not available for ',mc[[1]])
@@ -66,20 +77,13 @@ buildmer.prep <- function (mc,add,banned) {
 		stop('Argument ',notok,' is not available for ',mc[[1]])
 	}
 
-	# Separate buildmer arguments and fitter arguments; also handle the presence of an explicit buildmerControl
-	ctl[add] <- mc[add]
-	if ('buildmerControl' %in% names(mc)) {
-		mc[names(mc$buildmerControl)] <- mc$buildmerControl
-		mc$buildmerControl <- NULL
-	}
-	dots <- mc[-add]
-
-	# We now need to actually evaluate all of these terms, in case we will later be running on a cluster and these objects aren't available
-	e <- parent.env(2)
-	p <- lapply(ctl,eval,e)
-	p$dots <- lapply(dots,eval,e)
+	# Create control structure
+	mc[[1]] <- buildmerControl
+	e <- parent.frame(2)
+	p <- eval(mc,envir=e)
+	p[names(add)] <- add
+	p$call <- mc[-1]
 	p$env <- e
-	p$names <- ctl
 
 	# Further processing necessary for buildmer
 	if (is.character(p$family)) {
@@ -90,12 +94,14 @@ buildmer.prep <- function (mc,add,banned) {
 	}
 	p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
+	p$crit.name <- p$crit
 	if (!is.function(p$crit)) {
 		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace (or user-defined, which is on the search path by default at this moment)
 	}
+	p$elim.name <- p$elim
 	if (!is.function(p$elim)) {
 		p$elim <- get(paste0('elim.',p$elim))
 	}
 
 	p
-
+}

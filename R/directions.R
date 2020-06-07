@@ -27,9 +27,6 @@ backward <- function (p) {
 			p$tab[,p$crit.name] <- rep(NA,nrow(p$tab))
 		}
 	}
-	if (p$parallel) {
-		parallel::clusterExport(p$cl,c('converged','build.formula','unravel','can.remove','get2LL','getdf'),environment())
-	}
 
 	iter <- 0
 	repeat {

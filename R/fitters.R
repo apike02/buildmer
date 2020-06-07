@@ -28,7 +28,7 @@ fit.bam <- function (p,formula) {
 	}
 	method <- if (p$reml) 'fREML' else 'ML'
 	buildmer:::progress('Fitting via bam, with ',method,': ',formula)
-	buildmer:::buildmer:::patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
+	buildmer:::patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
 fit.buildmer <- function (p,formula) {
@@ -240,10 +240,10 @@ fit.mertree <- function (p,formula) {
 		f <- stats::as.formula(ftext,environment(formula))
 		if (p$is.gaussian) {
 			buildmer:::progress('Fitting via lmertree: ',f)
-			buildmer:::patch.mertree(p,'lmer',glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
+			buildmer:::patch.mertree(p,glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		} else {
 			buildmer:::progress('Fitting via glmertree: ',f)
-			buildmer:::patch.mertree(p,'glmer',glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
+			buildmer:::patch.mertree(p,glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
 	}
 }

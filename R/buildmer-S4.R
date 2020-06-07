@@ -261,11 +261,9 @@ dummy.coef.buildmer <- function (object,...) dummy.coef(object=object@model,...)
 #' @export
 hatvalues.buildmer <- function (model,...) hatvalues(model=model@model,...)
 #' @method kappa buildmer
-#' @importFrom stats kappa
 #' @export
 kappa.buildmer <- function (z,...) kappa(z=z@model,...)
 #' @method labels buildmer
-#' @importFrom stats labels
 #' @export
 labels.buildmer <- function (object,...) labels(object=object@model,...)
 #' @method proj buildmer
@@ -277,7 +275,6 @@ proj.buildmer <- function (object,...) proj(object=object@model,...)
 #' @export
 qqnorm.buildmer <- function (y,...) qqnorm(y=y@model,...)
 #' @method qr buildmer
-#' @importFrom stats qr
 #' @export
 qr.buildmer <- function (x,...) qr(x=x@model,...)
 #' @method variable.names buildmer
@@ -358,31 +355,3 @@ isLMM.buildmer <- function (x,...) isLMM(x=x@model,...)
 #' @importFrom lme4 refit
 #' @export
 refit.buildmer <- function (object,...) refit(object=object@model,...)
-
-# Package ordinal is in Suggests rather than Depends, so:
-
-setGeneric('convergence',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
-#' @method convergence buildmer
-#' @export
-convergence.buildmer <- function(object,...) {
-	if (requireNamespace('ordinal')) {
-		ordinal::convergence(object=object@model,...)
-	} else stop("This method requires the package 'ordinal' to be installed")
-setGeneric('nominal_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
-}
-#' @method nominal_test buildmer
-#' @export
-nominal_test.buildmer <- function(object,...) {
-	if (requireNamespace('ordinal')) {
-		ordinal::nominal_test(object=object@model,...)
-	} else stop("This method requires the package 'ordinal' to be installed")
-}
-setGeneric('scale_test',function (object,...) stop("This generic only works on objects from package 'ordinal'"))
-#' @method scale_test buildmer
-#' @export
-scale_test.buildmer <- function(object,...) {
-	if (requireNamespace('ordinal')) {
-		ordinal::scale_test(object=object@model,...)
-	} else stop("This method requires the package 'ordinal' to be installed")
-}
-# the 'slice' and 'condVar' methods have been omitted on purpose

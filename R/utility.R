@@ -410,14 +410,20 @@ tabulate.formula <- function (formula,group=NULL) {
 			terms <- lapply(1:length(terms),function (j) {
 				g <- names(terms)[j]
 				terms <- terms[[j]]
-				if (!length(terms)) return(NULL)
+				if (!length(terms)) {
+					return(NULL)
+				}
 				ix <- paste(i,j)
 				data.frame(index=ix,grouping=g,term=terms,code=paste(ix,g,terms),block=paste(NA,g,mkGroups(terms)),stringsAsFactors=FALSE)
 			})
 			terms <- Filter(Negate(is.null),terms)
-			if (!length(terms)) return(NULL)
+			if (!length(terms)) {
+				return(NULL)
+			}
 			do.call(rbind,terms)
-		} else data.frame(index=NA,grouping=NA,term=term,code=term,block=paste(NA,NA,mkGroups(term)),stringsAsFactors=FALSE)
+		} else {
+			data.frame(index=NA,grouping=NA,term=term,code=term,block=paste(NA,NA,mkGroups(term)),stringsAsFactors=FALSE)
+		}
 	})
 	terms <- Filter(Negate(is.null),terms)
 	do.call(rbind,terms)

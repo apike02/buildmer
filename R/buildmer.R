@@ -56,7 +56,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 	if ('intercept' %in% names(p$data)) {
 		stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	}
-	if (!p$I_KNOW_WHAT_I_AM_DOING) && !p$is.gaussian && !all(p$names$crit %in% c('custom','deviance','devexp','F'))) {
+	if (!p$I_KNOW_WHAT_I_AM_DOING && !p$is.gaussian && any(p$crit.name %in% c('AIC','BIC','LRT','LL'))) {
 		stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, use crit='F', or use crit='deviance' (note that this is not a formal test). (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 	}
 	p <- buildmer.fit(p)
@@ -188,7 +188,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,buildmerC
 	if (is.null(p$data)) stop('Sorry, buildgam() requires data to be passed via the data= argument')
 	if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 	if (!p$I_KNOW_WHAT_I_AM_DOING) {
-		if (!p$is.gaussian && !all(p$crit.name %in% c('custom','deviance','devexp','F')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') {
+		if (!p$is.gaussian && any(p$crit.name %in% c('AIC','BIC','LRT')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') {
 		       stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test) or crit='F', or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		}
 		if (inherits(p$family,'general.family')) {
@@ -406,9 +406,6 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 	if (!requireNamespace('partykit',quietly=TRUE)) {
 		stop('Please install package partykit')
 	}
-	if (any( (is.character(p$crit) & p$crit == 'LRT') | (!is.character(p$crit) & isTRUE(all.equal(p$crit,crit.LRT))) )) {
-		stop('The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use information criteria such as AIC instead.')
-	}
 
 	dots <- list(...)
 	if (is.null(dots$partitioning)) {
@@ -431,8 +428,10 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 	}
 
 	p <- buildmer.prep(match.call(),add=list(fit=fit.mertree),banned=c('calc.anova','ddf'))
-	p$names$control <- if (p$is.gaussian) substitute(lmer.control) else substitute(glmer.control)
 	if (is.null(p$data)) stop("Sorry, buildmertree() requires data to be passed via the data= argument")
+	if (any(p$crit.name == 'LRT')) {
+		stop('The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use information criteria such as AIC instead.')
+	}
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }

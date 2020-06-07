@@ -64,8 +64,8 @@ buildmer.fit <- function (p) {
 				p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
 			}
 		}
-		if ('LRT' %in% p$crit.name && 'LRT' %in% names(p$results)) {
-			p$results$LRT <- exp(p$results$LRT)
+		if (any(i <- names(p$results %in% c('LRT','F')))) {
+			p$results[,i] <- exp(p$results[,i])
 		}
 	}
 	if (is.null(p$model)) {
@@ -81,8 +81,12 @@ buildmer.fit <- function (p) {
 buildmer.finalize <- function (p) {
 	ret <- mkBuildmer(model=p$model,p=p)
 	ret@p$in.buildmer <- TRUE
-	if (p$calc.anova) ret@anova <- anova.buildmer(ret,ddf=p$ddf)
-	if (p$calc.summary) ret@summary <- summary.buildmer(ret,ddf=p$ddf)
+	if (p$calc.anova) {
+		ret@anova <- anova.buildmer(ret,ddf=p$ddf)
+	}
+	if (p$calc.summary) {
+		ret@summary <- summary.buildmer(ret,ddf=p$ddf)
+	}
 	ret@p$in.buildmer <- FALSE
 	ret
 }
