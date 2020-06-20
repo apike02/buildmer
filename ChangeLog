@@ -4,8 +4,33 @@
 '.' denotes minor bug fixes
 
 Deprecated and liable to be removed in a future version:
- * buildjulia() and assorted functions (as of 2020-02-04)
  * conv() has been renamed to converged() (as of 2020-02-05)
+ * 'Old-style' passing of buildmer control parameters in the build...(...)
+   function call is deprecated (as of 2020-06-05); please use the new-style
+   'buildmerControl' parameter. That is: change
+   	buildmer(y ~ x,crit='AIC',direction='backward')
+   to
+   	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
+
+1.7
+
+*** Buildmer control parameters (e.g. crit, direction, cl, ...) are now passed
+    in a new argument buildmerControl=list(...). The 'old-style' passing of
+    these arguments as part of the buildX() call itself is still supported,
+    but is now deprecated. If an control parameter is passed both 'old-style'
+    and in buildmerControl, the latter takes precedence. All parameters are
+    now documented in a single place: ?buildmerControl
+* Implement gradient and Hessian tolerances in converged(). These can now also
+  be passed as arguments to buildmer functions.
+* New elimination criterion for gam/bam models only: 'F'. This uses the change
+  in R-squared, and has the advantage of being a valid formal test even for
+  models that were fitted using PQL.
+* buildmer will no longer export its own internal structures to user-provided
+  cluster nodes
+* If singular.ok=TRUE, converged() will now also test singular fits for
+  convergence, rather than discard them outright
+. glmmTMB models are now also checked for gradient convergence, not just for
+  positive-definiteness of the Hessian
 
 1.6
 

@@ -4,12 +4,16 @@
 \alias{converged}
 \title{Test a model for convergence}
 \usage{
-converged(model, singular.ok = FALSE)
+converged(model, singular.ok = FALSE, grad.tol = 0.04, hess.tol = 0.002)
 }
 \arguments{
 \item{model}{The model object to test.}
 
 \item{singular.ok}{A logical indicating whether singular fits are accepted as `converged' or not. Relevant only for lme4 models.}
+
+\item{grad.tol}{The tolerance to use for checking the gradient. This is currently only used by mgcv, glmmTMB, and clm(m) models.}
+
+\item{hess.tol}{The tolerance to use for checking the Hessian for negative eigenvalues. This is currently only used by mgcv, glmmTMB, and clm(m) models.}
 }
 \value{
 Logical indicating whether the model converged.

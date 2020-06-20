@@ -8,12 +8,7 @@ buildgamm(
   formula,
   data = NULL,
   family = gaussian(),
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.anova = FALSE,
-  calc.summary = TRUE,
+  buildmerControl = buildmerControl(),
   ...
 )
 }
@@ -24,19 +19,9 @@ buildgamm(
 
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{gamm}}
+\item{...}{Additional options to be passed to \code{gamm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}

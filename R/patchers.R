@@ -6,9 +6,9 @@ patch.GLMMadaptive <- function (p,fun,args) {
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
-	model$call[[1]] <- name
-	model$call$data <- p$call$data
-	model$call$family <- p$call$family
+	model$call[[1]]    <- name
+	model$call$data    <- p$call$data
+	model$call$family  <- p$call$family
 	model$call$control <- p$call$control
 	model
 }
@@ -19,8 +19,8 @@ patch.gamm <- function (p,fun,args) {
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
-	model$lme$call[[1]] <- name
-	model$lme$call$data <- p$call$data
+	model$lme$call[[1]]    <- name
+	model$lme$call$data    <- p$call$data
 	model$lme$call$family  <- p$call$family
 	model$lme$call$subset  <- p$call$subset
 	model$lme$call$control <- p$call$control
@@ -33,8 +33,8 @@ patch.gamm4 <- function (p,fun,args) {
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
-	model$mer@call[[1]] <- name
-	model$mer@call$data <- p$data
+	model$mer@call[[1]]    <- name
+	model$mer@call$data    <- p$data
 	model$mer@call$family  <- p$call$family
 	model$mer@call$subset  <- p$call$subset
 	model$mer@call$control <- p$call$control
@@ -47,8 +47,8 @@ patch.lm <- function (p,fun,args) {
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
-	model$call[[1]] <- name
-	model$call$data <- p$call$data
+	model$call[[1]]    <- name
+	model$call$data    <- p$call$data
 	model$call$family  <- p$call$family
 	model$call$subset  <- p$call$subset
 	model$call$control <- p$call$control
@@ -61,8 +61,8 @@ patch.lmer <- function (p,fun,args) {
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
-	model@call[[1]] <- name
-	model@call$data <- p$call$data
+	model@call[[1]]    <- name
+	model@call$data    <- p$call$data
 	model@call$family  <- p$call$family
 	model@call$subset  <- p$call$subset
 	model@call$control <- p$call$control

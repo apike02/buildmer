@@ -4,36 +4,16 @@
 \alias{buildlme}
 \title{Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}}
 \usage{
-buildlme(
-  formula,
-  data = NULL,
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.anova = FALSE,
-  calc.summary = TRUE,
-  ...
-)
+buildlme(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 }
 \arguments{
 \item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike \code{lme}, \code{buildlme} does not use a separate \code{random} argument!)}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{lme}}
+\item{...}{Additional options to be passed to \code{lme}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}

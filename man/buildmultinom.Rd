@@ -4,33 +4,16 @@
 \alias{buildmultinom}
 \title{Use \code{buildmer} to perform stepwise elimination for \code{multinom} models from package \code{nnet}}
 \usage{
-buildmultinom(
-  formula,
-  data = NULL,
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.summary = TRUE,
-  ...
-)
+buildmultinom(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{multinom}}
+\item{...}{Additional options to be passed to \code{multinom}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \code{multinom} models from package \code{nnet}

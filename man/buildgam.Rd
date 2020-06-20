@@ -9,12 +9,7 @@ buildgam(
   data = NULL,
   family = gaussian(),
   quickstart = 0,
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.anova = FALSE,
-  calc.summary = TRUE,
+  buildmerControl = buildmerControl(),
   ...
 )
 }
@@ -27,19 +22,9 @@ buildgam(
 
 \item{quickstart}{A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{gam}}
+\item{...}{Additional options to be passed to \code{gam}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}

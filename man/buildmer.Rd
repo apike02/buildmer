@@ -8,13 +8,7 @@ buildmer(
   formula,
   data = NULL,
   family = gaussian(),
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.anova = FALSE,
-  calc.summary = TRUE,
-  ddf = "Wald",
+  buildmerControl = buildmerControl(),
   ...
 )
 }
@@ -25,21 +19,11 @@ buildmer(
 
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
+\item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.}
 
 \item{ddf}{The method used for calculating \emph{p}-values if \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)}
-
-\item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm})}
 }
 \description{
 Use \code{buildmer} to fit mixed-effects models using \code{lmer}/\code{glmer} from \code{lme4}

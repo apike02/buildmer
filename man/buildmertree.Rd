@@ -8,11 +8,7 @@ buildmertree(
   formula,
   data = NULL,
   family = gaussian(),
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "AIC",
-  include = NULL,
-  calc.summary = TRUE,
+  buildmerControl = buildmerControl(crit = "AIC"),
   ...
 )
 }
@@ -23,17 +19,9 @@ buildmertree(
 
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree})}
+\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}

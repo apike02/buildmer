@@ -4,36 +4,16 @@
 \alias{buildgls}
 \title{Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}}
 \usage{
-buildgls(
-  formula,
-  data = NULL,
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.anova = FALSE,
-  calc.summary = TRUE,
-  ...
-)
+buildgls(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.anova}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{gls}}
+\item{...}{Additional options to be passed to \code{gls}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}

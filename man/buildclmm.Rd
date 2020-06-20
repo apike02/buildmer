@@ -4,33 +4,16 @@
 \alias{buildclmm}
 \title{Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}}
 \usage{
-buildclmm(
-  formula,
-  data = NULL,
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.summary = TRUE,
-  ...
-)
+buildclmm(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 }
 \arguments{
 \item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax}
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{clmm}}
+\item{...}{Additional options to be passed to \code{clmm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}

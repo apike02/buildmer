@@ -7,13 +7,11 @@
 buildcustom(
   formula,
   data = NULL,
-  cl = NULL,
-  direction = c("order", "backward"),
   crit = function(p, ref, alt) stop("'crit' not specified"),
-  include = NULL,
   fit = function(p, formula) stop("'fit' not specified"),
   elim = function(x) stop("'elim' not specified"),
   REML = FALSE,
+  buildmerControl = buildmerControl(),
   ...
 )
 }
@@ -22,21 +20,15 @@ buildcustom(
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
 \item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge}
 
 \item{elim}{A function taking one argument and returning a single value. The first argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})}
 
 \item{REML}{A logical indicating if the fitting function wishes to distinguish between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE). Note that this ignores the usual semantics of buildmer's optional \code{REML} argument, because they are redundant: if you wish to force REML on or off, simply code it so in your custom fitting function.}
 
-\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
+
+\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination using a custom fitting function

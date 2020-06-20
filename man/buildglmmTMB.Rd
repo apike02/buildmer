@@ -8,11 +8,7 @@ buildglmmTMB(
   formula,
   data = NULL,
   family = gaussian(),
-  cl = NULL,
-  direction = c("order", "backward"),
-  crit = "LRT",
-  include = NULL,
-  calc.summary = TRUE,
+  buildmerControl = buildmerControl(),
   ...
 )
 }
@@ -23,25 +19,18 @@ buildglmmTMB(
 
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{cl}{See the general documentation under \code{\link{buildmer-package}}}
+\item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{direction}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{crit}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{include}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{calc.summary}{See the general documentation under \code{\link{buildmer-package}}}
-
-\item{...}{Additional options to be passed to \code{glmmTMB}}
+\item{...}{Additional options to be passed to \code{glmmTMB}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models
 }
 \examples{
 library(buildmer)
-model <- if (requireNamespace('glmmTMB')) buildglmmTMB(Reaction ~ Days + (Days|Subject)
-       ,data=lme4::sleepstudy)
+if (requireNamespace('glmmTMB')) {
+	model <- buildglmmTMB(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+}
 }
 \seealso{
 \code{\link{buildmer-package}}
