@@ -132,9 +132,9 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		if (!is.null(model$outer.info)) {
 			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv outer convergence failed',err))
 			if ((err <- max(abs(model$outer.info$grad))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
-			ev <- try(eigen(model$outer.info$hess)$values,silent=TRUE)
-			if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
-			if ((err <- min(ev)) < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
+			err <- try(min(eigen(model$outer.info$hess)$values),silent=TRUE)
+			if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
+			if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 			return(success('All buildmer checks passed (bam)'))
 		} else {
 			if (!length(model$sp)) return(success('No smoothing parameters to optimize'))
@@ -147,9 +147,16 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 	if (inherits(model,'merMod')) {
 		if ((err <- model@optinfo$conv$opt) != 0) return(failure('Optimizer reports not having finished',err))
 		if (!length(model@optinfo$conv$lme4)) return(success('No lme4 info available -- succeeding by default (dangerous!)'))
-		if (is.null(model@optinfo$conv$lme4$code)) return(setattr(singular.ok,'Singular fit'))
+		if (is.null(model@optinfo$conv$lme4$code) && !singular.ok) return(failure('Singular fit'))
 		if (any((err <- model@optinfo$conv$lme4$code) != 0)) return(failure('lme4 reports not having converged',err))
-		#TODO: reimplement these checks ourselves with the configurable tolerances
+		grad <- model@optinfo$derivs$gradient
+		hess <- model@optinfo$derivs$Hessian
+		scaled <- try(solve(hess,grad))
+		if (inherits(scaled,'try-error')) return(failure('Manual gradient checks were unable to compute scaled gradient',ev))
+		if ((err <- max(pmin(abs(sc.grad),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
+		err <- try(min(eigen(hess)$values),silent=TRUE)
+		if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
+		if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 		return(success('All buildmer checks passed (merMod)'))
 	}
 	if (inherits(model,'glmmTMB')) {
