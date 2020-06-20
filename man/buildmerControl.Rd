@@ -5,7 +5,7 @@
 \title{Set control options for buildmer}
 \usage{
 buildmerControl(
-  formula = stop("No formula specified"),
+  formula = NULL,
   data = NULL,
   family = gaussian(),
   direction = c("order", "backward"),

@@ -30,9 +30,10 @@
 #' \item \code{REML}: In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
 #' }
 #' These arguments are not passed on to the fitting function via the \code{...} mechanism.
+#' @export
 
 buildmerControl <- function (
-	formula=stop('No formula specified'),
+	formula=quote(stop('No formula specified')),
 	data=NULL,
 	family=gaussian(),
 	direction=c('order','backward'),
@@ -60,18 +61,16 @@ buildmerControl <- function (
 	fm <- fm[-length(fm)]
 	fm <- fm[!names(fm) %in% names(mc)]
 	fm <- lapply(fm,eval) #these are all defaults, so no need for env
-	c(mc,fm)
+	p <- c(mc,fm)
+	names(p)[which(names(p) == '...')] <- 'dots' #to avoid warning
+	p
 }
 
 buildmer.prep <- function (mc,add,banned) {
-	# Override legacy specifications with the new buildmerControl specification, if given
-	if ('buildmerControl' %in% names(mc)) {
-		mc[names(mc$buildmerControl)] <- mc$buildmerControl
-		mc$buildmerControl <- NULL
-	}
+	e <- parent.frame(2)
 
-	# Check arguments
-	notok <- intersect(names(mc),names(banned))
+	# Check arguments. Only do the legacy explicit ones, as buildmerControl gives all possible defaults anyway
+	notok <- intersect(names(mc),banned)
 	if (length(notok)) {
 		if (length(notok) > 1) {
 			stop('Arguments ',notok,' are not available for ',mc[[1]])
@@ -79,26 +78,43 @@ buildmer.prep <- function (mc,add,banned) {
 		stop('Argument ',notok,' is not available for ',mc[[1]])
 	}
 
-	# Create control structure
+	# Add any terms provided by any new buildmerControl argument
+	# Any legacy arguments must override these, as all buildX functions now include a buildmerControl=buildmerControl() default
+	if ('buildmerControl' %in% names(mc)) {
+		p <- eval(mc$buildmerControl,e,e)
+		p <- p[!names(p) %in% names(mc)]
+		mc[names(p)] <- p
+		mc$buildmerControl <- NULL
+	}
+
+	# Create the parameter list
 	mc[[1]] <- buildmerControl
-	e <- parent.frame(2)
-	p <- eval(mc,envir=e)
-	p[names(add)] <- add
+	mc[names(add)] <- add
+	p <- eval(mc,e,e)
 	p$call <- mc[-1]
 	p$env <- e
 
+	# Get defaults for formula/data/family/etc options, and add them to the parameter list
+	# Note: names(mc) only provides the explicit arguments, not the defaults, hence why the below works
+	caller <- sys.function(-1)
+	defs <- formals(caller)
+	defs <- defs[!names(defs) %in% c(names(mc),banned,'...','buildmerControl')]
+	p <- c(p,lapply(defs,eval))
+
 	# Further processing necessary for buildmer
-	if (is.character(p$family)) {
-		p$family <- get(p$family,p$env)
+	if (!is.null(p$family)) {
+		if (is.character(p$family)) {
+			p$family <- get(p$family,e)
+		}
+		if (is.function(p$family)) {
+			p$family <- p$family()
+		}
+		p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	}
-	if (is.function(p$family)) {
-		p$family <- p$family()
-	}
-	p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
 	p$crit.name <- p$crit
 	if (!is.function(p$crit)) {
-		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace (or user-defined, which is on the search path by default at this moment)
+		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace
 	}
 	p$elim.name <- p$elim
 	if (!is.function(p$elim)) {
