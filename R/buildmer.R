@@ -57,7 +57,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 		stop("To enable buildbam() to work around a problem in bam(), please remove or rename the column named 'intercept' from your data")
 	}
 	if (!p$I_KNOW_WHAT_I_AM_DOING && !p$is.gaussian && any(p$crit.name %in% c('AIC','BIC','LRT','LL'))) {
-		stop(progress("bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, use crit='F', or use crit='deviance' (note that this is not a formal test). (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
+		stop(progress(p,"bam() uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam() instead, use crit='F', or use crit='deviance' (note that this is not a formal test). (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 	}
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
@@ -189,13 +189,13 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,buildmerC
 	if ('intercept' %in% names(p$data)) stop("To enable buildgam() to work around a problem in gam(), please remove or rename the column named 'intercept' from your data")
 	if (!p$I_KNOW_WHAT_I_AM_DOING) {
 		if (!p$is.gaussian && any(p$crit.name %in% c('AIC','BIC','LRT')) && !is.null(p$dots$optimizer[1]) && p$dots$optimizer[1] != 'outer') {
-		       stop(progress("You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test) or crit='F', or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
+		       stop(progress(p,"You are trying to use buildgam() using performance iteration or the EFS optimizer. In this situation, gam() uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam() with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), use crit='deviance' (note that this is not a formal test) or crit='F', or find a way to fit your model using Gaussian errors. (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 		}
 		if (inherits(p$family,'general.family')) {
 			if (p$quickstart) {
 				stop('Quickstart is not possible with the ',p$family$family,' family')
 			}
-			warning(progress('The ',p$family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects"))
+			warning(progress(p,'The ',p$family$family," family can only be fitted using REML. Adding select=TRUE to gam()'s command arguments (see ?gam to review the implications), and refusing to eliminate fixed effects"))
 			p$force.reml <- TRUE
 			p$dots$select <- TRUE
 			if (!is.data.frame(p$formula)) {

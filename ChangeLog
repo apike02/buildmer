@@ -29,6 +29,7 @@ Deprecated and liable to be removed in a future version:
   cluster nodes
 * If singular.ok=TRUE, converged() will now also test singular fits for
   convergence, rather than discard them outright
+* The optional 'quiet' argument has been re-added
 . glmmTMB models are now also checked for gradient convergence, not just for
   positive-definiteness of the Hessian
 

@@ -12,16 +12,17 @@ buildmerControl(
   cl = NULL,
   crit = "LRT",
   elim = "LRT",
-  fit = stop("No fitting function specified"),
+  fit = function(...) stop("No fitting function specified"),
   include = NULL,
+  quiet = FALSE,
   ddf = "Wald",
   calc.anova = FALSE,
   calc.summary = TRUE,
   dep = NULL,
   can.use.reml = TRUE,
   force.reml = FALSE,
-  tol.grad = formals(converged)$tol.grad,
-  tol.hess = formals(converged)$tol.hess,
+  tol.grad = formals(buildmer:::converged)$grad.tol,
+  tol.hess = formals(buildmer:::converged)$hess.tol,
   I_KNOW_WHAT_I_AM_DOING = FALSE,
   ...
 )
@@ -40,6 +41,8 @@ buildmerControl(
 \item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)}
 
 \item{include}{A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models}
+
+\item{quiet}{A logical indicating whether to suppress progress messages}
 
 \item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination}
 

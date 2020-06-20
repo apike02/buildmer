@@ -13,7 +13,7 @@ fit.GLMMadaptive <- function (p,formula) {
 	if (is.null(bars)) return(buildmer:::fit.buildmer(p,formula))
 	if (length(bars) != 1) stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
 	random <- buildmer:::mkForm(as.character(bars),p$env)
-	buildmer:::progress('Fitting via mixed_model: ',fixed,', random=',random)
+	buildmer:::progress(p,'Fitting via mixed_model: ',fixed,', random=',random)
 	buildmer:::patch.GLMMadaptive(p,GLMMadaptive::mixed_model,c(list(fixed=fixed,random=random,data=p$data,family=p$family),p$dots))
 }
 
@@ -27,7 +27,7 @@ fit.bam <- function (p,formula) {
 		p$data$intercept <- 1
 	}
 	method <- if (p$reml) 'fREML' else 'ML'
-	buildmer:::progress('Fitting via bam, with ',method,': ',formula)
+	buildmer:::progress(p,'Fitting via bam, with ',method,': ',formula)
 	buildmer:::patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
@@ -41,19 +41,19 @@ fit.buildmer <- function (p,formula) {
 		}
 		if (p$is.gaussian) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
-			buildmer:::progress('Fitting via lm: ',formula)
+			buildmer:::progress(p,'Fitting via lm: ',formula)
 			buildmer:::patch.lm(p,stats::lm,c(list(formula=formula,data=p$data),p$dots))
 		} else {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::glm))]
-			buildmer:::progress('Fitting via glm: ',formula)
+			buildmer:::progress(p,'Fitting via glm: ',formula)
 			buildmer:::patch.lm(p,stats::glm,c(list(formula=formula,family=p$family,data=p$data),p$dots))
 		}
 	} else {
 		if (p$is.gaussian) {
-			buildmer:::progress('Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',formula)
+			buildmer:::progress(p,'Fitting via lmer, with ',ifelse(reml,'REML','ML'),': ',formula)
 			buildmer:::patch.lmer(p,lme4::lmer,c(list(formula=formula,data=p$data,REML=reml),p$dots))
 		} else {
-			buildmer:::progress('Fitting via glmer, with ',ifelse(reml,'REML','ML'),': ',formula)
+			buildmer:::progress(p,'Fitting via glmer, with ',ifelse(reml,'REML','ML'),': ',formula)
 			buildmer:::patch.lmer(p,lme4::glmer,c(list(formula=formula,data=p$data,family=p$family),p$dots))
 		}
 	}
@@ -103,30 +103,30 @@ fit.gam <- function (p,formula) {
 		if (p$quickstart > 4) {
 			dots$control <- c(p$dots$control,list(epsilon=.02))
 		}
-		buildmer:::progress('Quickstart fit with bam/',method,': ',formula)
+		buildmer:::progress(p,'Quickstart fit with bam/',method,': ',formula)
 		qs <- buildmer:::patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=data,method=method),dots))
 		if (!inherits(qs,'try-error')) {
 			p$dots$in.out <- list(sp=unname(qs$sp),scale=qs$sig2)
 			if (startsWith(qs$family$family,'Scaled t')) {
 				if (utils::packageVersion('mgcv') < '1.8.32') {
-					buildmer:::progress(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),', excluding scaled-t theta values as mgcv version < 1.8.32'))
+					buildmer:::progress(p,paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),', excluding scaled-t theta values as mgcv version < 1.8.32'))
 				} else {
 					# set up starting values for theta
 					th.notrans <- qs$family$getTheta(FALSE)
 					th.trans   <- qs$family$getTheta(TRUE)
 					# transformation undoes the logarithm and then adds min.df to the df, so:
 					min.df <- th.trans[1] - exp(th.notrans[1])
-					buildmer:::progress(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with theta values ',paste0(th.trans,collapse=' '),' and min.df ',min.df))
+					buildmer:::progress(p,paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with theta values ',paste0(th.trans,collapse=' '),' and min.df ',min.df))
 					p$family <- mgcv::scat(theta=-th.trans,link=qs$family$link,min.df=min.df)
 				}
 			} else {
-				buildmer:::progress(paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with scale parameter ',p$dots$in.out$scale))
+				buildmer:::progress(p,paste0('Starting values: ',paste0(p$dots$in.out$sp,collapse=' '),' with scale parameter ',p$dots$in.out$scale))
 			}
 		}
 	}
 	method <- if (p$reml) 'REML' else 'ML'
 	p$dots <- p$dots[names(p$dots) %in% names(formals(mgcv::gam))]
-	buildmer:::progress('Fitting via gam, with ',method,': ',formula)
+	buildmer:::progress(p,'Fitting via gam, with ',method,': ',formula)
 	buildmer:::patch.lm(p,mgcv::gam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
 
@@ -145,7 +145,7 @@ fit.gamm <- function (p,formula) {
 		names(random) <- sapply(bars,function (x) as.character(x[[3]]))
 	}
 	method <- if (p$reml) 'REML' else 'ML'
-	buildmer:::progress('Fitting via gamm, with ',method,': ',fixed,', random=',random)
+	buildmer:::progress(p,'Fitting via gamm, with ',method,': ',fixed,', random=',random)
 	m <- buildmer:::patch.lm(p,mgcv::gamm,c(list(formula=fixed,random=random,family=p$family,data=p$data,method=method),p$dots))
 	if (inherits(m,'try-error') || p$finalize) m else m$lme
 }
@@ -156,7 +156,7 @@ fit.gamm4 <- function (p,formula) {
 	bars <- lme4::findbars(formula)
 	random <- if (length(bars)) buildmer:::mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
 	if (is.null(random) && !has.smooth.terms(formula)) return(buildmer:::fit.buildmer(p,formula))
-	buildmer:::progress('Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',fixed,', random=',random)
+	buildmer:::progress(p,'Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',fixed,', random=',random)
 	model <- buildmer:::patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
 	if (inherits(model,'try-error') || p$finalize) model else model$mer
 }
@@ -173,13 +173,13 @@ fit.glmmTMB <- function (p,formula) {
 			return(buildmer:::fit.gam(p,formula))
 		}
 	}
-	buildmer:::progress('Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',formula)
+	buildmer:::progress(p,'Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',formula)
 	buildmer:::patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
 }
 
 fit.gls <- function (p,formula) {
 	method <- if (p$reml) 'REML' else 'ML'
-	buildmer:::progress('Fitting via gls, with ',method,': ',formula)
+	buildmer:::progress(p,'Fitting via gls, with ',method,': ',formula)
 	# gls cannot handle rank-deficient fixed effects --- work around the problem
 	dep <- as.character(formula[[2]])
 	y <- p$data[[dep]]
@@ -190,7 +190,7 @@ fit.gls <- function (p,formula) {
 	newdata <- list(y=y,X=X)
 	na <- is.na(coef(lm(newform,newdata)))
 	if (ndrop <- sum(na)) {
-		buildmer:::progress('gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
+		buildmer:::progress(p,'gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
 		newdata$X <- newdata$X[,!na]
 		return(buildmer:::patch.lm(p,nlme::gls,c(list(newform,data=newdata,method=method),p$dots)))
 	}
@@ -215,7 +215,7 @@ fit.lme <- function (p,formula) {
 		# and continue with lme
 	}
 	method <- if (p$reml) 'REML' else 'ML'
-	buildmer:::progress('Fitting via lme, with ',method,': ',fixed,', random=',random)
+	buildmer:::progress(p,'Fitting via lme, with ',method,': ',fixed,', random=',random)
 	buildmer:::patch.lm(p,nlme::lme,c(list(fixed,data=p$data,random=random,method=method),p$dots))
 }
 
@@ -226,11 +226,11 @@ fit.mertree <- function (p,formula) {
 		ftext <- paste0(as.character(list(fixed)),' | ',p$partitioning,sep='',collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
 		if (p$is.gaussian) {
-			buildmer:::progress('Fitting via lmtree: ',f)
+			buildmer:::progress(p,'Fitting via lmtree: ',f)
 			p$dots <- p$dots[names(p$dots) %in% names(formals(partykit::lmtree))]
 			buildmer:::patch.lm(p,partykit::lmtree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			buildmer:::progress('Fitting via glmtree: ',f)
+			buildmer:::progress(p,'Fitting via glmtree: ',f)
 			p$dots <- p$dots[names(p$dots) %in% names(formals(partykit::glmtree))]
 			buildmer:::patch.lm(p,partykit::glmtree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
@@ -239,16 +239,16 @@ fit.mertree <- function (p,formula) {
 		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
 		f <- stats::as.formula(ftext,environment(formula))
 		if (p$is.gaussian) {
-			buildmer:::progress('Fitting via lmertree: ',f)
+			buildmer:::progress(p,'Fitting via lmertree: ',f)
 			buildmer:::patch.mertree(p,glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))
 		} else {
-			buildmer:::progress('Fitting via glmertree: ',f)
+			buildmer:::progress(p,'Fitting via glmertree: ',f)
 			buildmer:::patch.mertree(p,glmertree::glmertree,c(list(formula=f,data=p$data,family=p$family),p$dots))
 		}
 	}
 }
 
 fit.multinom <- function (p,formula) {
-	buildmer:::progress('Fitting via multinom: ',formula)
+	buildmer:::progress(p,'Fitting via multinom: ',formula)
 	buildmer:::patch.lm(p,nnet::multinom,c(list(formula=formula,data=p$data),p$dots))
 }

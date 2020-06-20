@@ -140,12 +140,14 @@ is.random.term <- function (term) {
 mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),env=env)
 mkTerm <- function (term) buildmer:::mkForm(term)[[2]]
 
-progress <- function (...) {
+progress <- function (p,...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
 	text <- paste0(text,collapse='')
 	text <- strwrap(text,exdent=4)
 	text <- paste0(text,collapse='\n')
-	message(text)
+	if (!p$quiet) {
+		message(text)
+	}
 	text
 }
 

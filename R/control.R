@@ -18,6 +18,7 @@
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed
 #' @param crit Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)
 #' @param include A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models
+#' @param quiet A logical indicating whether to suppress progress messages
 #' @param calc.anova Logical indicating whether to also calculate the ANOVA table for the final model after term elimination
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination
 #' 
@@ -40,6 +41,7 @@ buildmerControl <- function (
 	elim='LRT',
 	fit=function (...) stop('No fitting function specified'),
 	include=NULL,
+	quiet=FALSE,
 	ddf='Wald',
 	calc.anova=FALSE,
 	calc.summary=TRUE,
