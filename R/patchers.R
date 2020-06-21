@@ -52,10 +52,12 @@ patch.lm <- function (p,fun,args) {
 	}
 	model$call[[1]]    <- name
 	model$call$data    <- p$call$data
-	model$call$family  <- p$call$family
 	model$call$subset  <- p$call$dots$subset
 	model$call$control <- p$call$dots$control
 	model$call$weights <- p$call$dots$weights
+	if (!p$is.gaussian) {
+		model$call$family  <- p$call$family
+	}
 	model
 }
 
@@ -67,10 +69,12 @@ patch.lmer <- function (p,fun,args) {
 	}
 	model@call[[1]]    <- name
 	model@call$data    <- p$call$data
-	model@call$family  <- p$call$family
 	model@call$subset  <- p$call$dots$subset
 	model@call$control <- p$call$dots$control
 	model@call$weights <- p$call$dots$weights
+	if (!p$is.gaussian) {
+		model@call$family  <- p$call$family
+	}
 	model
 }
 
@@ -85,14 +89,16 @@ patch.mertree <- function (p,fun,args) {
 		return(model[[eltname]])
 	}
 	model$call$data    <- p$call$data
-	model$call$family  <- p$call$family
 	model$call$subset  <- p$call$dots$subset
 	model$call$ctrl    <- p$call$dots$control
 	model$call$weights <- p$call$dots$weights
 	model[[eltname]]@call$data    <- p$call$data
-	model[[eltname]]@call$family  <- p$call$family
 	model[[eltname]]@call$subset  <- p$call$dots$subset
 	model[[eltname]]@call$control <- if (p$is.gaussian) p$call$dots$lmer.control else p$call$dots$glmer.control
 	model[[eltname]]@call$weights <- p$call$dots$weights
+	if (!p$is.gaussian) {
+		model$call$family <- p$call$family
+		model[[eltname]]@call$family <- p$call$family
+	}
 	model
 }
