@@ -91,6 +91,7 @@ buildmer.prep <- function (mc,add,banned) {
 	mc[[1]] <- buildmerControl
 	mc[names(add)] <- add
 	p <- eval(mc,e,e)
+	p$dots <- lapply(p$dots,eval,e,e)
 	p$call <- mc[-1]
 	p$env <- e
 
