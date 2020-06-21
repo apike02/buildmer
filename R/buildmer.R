@@ -374,7 +374,9 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 		if ('subset'  %in% names(p$dots)) p$model@call$subset  <- p$dots$subset
 		if ('control' %in% names(p$dots)) p$model@call$control <- p$dots$control
 		if ('weights' %in% names(p$dots)) p$model@call$weights <- p$dots$weights
+		fun <- p$model@call[[1]]
 		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
+		p$model@call[[1]] <- fun
 	}
 	buildmer.finalize(p)
 }
