@@ -153,7 +153,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		hess <- model@optinfo$derivs$Hessian
 		scaled <- try(solve(hess,grad))
 		if (inherits(scaled,'try-error')) return(failure('Manual gradient checks were unable to compute scaled gradient',ev))
-		if ((err <- max(pmin(abs(sc.grad),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
+		if ((err <- max(pmin(abs(scaled),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
 		err <- try(min(eigen(hess)$values),silent=TRUE)
 		if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
 		if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
