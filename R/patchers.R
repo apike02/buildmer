@@ -1,8 +1,14 @@
-run <- function (fun,args) withCallingHandlers(try(do.call(fun,args)),warning=function (w) invokeRestart('muffleWarning'))
+run <- function (fun,args,quiet) {
+	if (p$quiet) {
+		suppressMessages(suppressWarnings(try(do.call(fun,args),silent=TRUE)))
+	} else {
+		suppressWarnings(try(do.call(fun,args)))
+	}
+}
 
 patch.GLMMadaptive <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
@@ -16,7 +22,7 @@ patch.GLMMadaptive <- function (p,fun,args) {
 
 patch.gamm <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
@@ -31,7 +37,7 @@ patch.gamm <- function (p,fun,args) {
 
 patch.gamm4 <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
@@ -46,7 +52,7 @@ patch.gamm4 <- function (p,fun,args) {
 
 patch.lm <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
@@ -63,7 +69,7 @@ patch.lm <- function (p,fun,args) {
 
 patch.lmer <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}
@@ -80,7 +86,7 @@ patch.lmer <- function (p,fun,args) {
 
 patch.mertree <- function (p,fun,args) {
 	name <- substitute(fun)
-	model <- run(fun,args)
+	model <- run(fun,args,p$quiet)
 	if (inherits(model,'try-error')) {
 		return(model)
 	}

@@ -151,9 +151,9 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		if (any((err <- model@optinfo$conv$lme4$code) != 0)) return(failure('lme4 reports not having converged',err))
 		grad <- model@optinfo$derivs$gradient
 		hess <- model@optinfo$derivs$Hessian
-		scaled <- try(solve(hess,grad))
-		if (inherits(scaled,'try-error')) return(failure('Manual gradient checks were unable to compute scaled gradient',ev))
-		if ((err <- max(pmin(abs(scaled),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
+		scaled.grad <- try(solve(hess,grad),silent=TRUE)
+		if (inherits(scaled.grad,'try-error')) return(failure('Manual gradient checks were unable to compute scaled gradient',ev))
+		if ((err <- max(pmin(abs(scaled.grad),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
 		err <- try(min(eigen(hess)$values),silent=TRUE)
 		if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
 		if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
