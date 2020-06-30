@@ -81,7 +81,7 @@ buildmer.prep <- function (mc,add,banned) {
 	# Add any terms provided by any new buildmerControl argument
 	# Any legacy arguments must override these, as all buildX functions now include a buildmerControl=buildmerControl() default
 	if ('buildmerControl' %in% names(mc)) {
-		p <- eval(mc$buildmerControl,e,e)
+		p <- eval(mc$buildmerControl,e)
 		p <- p[!names(p) %in% names(mc)]
 		mc[names(p)] <- p
 		mc$buildmerControl <- NULL
@@ -90,8 +90,8 @@ buildmer.prep <- function (mc,add,banned) {
 	# Create the parameter list
 	mc[[1]] <- buildmerControl
 	mc[names(add)] <- add
-	p <- eval(mc,e,e)
-	p$dots <- lapply(p$dots,eval,e,e)
+	p <- eval(mc,e)
+	p$dots <- lapply(p$dots,eval,e)
 	p$call <- mc[-1]
 	p$env <- e
 
