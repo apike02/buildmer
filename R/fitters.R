@@ -36,8 +36,9 @@ fit.buildmer <- function (p,formula) {
 	if (is.null(lme4::findbars(formula))) {
 		p$dots$control <- NULL
 		if (reml) {
-			p$dots <- p$dots[names(p$dots) %in% names(formals(nlme::gls))]
-			return(buildmer:::fit.gls(p,formula))
+			# gls() has issues with weights
+			p$dots <- p$dots[names(p$dots) %in% c('weights','subset','na.action','offset')]
+			return(buildmer:::fit.gam(p,formula))
 		}
 		if (p$is.gaussian) {
 			p$dots <- p$dots[names(p$dots) %in% names(formals(stats::lm))]
