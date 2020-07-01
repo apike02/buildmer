@@ -49,6 +49,7 @@ buildmerControl <- function (
 	dep=NULL,
 	can.use.reml=TRUE,
 	force.reml=FALSE,
+	quickstart=0,
 	tol.grad=formals(buildmer:::converged)$grad.tol, #::: needed in case buildmer isn't attached
 	tol.hess=formals(buildmer:::converged)$hess.tol,
 	I_KNOW_WHAT_I_AM_DOING=FALSE,
