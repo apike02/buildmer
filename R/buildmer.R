@@ -155,7 +155,6 @@ buildcustom <- function (formula,data=NULL,crit=function (p,ref,alt) stop("'crit
 #' @template formula
 #' @template data
 #' @template family
-#' @param quickstart A numeric with values 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML}. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g., \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @template control
 #' @param ... Additional options to be passed to \code{gam}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
 #' @details
@@ -251,7 +250,6 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 #' @template formula
 #' @template data
 #' @template family
-#' @param ddf The method used for calculating \emph{p}-values if all smooth terms were eliminated and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
 #' @template control
 #' @param ... Additional options to be passed to \code{gamm4}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
 #' @examples
@@ -350,7 +348,6 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) {
 #' @template formula
 #' @template data
 #' @template family
-#' @param ddf The method used for calculating \emph{p}-values if \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values)
 #' @template control
 #' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.
 #' @examples
