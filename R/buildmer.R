@@ -271,7 +271,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 #' @export
 buildgamm4 <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl(),...) {
 	if (!requireNamespace('gamm4',quietly=TRUE)) stop('Please install package gamm4')
-	p <- buildmer.prep(match.call(),add=list(fit=fit.buildmer,finalize=FALSE),banned=NULL)
+	p <- buildmer.prep(match.call(),add=list(fit=fit.gamm4,finalize=FALSE),banned='ddf')
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
 		if (!p$quiet) {
@@ -371,7 +371,7 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) {
 buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl(),...) {
 	p <- buildmer.prep(match.call(),add=list(fit=fit.buildmer),banned=NULL)
 	p <- buildmer.fit(p)
-	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=TRUE)) {
+	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=TRUE) && p$ddf != 'lme4') {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		if (!p$quiet) {
 			message('Finalizing by converting the model to lmerTest')
