@@ -12,7 +12,7 @@ fit.GLMMadaptive <- function (p,formula) {
 	bars <- lme4::findbars(formula)
 	if (is.null(bars)) return(buildmer:::fit.buildmer(p,formula))
 	if (length(bars) != 1) stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
-	random <- buildmer:::mkForm(as.character(bars),p$env)
+	random <- buildmer:::mkForm(as.character(bars))
 	buildmer:::progress(p,'Fitting via mixed_model: ',fixed,', random=',random)
 	buildmer:::patch.GLMMadaptive(p,GLMMadaptive::mixed_model,c(list(fixed=fixed,random=random,data=p$data,family=p$family),p$dots))
 }
@@ -142,7 +142,7 @@ fit.gamm <- function (p,formula) {
 		}
 		random <- NULL
 	} else {
-		random <- lapply(bars,function (x) buildmer:::mkForm(as.character(x[2]),p$env))
+		random <- lapply(bars,function (x) buildmer:::mkForm(as.character(x[2])))
 		names(random) <- sapply(bars,function (x) as.character(x[[3]]))
 	}
 	method <- if (p$reml) 'REML' else 'ML'
@@ -155,7 +155,7 @@ fit.gamm4 <- function (p,formula) {
 	reml <- p$reml && p$is.gaussian
 	fixed <- lme4::nobars(formula)
 	bars <- lme4::findbars(formula)
-	random <- if (length(bars)) buildmer:::mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + '),p$env) else NULL
+	random <- if (length(bars)) buildmer:::mkForm(paste('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + ')) else NULL
 	if (is.null(random) && !has.smooth.terms(formula)) return(buildmer:::fit.buildmer(p,formula))
 	buildmer:::progress(p,'Fitting via gamm4, with ',ifelse(reml,'REML','ML'),': ',fixed,', random=',random)
 	model <- buildmer:::patch.gamm4(p,gamm4::gamm4,c(list(formula=fixed,random=random,family=p$family,data=p$data,REML=reml),p$dots))
@@ -187,7 +187,6 @@ fit.gls <- function (p,formula) {
 	y <- y[!is.na(y)]
 	X <- model.matrix(formula,p$data)
 	newform <- y ~ 0+X
-	environment(newform) <- NULL
 	newdata <- list(y=y,X=X)
 	na <- is.na(coef(lm(newform,newdata)))
 	if (ndrop <- sum(na)) {
@@ -203,7 +202,7 @@ fit.lme <- function (p,formula) {
 	bars <- lme4::findbars(formula)
 	if ((length(bars) + !is.null(p$dots$random)) > 1) stop(paste0('lme can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
 	if (!is.null(bars)) {
-		random <- buildmer:::mkForm(as.character(bars),p$env)
+		random <- buildmer:::mkForm(as.character(bars))
 		# and continue with lme
 	} else {
 		if (is.null(p$dots$random)) {
@@ -225,7 +224,7 @@ fit.mertree <- function (p,formula) {
 	bars <- lme4::findbars(formula)
 	if (is.null(bars)) {
 		ftext <- paste0(as.character(list(fixed)),' | ',p$partitioning,sep='',collapse=' + ')
-		f <- stats::as.formula(ftext,environment(formula))
+		f <- stats::as.formula(ftext)
 		if (p$is.gaussian) {
 			buildmer:::progress(p,'Fitting via lmtree: ',f)
 			p$dots <- p$dots[names(p$dots) %in% names(formals(partykit::lmtree))]
@@ -238,7 +237,7 @@ fit.mertree <- function (p,formula) {
 	} else {
 		random <- paste0('(',sapply(bars,function (x) as.character(list(x))),')',collapse=' + ')
 		ftext <- paste0(as.character(list(fixed)),' | ',random,' | ',p$partitioning,collapse=' + ')
-		f <- stats::as.formula(ftext,environment(formula))
+		f <- stats::as.formula(ftext)
 		if (p$is.gaussian) {
 			buildmer:::progress(p,'Fitting via lmertree: ',f)
 			buildmer:::patch.mertree(p,glmertree::lmertree,c(list(formula=f,data=p$data),p$dots))

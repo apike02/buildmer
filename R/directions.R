@@ -1,12 +1,9 @@
 backward <- function (p) {
 	fit.references.parallel <- function (p) {
-		if (p$parallel) parallel::clusterExport(p$cl,'p',environment())
 		progress(p,'Fitting ML and REML reference models')
+		plist <- list(within(p, REML <- TRUE),within(p, REML <- FALSE))
 		repeat {
-			res <- p$parply(c(TRUE,FALSE),function (x) {
-				p$reml <- x
-				p$fit(p,p$formula)
-			})
+			res <- p$parply(plist,p$fit,p$formula)
 			conv <- lapply(res,converged)
 			if (all(unlist(conv))) {
 				p$cur.reml <- res[[1]]
@@ -256,11 +253,13 @@ order <- function (p) {
 				return(p)
 			}
 			progress(p,paste0('Currently evaluating ',p$crit.name,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) parallel::clusterExport(p$cluster,c('check','have','p'),environment())
+			if (p$parallel) {
+				parallel::clusterExport(p$cluster,c('check','have','p'),environment())
+			}
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
-				form <- buildmer:::build.formula(p$dep,tab) #,p$env) corrupts the environment if lmer is used
+				form <- buildmer:::build.formula(p$dep,tab)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
@@ -313,7 +312,7 @@ order <- function (p) {
 		p$reml <- p$can.use.reml
 		p <- reorder(p,tab[!fxd,])
 	}
-	p$formula <- build.formula(p$dep,p$tab,p$env)
+	p$formula <- build.formula(p$dep,p$tab)
 	p
 }
 

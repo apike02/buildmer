@@ -3,7 +3,7 @@ buildmer.fit <- function (p) {
 	if (is.data.frame(p$formula)) {
 		p$tab <- p$formula
 		if (is.null(p$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
-		p$formula <- build.formula(p$dep,p$tab,p$env)
+		p$formula <- build.formula(p$dep,p$tab)
 	} else {
 		p$dep <- as.character(p$formula[2])
 		p$tab <- tabulate.formula(p$formula)
@@ -41,7 +41,6 @@ buildmer.fit <- function (p) {
 	} else {
 		p$parallel <- TRUE
 		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
-		p$env <- .GlobalEnv
 		if (is.numeric(p$cluster)) {
 			p$cluster <- parallel::makeCluster(p$cluster,outfile='')
 			cleanup.cluster <- TRUE
@@ -137,7 +136,7 @@ is.random.term <- function (term) {
 	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(TRUE)
 	FALSE
 }
-mkForm <- function (term,env=parent.frame()) stats::as.formula(paste0('~',term),env=env)
+mkForm <- function (term) stats::as.formula(paste0('~',term))
 mkTerm <- function (term) buildmer:::mkForm(term)[[2]]
 
 progress <- function (p,...) {

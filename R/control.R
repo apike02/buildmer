@@ -97,7 +97,6 @@ buildmer.prep <- function (mc,add,banned) {
 	p <- eval(mc,e)
 	p$dots <- lapply(p$dots,eval,e)
 	p$call <- mc[-1]
-	p$env <- e
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list
 	# Note: names(mc) only provides the explicit arguments, not the defaults, hence why the below works

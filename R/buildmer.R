@@ -427,7 +427,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 		sane(terms[[1]],'|')
 		left <- as.character(terms[2])
 		middle <- as.character(terms[3])
-		formula <- stats::as.formula(paste0(dep,'~',paste0(c(left,middle),collapse='+')),env=parent.frame())
+		formula <- stats::as.formula(paste0(dep,'~',paste0(c(left,middle),collapse='+')))
 	} else {
 		partitioning <- as.character(dots$partitioning[2])
 		dots$partitioning <- NULL
