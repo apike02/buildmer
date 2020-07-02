@@ -1,5 +1,5 @@
 run <- function (fun,args,quiet) {
-	if (p$quiet) {
+	if (quiet) {
 		suppressMessages(suppressWarnings(try(do.call(fun,args),silent=TRUE)))
 	} else {
 		suppressWarnings(try(do.call(fun,args)))
