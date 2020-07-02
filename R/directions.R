@@ -85,7 +85,7 @@ backward <- function (p) {
 				p$reml <- p$can.use.reml && all(!is.na(p$tab[i,]$grouping))
 				m.cur <- if (need.reml && p$reml) p$cur.reml else p$cur.ml
 			}
-			f.alt <- buildmer:::build.formula(p$dep,p$tab[-i,],p$env)
+			f.alt <- buildmer:::build.formula(p$dep,p$tab[-i,])
 			m.alt <- p$fit(p,f.alt)
 			val <- if (buildmer:::converged(m.alt)) p$crit(p,m.alt,m.cur) else NaN
 			val <- rep(val,length(i))
@@ -111,7 +111,7 @@ backward <- function (p) {
 		# Remove the worst offender(s) and continue
 		remove <- remove[p$tab[remove,p$crit.name] == max(p$tab[remove,p$crit.name])]
 		p$tab <- p$tab[-remove,]
-		p$formula <- build.formula(p$dep,p$tab,p$env)
+		p$formula <- build.formula(p$dep,p$tab)
 		p$cur.ml <- p$cur.reml <- NULL
 		if (length(results) == 1) {
 			# Recycle the current model as the next reference model
@@ -175,7 +175,7 @@ forward <- function (p) {
 	p$tab[,p$crit.name] <- p$tab$score
 	p$results <- p$tab
 	p$tab <- p$tab[!(remove & remove.ok),]
-	p$formula <- build.formula(p$dep,p$tab,p$env)
+	p$formula <- build.formula(p$dep,p$tab)
 	p$reml <- p$can.use.reml
 	p$model <- p$fit(p,p$formula)
 	p
@@ -234,7 +234,7 @@ order <- function (p) {
 		p$ordered <- p$crit.name
 		repeat {
 			have <- p$tab
-			cur <- p$fit(p,build.formula(p$dep,have,p$env))
+			cur <- p$fit(p,build.formula(p$dep,have))
 			conv <- converged(cur)
 			if (conv) break
 			p <- reduce.model(p,conv)
@@ -260,7 +260,7 @@ order <- function (p) {
 			mods <- p$parply(unique(check$block),function (b) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
-				form <- buildmer:::build.formula(p$dep,tab,p$env)
+				form <- buildmer:::build.formula(p$dep,tab) #,p$env) corrupts the environment if lmer is used
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
 			})
@@ -282,7 +282,7 @@ order <- function (p) {
 				# In principle, there should be only one winner. If there are multiple candidates which happen to add _exactly_ the same amount of information to the model, this is
 				# suspicious. Probably the reason is that this is an overfitted model and none of the candidate terms add any new information. The solution is to add both terms, but this
 				# needs an extra fit to obtain the new 'current' model.
-				form <- build.formula(p$dep,have,p$env)
+				form <- build.formula(p$dep,have)
 				cur <- p$fit(p,form)
 				conv <- conv(cur)
 				if (!conv) {
@@ -329,6 +329,6 @@ reduce.model <- function (p,conv) {
 		stop('No terms left for reduction, giving up')
 	}
 	p$tab <- p$tab[!is.na(p$tab$block) & p$tab$block != cands[length(cands)],]
-	p$formula <- build.formula(p$dep,p$tab,p$env)
+	p$formula <- build.formula(p$dep,p$tab)
 	p
 }
