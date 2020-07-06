@@ -97,6 +97,14 @@ buildmer.prep <- function (mc,add,banned) {
 	p <- eval(mc,e)
 	p$dots <- lapply(p$dots,eval,e)
 	p$call <- mc[-1]
+	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
+	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
+	if (length(p$call$dots)) {
+		# As above, legacy arguments override dots arguments
+		p$call$dots <- c(p$call,p$call$dots[!names(p$call$dots) %in% p$call])
+	} else {
+		p$call$dots <- p$call
+	}
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list
 	# Note: names(mc) only provides the explicit arguments, not the defaults, hence why the below works
