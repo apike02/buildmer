@@ -253,16 +253,13 @@ order <- function (p) {
 				return(p)
 			}
 			progress(p,paste0('Currently evaluating ',p$crit.name,' for: ',paste0(ifelse(is.na(check$grouping),check$term,paste(check$term,'|',check$grouping)),collapse=', ')))
-			if (p$parallel) {
-				parallel::clusterExport(p$cluster,c('check','have','p'),environment())
-			}
-			mods <- p$parply(unique(check$block),function (b) {
+			mods <- p$parply(unique(check$block),function (b,check,have,p) {
 				check <- check[check$block == b,]
 				tab <- rbind(have[,c('index','grouping','term')],check[,c('index','grouping','term')])
 				form <- buildmer:::build.formula(p$dep,tab)
 				mod <- list(p$fit(p,form))
 				rep(mod,nrow(check))
-			})
+			},check,have,p)
 			mods <- unlist(mods,recursive=FALSE)
 			check$score <- sapply(mods,function (mod) if (converged(mod)) p$crit(p,cur,mod) else NaN)
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
