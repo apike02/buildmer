@@ -17,6 +17,7 @@ patch.GLMMadaptive <- function (p,fun,args) {
 	model$call$family  <- p$call$family
 	model$call$control <- p$call$dots$control
 	model$call$weights <- p$call$dots$weights
+	model$call$offset  <- p$call$dots$offset
 	model
 }
 
@@ -32,6 +33,7 @@ patch.gamm <- function (p,fun,args) {
 	model$lme$call$subset  <- p$call$dots$subset
 	model$lme$call$control <- p$call$dots$control
 	model$lme$call$weights <- p$call$dots$weights
+	model$lme$call$offset  <- p$call$dots$offset
 	model
 }
 
@@ -47,6 +49,7 @@ patch.gamm4 <- function (p,fun,args) {
 	model$mer@call$subset  <- p$call$dots$subset
 	model$mer@call$control <- p$call$dots$control
 	model$mer@call$weights <- p$call$dots$weights
+	model$mer@call$offset  <- p$call$dots$offset
 	model
 }
 
@@ -61,8 +64,9 @@ patch.lm <- function (p,fun,args) {
 	model$call$subset  <- p$call$dots$subset
 	model$call$control <- p$call$dots$control
 	model$call$weights <- p$call$dots$weights
+	model$call$offset  <- p$call$dots$offset
 	if (!p$is.gaussian) {
-		model$call$family  <- p$call$family
+		model$call$family <- p$call$family
 	}
 	model
 }
@@ -78,8 +82,9 @@ patch.lmer <- function (p,fun,args) {
 	model@call$subset  <- p$call$dots$subset
 	model@call$control <- p$call$dots$control
 	model@call$weights <- p$call$dots$weights
+	model@call$offset  <- p$call$dots$offset
 	if (!p$is.gaussian) {
-		model@call$family  <- p$call$family
+		model@call$family <- p$call$family
 	}
 	model
 }
@@ -98,13 +103,14 @@ patch.mertree <- function (p,fun,args) {
 	model$call$subset  <- p$call$dots$subset
 	model$call$ctrl    <- p$call$dots$control
 	model$call$weights <- p$call$dots$weights
+	model$call$offset  <- p$call$dots$offset
 	model[[eltname]]@call$data    <- p$call$data
 	model[[eltname]]@call$subset  <- p$call$dots$subset
 	model[[eltname]]@call$control <- if (p$is.gaussian) p$call$dots$lmer.control else p$call$dots$glmer.control
 	model[[eltname]]@call$weights <- p$call$dots$weights
+	model[[eltname]]@call$offset  <- p$call$dots$offset
 	if (!p$is.gaussian) {
-		model$call$family <- p$call$family
-		model[[eltname]]@call$family <- p$call$family
+		model$call$family <- model[[eltname]]@call$family <- p$call$family
 	}
 	model
 }
