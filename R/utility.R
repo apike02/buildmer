@@ -164,7 +164,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		if (!is.null(model$sdr$pdHess)) {
 			if (!model$sdr$pdHess) return(failure('glmmTMB reports non-positive-definite Hessian'))
 			if (sum(dim(model$sdr$cov.fixed))) {
-				if ((err <- max(abs(model$sdr$gradient.fixed))) < grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
+				if ((err <- max(abs(model$sdr$gradient.fixed))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
 				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=TRUE)
 				if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 				if ((err <- min(ev)) < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))

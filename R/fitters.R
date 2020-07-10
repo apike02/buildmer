@@ -174,8 +174,16 @@ fit.glmmTMB <- function (p,formula) {
 			return(buildmer:::fit.gam(p,formula))
 		}
 	}
+	if ('offset' %in% names(p$dots)) {
+		# glmmTMB issue #612
+		buildmer_offset <- p$dots$offset
+		p$dots$offset <- NULL
+		fun <- function (...) glmmTMB::glmmTMB(...,offset=buildmer_offset)
+	} else {
+		fun <- glmmTMB::glmmTMB
+	}
 	buildmer:::progress(p,'Fitting via glmmTMB, with ',ifelse(p$reml,'REML','ML'),': ',formula)
-	buildmer:::patch.lm(p,glmmTMB::glmmTMB,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
+	buildmer:::patch.lm(p,fun,c(list(formula=formula,data=p$data,family=p$family,REML=p$reml),p$dots))
 }
 
 fit.gls <- function (p,formula) {
