@@ -40,9 +40,9 @@ buildmer.fit <- function (p) {
 		cleanup.cluster <- FALSE
 	} else {
 		p$parallel <- TRUE
-		p$parply <- function (x,fun,...) parallel::parLapply(p$cluster,x,fun,...)
+		p$parply <- function (x,fun,...) parallel::parLapply(p$cl,x,fun,...)
 		if (is.numeric(p$cluster)) {
-			p$cluster <- parallel::makeCluster(p$cluster,outfile='')
+			p$cl <- parallel::makeCluster(p$cl,outfile='')
 			cleanup.cluster <- TRUE
 		} else {
 			cleanup.cluster <- FALSE
@@ -72,7 +72,7 @@ buildmer.fit <- function (p) {
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
 	if (cleanup.cluster) {
-		parallel::stopCluster(p$cluster)
+		parallel::stopCluster(p$cl)
 	}
 	p
 }
