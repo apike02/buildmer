@@ -217,7 +217,7 @@ re2mgcv <- function (formula,data) {
 		data[[g]] <- factor(data[[g]])
 		tab <- random[random$grouping == g,]
 		tab$index <- tab$grouping <- NA
-		f <- buildmer:::build.formula(dep,tab)
+		f <- buildmer:::build.formula(dep,tab,emptyenv())
 		terms <- model.matrix(f,data)
 		nms <- gsub('[():]','_',colnames(terms))
 		for (i in 1:ncol(terms)) {
@@ -234,7 +234,7 @@ re2mgcv <- function (formula,data) {
 			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=FALSE)
 		}			
 	}
-	formula <- buildmer:::build.formula(dep,formula)
+	formula <- buildmer:::build.formula(dep,formula,emptyenv())
 	list(formula=formula,data=data)
 }
 

@@ -134,7 +134,7 @@ setMethod('diag','formula',function (x) {
 	tab <- tabulate.formula(x)
 	ok <- !is.na(tab$index)
 	tab$index[ok] <- 1:sum(ok)
-	build.formula(dep,tab)
+	build.formula(dep,tab,parent.frame())
 })
 
 #sapply(c('MixMod','bam','clm','clmm','gam','glm','lm','glmmTMB','gls','JuliaCall','lme','nlme','lmerMod','glmerMod','lmerModLmerTest','lmertree','glmertree','lmtree','glmtree','multinom','nnet'),function (x) methods(class=x)) %>% unlist %>% sapply(. %>% strsplit('.',fixed=T) %>% .[[1]] %>% .[1:(length(.)-1)] %>% paste0(collapse='.')) %>% unique %>% .[!endsWith(.,'-method')] %>% .[!. %in% c('anova','summary','show')] %>% sapply(function (x) {
