@@ -23,11 +23,11 @@ buildmer.fit <- function (p) {
 			# Force off
 			p$can.use.reml <- FALSE
 		}
-		# else: it's NA --> use default:
+		# else: it's NA --> use default
 		p$dots$REML <- NULL
 	} else {
 		# Default case, in which case one optimization can be applied:
-		if (all(p$crit.name %in% c('deviance','devexp'))) {
+		if (all(p$crit.name %in% c('deviance','devexp','F'))) {
 			p$can.use.reml <- FALSE
 			p$force.reml <- TRUE
 		}
@@ -60,7 +60,7 @@ buildmer.fit <- function (p) {
 		}
 		if (length(p$direction)) {
 			for (i in 1:length(p$direction)) {
-				p <- do.call(p$direction[i],list(p=within.list(p,{ crit <- crits[[i]] })))
+				p <- do.call(p$direction[[i]],list(p=within.list(p,{ crit <- crits[[i]] })))
 			}
 		}
 		if (any(i <- names(p$results %in% c('LRT','F')))) {
@@ -105,7 +105,7 @@ calcWald <- function (table,col.ef,col.df=0) {
 
 check.ddf <- function (ddf) {
 	if (is.null(ddf)) return('Wald')
-	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger','KR')
+	valid <- c('Wald','lme4','Satterthwaite','Kenward-Roger','KR','S')
 	i <- pmatch(ddf,valid)
 	if (is.na(i)) {
 		warning("Invalid ddf specification, possible options are 'Wald', 'lme4', 'Satterthwaite', 'Kenward-Roger'")
@@ -119,6 +119,9 @@ check.ddf <- function (ddf) {
 	}
 	if (ddf == 'KR') {
 		ddf <- 'Kenward-Roger'
+	}
+	if (ddf == 'S') {
+		ddf <- 'Satterthwaite'
 	}
 	if (ddf == 'Kenward-Roger' && !requireNamespace('pbkrtest',quietly=TRUE)) {
 		warning('pbkrtest package is not available, could not calculate Kenward-Roger denominator degrees of freedom')
