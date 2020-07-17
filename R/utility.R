@@ -129,19 +129,19 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 	success <- function (msg,err=NULL) setattr(TRUE,msg,err)
 	if (inherits(model,'try-error')) return(failure(model))
 	if (inherits(model,'gam')) {
-		if (!is.null(model$outer.info)) {
-			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv outer convergence failed',err))
+		if (is.null(model$outer.info)) {
+			if (!length(model$sp)) return(success('No smoothing parameters to optimize'))
+			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports nonconvergence'))
+			if ((err <- model$mgcv.conv$rms.grad) > grad.tol) return(failure(paste0('mgcv reports absolute gradient containing values >',grad.tol),err))
+			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
+			return(success('All buildmer checks passed (gam)'))
+		} else {
+			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv reports nonconvergence',err))
 			if ((err <- max(abs(model$outer.info$grad))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
 			err <- try(min(eigen(model$outer.info$hess)$values),silent=TRUE)
 			if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
 			if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 			return(success('All buildmer checks passed (bam)'))
-		} else {
-			if (!length(model$sp)) return(success('No smoothing parameters to optimize'))
-			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports outer convergence failed'))
-			if ((err <- model$mgcv.conv$rms.grad) > grad.tol) return(failure(paste0('mgcv reports absolute gradient containing values >',grad.tol),err))
-			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
-			return(success('All buildmer checks passed (gam)'))
 		}
 	}
 	if (inherits(model,'merMod')) {
