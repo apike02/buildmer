@@ -10,13 +10,23 @@
 #' add.terms(form,c('many','more|terms','to|terms','(be|added)','to|test'))
 #' @export
 add.terms <- function (formula,add) {
-	dep <- if (length(formula) < 3) '' else as.character(formula[2])
-	terms <- terms(formula,keep.order=TRUE)
+	dep       <- if (length(formula) < 3) '' else as.character(formula[2])
+	terms     <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
-	terms <- attr(terms,'term.labels')
+	offset    <- attr(terms,'offset')
+	vars      <- attr(terms,'variables')
+	terms     <- attr(terms,'term.labels')
+	terms     <- c(intercept,terms)
+	if (!is.null(offset)) {
+		offset.term <- as.character(list(vars[[1+offset]]))
+		terms <- c(offset.term,terms)
+	}
+
 	fixed.terms <- Filter(Negate(buildmer:::is.random.term),terms)
 	random.terms <- Filter(buildmer:::is.random.term,terms)
-	if (length(random.terms)) random.terms <- sapply(random.terms,function (x) if (buildmer:::mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
+	if (length(random.terms)) {
+		random.terms <- sapply(random.terms,function (x) if (buildmer:::mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
+	}
 
 	for (term in add) {
 		if (is.random.term(term)) {
@@ -57,7 +67,7 @@ add.terms <- function (formula,add) {
 			fixed.terms <- c(fixed.terms,term)
 		}
 	}
-	terms <- c(as.numeric(intercept),fixed.terms,random.terms)
+	terms <- c(fixed.terms,random.terms)
 	stats::as.formula(paste0(dep,'~',paste0(terms,collapse='+')),environment(formula))
 }
 
@@ -397,12 +407,18 @@ tabulate.formula <- function (formula,group=NULL) {
 		t
 	}
 
-	dep <- as.character(formula[2])
-	terms <- terms(formula,keep.order=TRUE)
+	dep       <- as.character(formula[2])
+	terms     <- terms(formula,keep.order=TRUE)
 	intercept <- attr(terms,'intercept')
-	terms <- attr(terms,'term.labels')
+	offset    <- attr(terms,'offset')
+	vars      <- attr(terms,'variables')
+	terms     <- attr(terms,'term.labels')
 	if (intercept) {
 		terms <- c('1',terms)
+	}
+	if (!is.null(offset)) {
+		offset.term <- as.character(list(vars[[1+offset]]))
+		terms <- c(offset.term,terms)
 	}
 
 	# Build lists to check which terms are currently present.

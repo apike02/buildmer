@@ -291,7 +291,7 @@ order <- function (p) {
 	}
 
 	progress(p,'Determining predictor order')
-	if (is.null(p$tab)) p$tab <- tabulate.formula(p$formula) else p$tab$ok <- p$tab$score <- NULL
+	p$tab$ok <- p$tab$score <- NULL
 	tab <- p$tab
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) {
