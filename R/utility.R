@@ -213,6 +213,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 #' re <- re2mgcv(log(Reaction) ~ Days + (Days|Subject),lme4::sleepstudy)
 #' @export
 re2mgcv <- function (formula,data) {
+	e <- environment(formula)
 	dep <- as.character(formula[[2]])
 	data <- data[!is.na(data[[dep]]),]
 	formula <- buildmer:::tabulate.formula(formula)
@@ -227,7 +228,7 @@ re2mgcv <- function (formula,data) {
 		data[[g]] <- factor(data[[g]])
 		tab <- random[random$grouping == g,]
 		tab$index <- tab$grouping <- NA
-		f <- buildmer:::build.formula(dep,tab)
+		f <- buildmer:::build.formula(dep,tab,e)
 		terms <- model.matrix(f,data)
 		nms <- gsub('[():]','_',colnames(terms))
 		for (i in 1:ncol(terms)) {
@@ -244,7 +245,7 @@ re2mgcv <- function (formula,data) {
 			formula <- rbind(formula,data.frame(index=NA,grouping=NA,term=term,code=term,block=term),stringsAsFactors=FALSE)
 		}			
 	}
-	formula <- buildmer:::build.formula(dep,formula)
+	formula <- buildmer:::build.formula(dep,formula,e)
 	list(formula=formula,data=data)
 }
 
@@ -449,5 +450,7 @@ tabulate.formula <- function (formula,group=NULL) {
 		}
 	})
 	terms <- Filter(Negate(is.null),terms)
-	do.call(rbind,terms)
+	tab <- do.call(rbind,terms)
+	environment(tab) <- environment(formula)
+	tab
 }

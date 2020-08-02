@@ -132,6 +132,7 @@ buildmer.prep <- function (mc,add,banned) {
 	if (!is.function(p$elim)) {
 		p$elim <- get(paste0('elim.',p$elim))
 	}
+	p$env <- environment(p$formula)
 
 	p
 }
