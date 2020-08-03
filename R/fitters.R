@@ -83,7 +83,7 @@ fit.gam <- function (p,formula) {
 	p$data <- re$data
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# gam is sometimes unable to fit intercept-only models
-		formula <- buildmer:::add.terms(formula,c('intercept'))
+		formula <- buildmer:::add.terms(formula,'intercept')
 		p$data$intercept <- 1
 	}
 	if (p$quickstart > 0) {
