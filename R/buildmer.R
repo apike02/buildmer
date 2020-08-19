@@ -248,7 +248,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
 		if (!p$quiet) {
-			message('Fitting final gamm model')
+			progress(p,'Fitting final gamm model')
 		}
 		p$reml <- p$finalize <- TRUE
 		p$model <- fit.gamm(p,p$formula)
@@ -284,7 +284,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),buildmerControl=buil
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {
 		if (!p$quiet) {
-			message('Fitting final gamm4 model')
+			progress(p,'Fitting final gamm4 model')
 		}
 		p$reml <- p$finalize <- TRUE
 		p$model <- fit.gamm4(p,p$formula)
@@ -383,7 +383,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=TRUE) && p$ddf != 'lme4') {
 		# Even if the user did not request lmerTest ddf, convert the model to an lmerTest object anyway in case the user is like me and only thinks about the ddf after having fitted the model
 		if (!p$quiet) {
-			message('Finalizing by converting the model to lmerTest')
+			progress(p,'Finalizing by converting the model to lmerTest')
 		}
 		p$model@call$data <- p$data
 		if ('subset'  %in% names(p$dots)) p$model@call$subset  <- p$dots$subset

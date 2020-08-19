@@ -47,6 +47,7 @@ buildmer.fit <- function (p) {
 		} else {
 			cleanup.cluster <- FALSE
 		}
+		parallel::clusterExport(p$cluster,privates,environment())
 	}
 
 	# Let's go
@@ -68,7 +69,7 @@ buildmer.fit <- function (p) {
 		}
 	}
 	if (is.null(p$model)) {
-		message('Fitting the final model')
+		progress(p,'Fitting the final model')
 		p$model <- p$parply(list(p),p$fit,p$formula)[[1]]
 	}
 	if (cleanup.cluster) {
@@ -87,6 +88,7 @@ buildmer.finalize <- function (p) {
 		ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	}
 	ret@p$in.buildmer <- FALSE
+	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=privates),silent=TRUE)
 	ret
 }
 
@@ -133,14 +135,15 @@ check.ddf <- function (ddf) {
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {
-	term <- buildmer:::mkTerm(term)
+	term <- mkTerm(term)
 	if (is.name(term)) return(FALSE)
 	if (term[[1]] == '|') return(TRUE)
 	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(TRUE)
 	FALSE
 }
 mkForm <- function (term) stats::as.formula(paste0('~',term))
-mkTerm <- function (term) buildmer:::mkForm(term)[[2]]
+mkTerm <- function (term) mkForm(term)[[2]]
+privates <- c('add.terms','build.formula','can.remove','fit.buildmer','fit.gam','has.smooth.terms','is.gaussian','mkForm','patch.gamm4','patch.lm','patch.lmer','patch.mertree','progress','re2mgcv','run','tabulate.formula')
 
 progress <- function (p,...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
@@ -172,15 +175,9 @@ unravel <- function (x,sym=c(':','interaction')) {
 unwrap.terms <- function (terms,inner=FALSE,intercept=FALSE) {
 	form <- stats::as.formula(paste0('~',terms))
 	terms <- terms(form,keep.order=TRUE)
-	if (intercept) {
-		intercept <- attr(terms,'intercept')
-	}
-	if (inner) {
-		return(terms[[2]])
-	}
+	if (intercept) intercept <- attr(terms,'intercept')
+	if (inner) return(terms[[2]])
 	terms <- attr(terms,'term.labels')
-	if (intercept) {
-		terms <- c('1',terms)
-	}
+	if (intercept) terms <- c('1',terms)
 	terms
 }
