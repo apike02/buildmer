@@ -47,7 +47,8 @@ buildmer.fit <- function (p) {
 		} else {
 			cleanup.cluster <- FALSE
 		}
-		parallel::clusterExport(p$cluster,privates,environment())
+		p$privates <- ls(getNamespace('buildmer'),all.names=TRUE)
+		parallel::clusterExport(p$cluster,p$privates,environment())
 	}
 
 	# Let's go
@@ -88,7 +89,7 @@ buildmer.finalize <- function (p) {
 		ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	}
 	ret@p$in.buildmer <- FALSE
-	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=privates),silent=TRUE)
+	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=p$privates),silent=TRUE)
 	ret
 }
 
@@ -143,7 +144,6 @@ is.random.term <- function (term) {
 }
 mkForm <- function (term) stats::as.formula(paste0('~',term))
 mkTerm <- function (term) mkForm(term)[[2]]
-privates <- c('add.terms','build.formula','can.remove','fit.buildmer','fit.gam','has.smooth.terms','is.gaussian','mkForm','patch.gamm4','patch.lm','patch.lmer','patch.mertree','progress','re2mgcv','run','tabulate.formula')
 
 progress <- function (p,...) {
 	text <- sapply(list(...),function (x) as.character(list(x)))
