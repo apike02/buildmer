@@ -17,26 +17,27 @@ crit.F <- function (p,ref,alt) {
 	if (!inherits(alt,'gam')) {
 		stop('crit.F currently only works with gam/bam models')
 	}
-	r2_alt <- summary(alt,re.test=FALSE)$r.sq
-	df_alt <- df.residual(alt)
+	r2_alt  <- summary(alt,re.test=FALSE)$r.sq
+	ddf_alt <- df.residual(alt)
+	ndf_alt <- nobs(alt) - ddf_alt
 	if (is.null(ref)) {
-		r2_ref <- 0
-		df_ref <- 0
+		r2_ref  <- 0
+		ddf_ref <- nobs(alt)
+		ndf_ref <- 0
 	} else {
 		if (!inherits(ref,'gam')) {
 			stop('crit.F currently only works with gam/bam models')
 		}
-		r2_ref <- summary(ref,re.test=FALSE)$r.sq
-		df_ref <- df.residual(ref)
+		r2_ref  <- summary(ref,re.test=FALSE)$r.sq
+		ddf_ref <- df.residual(ref)
+		ndf_ref <- nobs(ref) - ddf_ref
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
 	}
-	ndf <- df_alt - df_ref
-	ddf <- nobs(alt) - df_alt - alt$scale.estimated
-	num <- (r2_alt - r2_ref) / ndf
-	den <- (1 - r2_alt) / ddf
-	Fval <- num / den
+	Fval <- (r2_alt - r2_ref) / ((1 - r2_alt) / (ddf_alt))
+	ndf  <- ndf_alt - ndf_ref
+	ddf  <- ddf_alt
 	if (is.na(Fval)) {
 		return(log(1))
 	}
@@ -44,9 +45,9 @@ crit.F <- function (p,ref,alt) {
 		return(log(1 + abs(Fval))) #gives the order step some idea of which model is the least unhelpful
 	}
 	if (alt$scale.estimated) {
-		pf(Fval,ndf,ddf,log=TRUE)
+		pf(Fval,ndf,ddf,lower.tail=FALSE,log.p=TRUE)
 	} else {
-		pchisq(ndf*Fval,ndf,log=TRUE)
+		pchisq(ndf*Fval,ndf,lower.tail=FALSE,log.p=TRUE)
 	}
 }
 crit.LRT <- function (p,ref,alt) {
