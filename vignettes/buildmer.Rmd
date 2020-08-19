@@ -53,12 +53,11 @@ This model is still somewhat on the large side, so we will now use `buildmer` to
 
 # Finding the maximal _feasible_ model & doing stepwise elimination from it
 
-To illustrate `buildmer`'s modular capabilities, we'll fit this model in two steps. We start by identifying the maximal model that is still capable of converging. We do this by running `buildmer`, with the `direction` argument set to `'order'`. We also set `lme4`s optimizer to `bobyqa`, as this manages to get much further than the default `nloptwrap`.
+To illustrate `buildmer`'s modular capabilities, we'll fit this model in two steps. We start by identifying the maximal model that is still capable of converging. We do this by running `buildmer`, including an optional `buildmerControl` argument in which we set the `direction` parameter to `'order'`. We also set `lme4`s optimizer to `bobyqa`, as this manages to get much further than the default `nloptwrap`. Note how control parameters passed to buildmer itself are encased within `buildmerControl`, whereas control parameters intended for `lmer` are directly passed as arguments to `buildmer` itself.
 
 ```{r}
 library(lme4)
-m <- buildmer(f,data=vowels,buildmerControl=buildmerControl(direction='order',
-	control=lmerControl(optimizer='bobyqa')))
+m <- buildmer(f,data=vowels,control=lmerControl(optimizer='bobyqa'),buildmerControl=buildmerControl(direction='order'))
 ```
 
 The `order` step is useful if the maximal model includes random effects: `buildmer` will start out with an empty model and keeps adding terms to this model until convergence can no longer be achieved. The `order` step adds terms in order of their contribution to a certain criterion, such that the most important random slopes will be included first; this criterion is controlled by the `crit` argument. The default criterion is the significance of the change in log-likelihood (`LRT`: terms which provide lower chi-square $p$ values are considered more important), but other options are also supported. These are the raw log-likelihood (`LL`: terms which provide the largest increase in the log-likelihood; this measure will favor categorical predictors with many levels), AIC (`AIC`), BIC (`BIC`), explained deviance (`deviance`), and for GAMMs fitted using package `mgcv` the change in R-squared (`F`). You can select among them by passing e.g.\ `crit='LRT'` within the `buildmerControl` argument. The default `direction` is `c('order','backward')`, i.e.\ proceeding directly to backward stepwise elimination, but *for illustration purposes* we separate those steps here. (The `crit` argument also accepts vectors, such that e.g.\ `direction=c('order','backward'),crit=c('LL','LRT')` is allowed.)

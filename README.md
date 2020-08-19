@@ -7,12 +7,17 @@ In addition, the package (optionally) **determines the order of your predictors*
 **Nonconvergence** of models is handled properly by removing a random slope if the maximal model you have specified turns out to not converge. **p-values** are calculated for you using Wald z-scores. Better alternatives (Kenward-Roger, Satterthwaite) are available at the user's option (if the `lmerTest` package is installed).
 
 The package supports the fitting of a wide variety of models, if the relevant packages are available. The following `buildmer` functions make it possible to fit the following types of models:
- * *buildmer*: `lm`, `glm`, `lmer`, `glmer`, `gamm4` (package `gamm4`)
- * *buildbam*, *buildgam*, *buildgamm*: `bam`, `gam`, `gamm` (package `mgcv`)
+ * *buildmer*: `lm`, `glm`, `lmer`, `glmer`
+ * *buildgamm4*: `gamm4` (package `gamm4`)
+ * *buildbam*: `bam` (package `mgcv`)
+ * *buildgam*: `gam` (package `mgcv`)
+ * *buildgamm*: `gamm` (package `mgcv`)
  * *buildglmmTMB*: `glmmTMB` (package `glmmTMB`)
+ * *buildmultinom*: `multinom` (package `nnet`)
  * *buildmertree*: `lmertree`, `glmertree` (package `glmertree`)
  * *buildlme*: `lme` (package `nlme`)
- * *buildjulia*: uses `RCall` to drive a Julia installation to fit models using Julia package `MixedModels`
+ * *buildclmm*: `clmm` (package `ordinal`)
+ * *buildcustom*: enables you to write your own wrapper function to use the buildmer term-reordering and elimination features with any type of model you want.
 
 Automatic elimination of fixed, random, and/or smooth terms, is possible and enabled by default using the backward (default) or forward stepwise method. Bi-directional elimination is also possible, by passing e.g. `direction=c('forward','backward','forward')`, although I would not want to recommend doing this.
 

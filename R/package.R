@@ -4,6 +4,7 @@
 #' 
 #' @docType package
 #' @name buildmer-package
+#' @importFrom stats lm pchisq pf resid update
 NULL
 
 #' A very small dataset from a pilot study on sound change.

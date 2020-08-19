@@ -6,6 +6,7 @@
 #' @slot anova The model's ANOVA, if the model was built with `anova=TRUE'
 #' @slot summary The model's summary, if the model was built with `summary=TRUE'
 #' @seealso [buildmer()]
+#' @importFrom methods new
 #' @examples
 #' # Manually create a bare-bones buildmer object:
 #' model <- lm(Sepal.Length ~ Petal.Length,iris)
@@ -147,15 +148,19 @@ setMethod('diag','formula',function (x) {
 #	x
 #}) -> x
 #' @method coef buildmer
+#' @importFrom stats coef
 #' @export
 coef.buildmer <- function (object,...) coef(object=object@model,...)
 #' @method confint buildmer
+#' @importFrom stats confint
 #' @export
 confint.buildmer <- function (object,...) confint(object=object@model,...)
 #' @method family buildmer
+#' @importFrom stats family
 #' @export
 family.buildmer <- function (object,...) family(object=object@model,...)
 #' @method fitted buildmer
+#' @importFrom stats fitted
 #' @export
 fitted.buildmer <- function (object,...) fitted(object=object@model,...)
 #' @method fixef buildmer
@@ -163,21 +168,27 @@ fitted.buildmer <- function (object,...) fitted(object=object@model,...)
 #' @export
 fixef.buildmer <- function (object,...) fixef(object=object@model,...)
 #' @method formula buildmer
+#' @importFrom stats formula
 #' @export
 formula.buildmer <- function (x,...) formula(x=x@model,...)
 #' @method logLik buildmer
+#' @importFrom stats logLik
 #' @export
 logLik.buildmer <- function (object,...) logLik(object=object@model,...)
 #' @method model.frame buildmer
+#' @importFrom stats model.frame
 #' @export
 model.frame.buildmer <- function (formula,...) model.frame(formula=formula@model,...)
 #' @method model.matrix buildmer
+#' @importFrom stats model.matrix
 #' @export
 model.matrix.buildmer <- function (object,...) model.matrix(object=object@model,...)
 #' @method nobs buildmer
+#' @importFrom stats nobs
 #' @export
 nobs.buildmer <- function (object,...) nobs(object=object@model,...)
 #' @method predict buildmer
+#' @importFrom stats predict
 #' @export
 predict.buildmer <- function (object,...) predict(object=object@model,...)
 #' @method print buildmer
@@ -188,21 +199,27 @@ print.buildmer <- function (x,...) print(x=x@model,...)
 #' @export
 ranef.buildmer <- function (object,...) ranef(object=object@model,...)
 #' @method residuals buildmer
+#' @importFrom stats residuals
 #' @export
 residuals.buildmer <- function (object,...) residuals(object=object@model,...)
 #' @method simulate buildmer
+#' @importFrom stats simulate
 #' @export
 simulate.buildmer <- function (object,...) simulate(object=object@model,...)
 #' @method terms buildmer
+#' @importFrom stats terms
 #' @export
 terms.buildmer <- function (x,...) terms(x=x@model,...)
 #' @method vcov buildmer
+#' @importFrom stats vcov
 #' @export
 vcov.buildmer <- function (object,...) vcov(object=object@model,...)
 #' @method cooks.distance buildmer
+#' @importFrom stats cooks.distance
 #' @export
 cooks.distance.buildmer <- function (model,...) cooks.distance(model=model@model,...)
 #' @method influence buildmer
+#' @importFrom stats influence
 #' @export
 influence.buildmer <- function (model,...) influence(model=model@model,...)
 #' @method plot buildmer
@@ -210,30 +227,39 @@ influence.buildmer <- function (model,...) influence(model=model@model,...)
 #' @export
 plot.buildmer <- function (x,...) plot(x=x@model,...)
 #' @method add1 buildmer
+#' @importFrom stats add1
 #' @export
 add1.buildmer <- function (object,...) add1(object=object@model,...)
 #' @method deviance buildmer
+#' @importFrom stats deviance
 #' @export
 deviance.buildmer <- function (object,...) deviance(object=object@model,...)
 #' @method drop1 buildmer
+#' @importFrom stats drop1
 #' @export
 drop1.buildmer <- function (object,...) drop1(object=object@model,...)
 #' @method effects buildmer
+#' @importFrom stats effects
 #' @export
 effects.buildmer <- function (object,...) effects(object=object@model,...)
 #' @method extractAIC buildmer
+#' @importFrom stats extractAIC
 #' @export
 extractAIC.buildmer <- function (fit,...) extractAIC(fit=fit@model,...)
 #' @method profile buildmer
+#' @importFrom stats profile
 #' @export
 profile.buildmer <- function (fitted,...) profile(fitted=fitted@model,...)
 #' @method rstandard buildmer
+#' @importFrom stats rstandard
 #' @export
 rstandard.buildmer <- function (model,...) rstandard(model=model@model,...)
 #' @method rstudent buildmer
+#' @importFrom stats rstudent
 #' @export
 rstudent.buildmer <- function (model,...) rstudent(model=model@model,...)
 #' @method weights buildmer
+#' @importFrom stats weights
 #' @export
 weights.buildmer <- function (object,...) weights(object=object@model,...)
 #' @method alias buildmer
@@ -341,6 +367,7 @@ Variogram.buildmer <- function (object,...) Variogram(object=object@model,...)
 #' @export
 pairs.buildmer <- function (x,...) pairs(x=x@model,...)
 #' @method step buildmer
+#' @importFrom stats step
 #' @export
 step.buildmer <- function (object,...) step(object=object@model,...)
 #' @method getME buildmer

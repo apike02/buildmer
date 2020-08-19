@@ -5,7 +5,7 @@
 \title{Set control options for buildmer}
 \usage{
 buildmerControl(
-  formula = NULL,
+  formula = quote(stop("No formula specified")),
   data = NULL,
   family = gaussian(),
   direction = c("order", "backward"),
@@ -15,38 +15,64 @@ buildmerControl(
   fit = function(...) stop("No fitting function specified"),
   include = NULL,
   quiet = FALSE,
-  ddf = "Wald",
   calc.anova = FALSE,
   calc.summary = TRUE,
+  ddf = "Wald",
+  quickstart = 0,
   dep = NULL,
   can.use.reml = TRUE,
   force.reml = FALSE,
-  tol.grad = formals(buildmer:::converged)$grad.tol,
-  tol.hess = formals(buildmer:::converged)$hess.tol,
+  singular.ok = FALSE,
+  grad.tol = formals(buildmer:::converged)$grad.tol,
+  hess.tol = formals(buildmer:::converged)$hess.tol,
   I_KNOW_WHAT_I_AM_DOING = FALSE,
   ...
 )
 }
 \arguments{
-\item{formula}{The model formula for the maximal model you would like to fit. Alternatively, a buildmer term list as obtained from \code{\link{tabulate.formula}}. In the latter formulation, you also need to specify a \code{dep='...'} argument specifying the dependent variable to go along with the term list. See \code{\link{tabulate.formula}} for an example of where this is useful}
+\item{formula}{The model formula for the maximal model you would like to fit. Alternatively, a buildmer term list as obtained from \code{\link{tabulate.formula}}. In the latter formulation, you also need to specify a \code{dep='...'} argument specifying the dependent variable to go along with the term list. See \code{\link{tabulate.formula}} for an example of where this is useful.}
 
-\item{data}{The data to fit the model(s) to}
+\item{data}{The data to fit the model(s) to.}
 
-\item{family}{The error distribution to use}
+\item{family}{The error distribution to use.}
 
-\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed}
+\item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes}
+\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes.}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for elimination. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test)}
+\item{crit}{Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
 
-\item{include}{A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models}
+\item{elim}{Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
 
-\item{quiet}{A logical indicating whether to suppress progress messages}
+\item{fit}{Internal parameter --- do not modify.}
 
-\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination}
+\item{include}{A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models.}
 
-\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination}
+\item{quiet}{A logical indicating whether to suppress progress messages.}
+
+\item{calc.anova}{Logical indicating whether to also calculate the ANOVA table for the final model after term elimination.}
+
+\item{calc.summary}{Logical indicating whether to also calculate the summary table for the final model after term elimination.}
+
+\item{ddf}{The method used for calculating \emph{p}-values for \code{lme4} models and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).}
+
+\item{quickstart}{For \code{gam} models only: a numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.}
+
+\item{dep}{A character string specifying the name of the dependent variable. Only used if \code{formula} is a buildmer terms list.}
+
+\item{can.use.reml}{Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.}
+
+\item{force.reml}{Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.}
+
+\item{singular.ok}{Logical indicating whether singular fits are acceptable. Only for lme4 models.}
+
+\item{grad.tol}{Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.}
+
+\item{hess.tol}{Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.}
+
+\item{I_KNOW_WHAT_I_AM_DOING}{An internal option that you should not modify unless you know what you are doing.}
+
+\item{...}{Other arguments intended for the fitting function.}
 }
 \description{
 \code{buildmerControl()} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary()}/\code{anova()} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam()}/\code{buildgam()}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
@@ -60,7 +86,6 @@ With the default options, all \code{buildmer} functions will do two things:
 The final model is returned in the \code{model} slot of the returned \code{buildmer} object.
 All functions in the \code{buildmer} package are aware of the distinction between (f)REML and ML, and know to divide chi-square \emph{p}-values by 2 when comparing models differing only in random effects (see Pinheiro & Bates 2000).
 The steps executed above can be changed using the \code{direction} argument, allowing for arbitrary chains of, for instance, forward-backward-forward stepwise elimination (although using more than one elimination method on the same data is not recommended). The criterion for determining the importance of terms in the ordering stage and the elimination of terms in the elimination stage can also be changed, using the \code{crit} argument.
-
 
 
 There are two hidden arguments that \code{buildmer} can recognize. These are not part of the formal parameters of the various build* functions, but are recognized by all of them to benefit certain specialist applications:

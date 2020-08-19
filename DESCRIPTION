@@ -7,7 +7,7 @@ Description: Finds the largest possible regression model that will still converg
     additive models) and then optionally performs stepwise elimination similar to the
     forward and backward effect-selection methods in SAS, based on the change in
     log-likelihood or its significance, Akaike's Information Criterion, the Bayesian
-    Information Criterion, the explained deviance, or the F-test of the change in R^2.
+    Information Criterion, the explained deviance, or the F-test of the change in R².
 Depends:
     R (>= 3.2)
 Imports:
@@ -17,7 +17,7 @@ Suggests:
 License: FreeBSD
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 BugReports: https://github.com/cvoeten/buildmer/issues
 VignetteBuilder: knitr
 NeedsCompilation: no

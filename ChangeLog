@@ -15,31 +15,39 @@ Deprecated and liable to be removed in a future version:
 1.7
 
 *** Buildmer control parameters (e.g. crit, direction, cl, ...) are now passed
-    in a new argument buildmerControl=list(...). The 'old-style' passing of
+    via a new argument buildmerControl=list(...). The 'old-style' passing of
     these arguments as part of the buildX() call itself is still supported,
-    but is now deprecated. If an control parameter is passed both 'old-style'
-    and in buildmerControl, the latter takes precedence. All parameters are
-    now documented in a single place: ?buildmerControl
+    but is now deprecated. If a control parameter is passed both 'old-style'
+    and in buildmerControl, the former takes precedence. All parameters are
+    now documented in a single place: ?buildmerControl.
 * Implement gradient and Hessian tolerances in converged(). These can now also
   be passed as arguments to buildmer functions.
 * New elimination criterion for gam/bam models only: 'F'. This uses the change
   in R-squared, and has the advantage of being a valid formal test even for
   models that were fitted using PQL.
 * buildmer will no longer export its own internal structures to user-provided
-  cluster nodes
+  cluster nodes.
 * If singular.ok=TRUE, converged() will now also test singular fits for
-  convergence, rather than discard them outright
-* The optional 'quiet' argument has been re-added
+  convergence, rather than discard them outright.
+* The optional 'quiet' argument has been added back.
+* The REML+no-random-effects path now uses mgcv::gam rather than nlme::gls,
+  because the latter expects a non-compatible form for the 'weights' argument.
+. Fixes to environment handling support, in particular concerning
+  tabulate.formula(), which now preserves the formula's environment.
 . glmmTMB models are now also checked for gradient convergence, not just for
-  positive-definiteness of the Hessian
+  positive-definiteness of the Hessian.
+. A workaround has been implemented to enable fitting glmmTMB models with
+  offset terms.
+. Offset terms are now understood properly by tabulate.formula().
+. Changed the wording of the give-up message in order().
 
-1.6
+1.6 (2020-05-27)
 
 *** Function conv() has been renamed to converged(). Of course, an alias
     remains, but it is now deprecated and will be removed in a future release.
 ** clm and clmm support
 * Argument 'cl' now accepts an integer argument, in which case buildmer will
-  create and manage a cluster for you
+  create and manage a cluster for you.
 * REML can now be forced on by passing REML=TRUE. As an optimization, REML is
   forced on if the deviance-explained criterion is used. This can be disabled
   by passing REML=NA, which will fall back to the default behavior of
@@ -50,9 +58,9 @@ Deprecated and liable to be removed in a future version:
   behavior remains as the new behavior doesn't make much sense if the user is
   specifying their own fitting function anyway.
 * Remove deprecated 'reduce.fixed' and 'reduce.random' arguments (deprecated
-  since 2019-11-27)
+  since 2019-11-27).
 * Print the failure details when convergence failures cause order() or
-  backward() to exit early
+  backward() to exit early.
 . Fix a bug combining backward() with the 'include' argument (GH issue #3)
 . Fix a bug in calculating Wald p-values for ANOVA F scores affecting ndf >1
 . Allow ddf='KR' as an abbreviation for ddf='Kenward-Roger'

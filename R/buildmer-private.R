@@ -63,7 +63,7 @@ buildmer.fit <- function (p) {
 				p <- do.call(p$direction[[i]],list(p=within.list(p,{ crit <- crits[[i]] })))
 			}
 		}
-		if (any(i <- names(p$results %in% c('LRT','F')))) {
+		if (any(i <- names(p$results) %in% c('LRT','F'))) {
 			p$results[,i] <- exp(p$results[,i])
 		}
 	}

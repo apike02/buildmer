@@ -36,7 +36,7 @@ As \code{bam} uses PQL, only \code{crit='deviance'} is supported for non-Gaussia
 \examples{
 \dontshow{
 library(buildmer)
-model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels)
+model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels,buildmerControl=list(discrete=TRUE))
 }
 \donttest{
 library(buildmer)

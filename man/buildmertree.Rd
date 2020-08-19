@@ -28,14 +28,16 @@ Use \code{buildmer} to perform stepwise elimination for \code{lmertree()} and \c
 }
 \details{
 Note that the likelihood-ratio test is not available for \code{glmertree} models, as it cannot be assured that the models being compared are nested. The default is thus to use AIC.
-In the generalized case or when testing many partitioning variables, it is recommended to pass \code{joint=FALSE}, as this results in a dramatical speed gain and reduces the odds of the final \code{glmer} model failing to converge or converging singularly.
+In the generalized case or when testing many partitioning variables, it is recommended to pass \code{joint=FALSE}, as this results in a dramatic speed gain and reduces the odds of the final \code{glmer} model failing to converge or converging singularly.
 }
 \examples{
 if (requireNamespace('glmertree')) {
-	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
+		buildmerControl=buildmerControl(crit='LL',direction='order'),
         data=lme4::sleepstudy)
 \donttest{
-	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,crit='LL',direction='order',
+	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
+		buildmerControl=buildmerControl(crit='LL',direction='order'),
 	        data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
 }
 }

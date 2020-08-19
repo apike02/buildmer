@@ -1,4 +1,6 @@
-README.md
+README\.md
 ^doc$
 ^Meta$
 man-roxygen
+buildmer-Ex\.Rout
+buildmer_.*\.tar\.gz
