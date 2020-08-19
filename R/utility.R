@@ -144,14 +144,16 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports nonconvergence'))
 			if ((err <- model$mgcv.conv$rms.grad) > grad.tol) return(failure(paste0('mgcv reports absolute gradient containing values >',grad.tol),err))
 			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
-			return(success('All buildmer checks passed (gam)'))
+			return(success('All buildmer checks passed (gam with outer iteration)'))
 		} else {
 			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv reports nonconvergence',err))
-			if ((err <- max(abs(model$outer.info$grad))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
-			err <- try(min(eigen(model$outer.info$hess)$values),silent=TRUE)
-			if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
-			if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
-			return(success('All buildmer checks passed (bam)'))
+			if (!is.null(model$outer.info$grad) && (err <- max(abs(model$outer.info$grad))) > grad.tol)  return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
+			if (!is.null(model$outer.info$hess)) {
+				err <- try(min(eigen(model$outer.info$hess)$values),silent=TRUE)
+				if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
+				if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
+			}
+			return(success('All buildmer checks passed (gam with PQL)'))
 		}
 	}
 	if (inherits(model,'merMod')) {
@@ -159,6 +161,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		if (!length(model@optinfo$conv$lme4)) return(success('No lme4 info available -- succeeding by default (dangerous!)'))
 		if (is.null(model@optinfo$conv$lme4$code) && !singular.ok) return(failure('Singular fit'))
 		if (any((err <- model@optinfo$conv$lme4$code) != 0)) return(failure('lme4 reports not having converged',err))
+		if (is.null(model@optinfo$derivs)) return(success('No derivative information available -- succeeding by default (dangerous!)'))
 		grad <- model@optinfo$derivs$gradient
 		hess <- model@optinfo$derivs$Hessian
 		scaled.grad <- try(solve(hess,grad),silent=TRUE)

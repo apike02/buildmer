@@ -4,7 +4,7 @@ backward <- function (p) {
 		plist <- list(within(p, REML <- TRUE),within(p, REML <- FALSE))
 		repeat {
 			res <- p$parply(plist,p$fit,p$formula)
-			conv <- lapply(res,converged)
+			conv <- lapply(res,converged,p$singular.ok,p$grad.tol,p$hess.tol)
 			if (all(unlist(conv))) {
 				p$cur.reml <- res[[1]]
 				p$cur.ml <- res[[2]]
@@ -39,7 +39,7 @@ backward <- function (p) {
 				progress(p,'Fitting ML reference model')
 				p$reml <- FALSE
 				p$cur.ml <- p$fit(p,p$formula)
-				conv <- converged(p$cur.ml)
+				conv <- converged(p$cur.ml,p$singular.ok,p$grad.tol,p$hess.tol)
 				if (!conv) {
 					p <- reduce.model(p,conv)
 					if (!any(!is.na(p$tab$block))) return(p)
@@ -50,7 +50,7 @@ backward <- function (p) {
 				progress(p,'Fitting REML reference model')
 				p$reml <- TRUE
 				p$cur.reml <- p$fit(p,p$formula)
-				conv <- converged(p$cur.reml)
+				conv <- converged(p$cur.reml,p$singular.ok,p$grad.tol,p$hess.tol)
 				if (!conv) {
 					p <- reduce.model(p,conv)
 					if (!any(!is.na(p$tab$block))) return(p)
@@ -84,7 +84,7 @@ backward <- function (p) {
 			}
 			f.alt <- buildmer:::build.formula(p$dep,p$tab[-i,],p$env)
 			m.alt <- p$fit(p,f.alt)
-			val <- if (buildmer:::converged(m.alt)) p$crit(p,m.alt,m.cur) else NaN
+			val <- if (buildmer:::converged(m.alt,p$singular.ok,p$grad.tol,p$hess.tol)) p$crit(p,m.alt,m.cur) else NaN
 			val <- rep(val,length(i))
 			list(val=val,model=m.alt)
 		})
@@ -232,7 +232,7 @@ order <- function (p) {
 		repeat {
 			have <- p$tab
 			cur <- p$fit(p,build.formula(p$dep,have,p$env))
-			conv <- converged(cur)
+			conv <- converged(cur,p$singular.ok,p$grad.tol,p$hess.tol)
 			if (conv) break
 			p <- reduce.model(p,conv)
 			if (!any(!is.na(p$tab$block))) return(p)
@@ -261,10 +261,10 @@ order <- function (p) {
 				rep(mod,nrow(check))
 			},check,have,p)
 			mods <- unlist(mods,recursive=FALSE)
-			check$score <- sapply(mods,function (mod) if (converged(mod)) p$crit(p,cur,mod) else NaN)
+			check$score <- sapply(mods,function (mod) if (converged(mod,p$singular.ok,p$grad.tol,p$hess.tol)) p$crit(p,cur,mod) else NaN)
 			ok <- Filter(function (x) !is.na(x) & !is.nan(x),check$score)
 			if (!length(ok)) {
-				statuses <- sapply(mods,function (mod) attr(converged(mod),'reason'))
+				statuses <- sapply(mods,function (mod) attr(converged(mod,p$singular.ok,p$grad.tol,p$hess.tol),'reason'))
 				statuses <- statuses[!is.na(statuses)]
 				progress(p,'Ending the ordering procedure due to having reached the maximal feasible model - all higher models failed to converge. The types of convergence failure are:\n',paste(unique(statuses),collapse='\n    '))
 				p$tab <- have
@@ -280,9 +280,9 @@ order <- function (p) {
 				# needs an extra fit to obtain the new 'current' model.
 				form <- build.formula(p$dep,have,p$env)
 				cur <- p$fit(p,form)
-				conv <- conv(cur)
+				conv <- conv(cur,p$singular.ok,p$grad.tol,p$hess.tol)
 				if (!conv) {
-					progress(p,'The reference model for the next step failed to convergederge - giving up ordering attempt.\nThe failure was: ',attr(conv,'reason'))
+					progress(p,'The reference model for the next step failed to converge - giving up ordering attempt.\nThe failure was: ',attr(conv,'reason'))
 					return(p)
 				}
 			}

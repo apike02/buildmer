@@ -103,14 +103,19 @@ buildmer.prep <- function (mc,add,banned) {
 	mc[[1]] <- buildmerControl
 	mc[names(add)] <- add
 	p <- eval(mc,e)
+	if ('dots' %in% names(mc)) {
+		# dots had already been provided, i.e. user used buildmerControl=buildmerControl(...,some_dots_argument)
+		p$dots <- mc$dots
+	}
 	p$dots <- lapply(p$dots,eval,e)
 	p$call <- mc[-1]
 	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
 	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
 	if (length(p$call$dots)) {
 		# As above, legacy arguments override dots arguments
-		p$call$dots <- c(p$call,p$call$dots[!names(p$call$dots) %in% p$call])
+		p$call$dots <- c(p$call,p$call$dots[!names(p$call$dots) %in% names(p$call)])
 	} else {
+		# The call is only used to look up names for data, control, etc, so this is not only fine but in fact needed
 		p$call$dots <- p$call
 	}
 
@@ -132,12 +137,16 @@ buildmer.prep <- function (mc,add,banned) {
 		p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	}
 	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
-	p$crit.name <- p$crit
-	if (!is.function(p$crit)) {
+	if (is.function(p$crit)) {
+		p$crit.name <- 'custom'
+	} else {
+		p$crit.name <- p$crit
 		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace
 	}
-	p$elim.name <- p$elim
-	if (!is.function(p$elim)) {
+	if (is.function(p$elim)) {
+		p$elim.name <- 'custom'
+	} else {
+		p$elim.name <- p$elim
 		p$elim <- get(paste0('elim.',p$elim))
 	}
 	p$env <- environment(p$formula)
