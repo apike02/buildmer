@@ -88,8 +88,11 @@ buildmer.finalize <- function (p) {
 	if (p$calc.summary) {
 		ret@summary <- summary.buildmer(ret,ddf=p$ddf)
 	}
+	if (!is.null(p$cl)) {
+		try(parallel::clusterCall(p$cl,rm,list=p$privates),silent=TRUE)
+		p$privates <- NULL
+	}
 	ret@p$in.buildmer <- FALSE
-	if (!is.null(p$cl)) try(parallel::clusterCall(p$cl,rm,list=p$privates),silent=TRUE)
 	ret
 }
 

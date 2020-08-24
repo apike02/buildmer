@@ -1,5 +1,3 @@
-# The crit.* functions could all be being run on cluster nodes, and hence need explicit buildmer::: prefixation for buildmer-internal functions!
-
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
 getdf  <- function (m) attr(stats::logLik(m),'df')
 getdev <- function (m) {
@@ -52,11 +50,11 @@ crit.F <- function (p,ref,alt) {
 }
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
-		chLL <- buildmer:::get2LL(alt)
-		chdf <- buildmer:::getdf(alt)
+		chLL <- get2LL(alt)
+		chdf <- getdf(alt)
 	} else {
-		chLL <- buildmer:::get2LL(ref) - buildmer:::get2LL(alt)
-		chdf <- buildmer:::getdf(alt)  - buildmer:::getdf(ref)
+		chLL <- get2LL(ref) - get2LL(alt)
+		chdf <- getdf(alt)  - getdf(ref)
 	}
 	if (chdf <= 0) {
 		return(0)
@@ -71,9 +69,9 @@ crit.LRT <- function (p,ref,alt) {
 		stats::pchisq(chLL,chdf,lower.tail=FALSE,log.p=TRUE)
 	}
 }
-crit.2LL <- function (p,ref,alt) if (is.null(ref)) buildmer:::get2LL(alt) else buildmer:::get2LL(alt) - buildmer:::get2LL(ref)
+crit.2LL <- function (p,ref,alt) if (is.null(ref)) get2LL(alt) else get2LL(alt) - get2LL(ref)
 crit.LL <- crit.2LL
-crit.devexp <- function (p,ref,alt) if (is.null(ref)) buildmer:::getdev(alt) else buildmer:::getdev(alt) - buildmer:::getdev(ref)
+crit.devexp <- function (p,ref,alt) if (is.null(ref)) getdev(alt) else getdev(alt) - getdev(ref)
 crit.deviance <- crit.devexp
 
 elim.AIC <- function (diff) diff > -.001

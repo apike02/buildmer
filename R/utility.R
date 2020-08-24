@@ -22,10 +22,10 @@ add.terms <- function (formula,add) {
 		terms <- c(offset.term,terms)
 	}
 
-	fixed.terms <- Filter(Negate(buildmer:::is.random.term),terms)
-	random.terms <- Filter(buildmer:::is.random.term,terms)
+	fixed.terms <- Filter(Negate(is.random.term),terms)
+	random.terms <- Filter(is.random.term,terms)
 	if (length(random.terms)) {
-		random.terms <- sapply(random.terms,function (x) if (buildmer:::mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
+		random.terms <- sapply(random.terms,function (x) if (mkTerm(x)[[1]] != '(') paste0('(',x,')') else x)
 	}
 
 	for (term in add) {

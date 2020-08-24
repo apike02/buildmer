@@ -23,8 +23,8 @@ buildmerControl(
   can.use.reml = TRUE,
   force.reml = FALSE,
   singular.ok = FALSE,
-  grad.tol = formals(buildmer:::converged)$grad.tol,
-  hess.tol = formals(buildmer:::converged)$hess.tol,
+  grad.tol = formals(buildmer::converged)$grad.tol,
+  hess.tol = formals(buildmer::converged)$hess.tol,
   I_KNOW_WHAT_I_AM_DOING = FALSE,
   ...
 )
@@ -38,7 +38,7 @@ buildmerControl(
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes.}
+\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes. Note: the various buildmer functions will export a copy of the package namespace to any user-provided cluster; these objects will be cleaned up afterwards, but any pre-existing objects having the same names will be lost. Use `ls(getNamespace('buildmer'),all.names=TRUE)` to obtain a list of object names you should avoid (or rather, be willing to lose).}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
 
