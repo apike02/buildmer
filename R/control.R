@@ -107,7 +107,9 @@ buildmer.prep <- function (mc,add,banned) {
 		# dots had already been provided, i.e. user used buildmerControl=buildmerControl(...,some_dots_argument)
 		p$dots <- mc$dots
 	}
-	p$dots <- lapply(p$dots,eval,e)
+	# Now evaluate the dots, except for those arguments that are evaluated NSEly...
+	nse <- names(p$dots) %in% c('weights','offset','AR.start')
+	p$dots <- c(lapply(p$dots[!nse],eval,e),p$dots[nse])
 	p$call <- mc[-1]
 	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
 	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
