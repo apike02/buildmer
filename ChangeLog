@@ -12,7 +12,7 @@ Deprecated and liable to be removed in a future version:
    to
    	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
 
-1.7
+1.7.1
 
 *** Buildmer control parameters (e.g. crit, direction, cl, ...) are now passed
     via a new argument buildmerControl=list(...). The 'old-style' passing of
@@ -25,8 +25,6 @@ Deprecated and liable to be removed in a future version:
 * New elimination criterion for gam/bam models only: 'F'. This uses the change
   in R-squared, and has the advantage of being a valid formal test even for
   models that were fitted using PQL.
-* buildmer will no longer export its own internal structures to user-provided
-  cluster nodes.
 * If singular.ok=TRUE, converged() will now also test singular fits for
   convergence, rather than discard them outright.
 * The optional 'quiet' argument has been added back.
