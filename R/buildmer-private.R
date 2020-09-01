@@ -15,16 +15,12 @@ buildmer.fit <- function (p) {
 	}
 
 	# REML
-	if (!is.null(p$dots$REML)) {
-		if (isTRUE(p$dots$REML)) {
-			# Force on
-			p$force.reml <- TRUE
-		} else if (isFALSE(p$dots$REML)) {
-			# Force off
-			p$can.use.reml <- FALSE
-		}
-		# else: it's NA --> use default
-		p$dots$REML <- NULL
+	if (isTRUE(p$REML)) {
+		# Force on
+		p$force.reml <- TRUE
+	} else if (isFALSE(p$REML)) {
+		# Force off
+		p$can.use.reml <- FALSE
 	} else {
 		# Default case, in which case one optimization can be applied:
 		if (all(p$crit.name %in% c('deviance','devexp','F'))) {

@@ -26,20 +26,15 @@
 #' @param ddf The method used for calculating \emph{p}-values for \code{lme4} models and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).
 #' @param quickstart For \code{gam} models only: a numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @param dep A character string specifying the name of the dependent variable. Only used if \code{formula} is a buildmer terms list.
-#' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.
-#' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.
+#' @param REML In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
+#' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you via the \code{REML} option.
+#' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you pass a \code{REML} option.
 #' @param singular.ok Logical indicating whether singular fits are acceptable. Only for lme4 models.
 #' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param I_KNOW_WHAT_I_AM_DOING An internal option that you should not modify unless you know what you are doing.
 #' @param ... Other arguments intended for the fitting function.
 #' @details
-#' There are two hidden arguments that \code{buildmer} can recognize. These are not part of the formal parameters of the various build* functions, but are recognized by all of them to benefit certain specialist applications:
-#' \enumerate{
-#' \item \code{dep}: It is possible to pass the maximal model formula as a buildmer terms object as obtained via \code{\link{tabulate.formula}}. This allows more control over, for instance, which model terms should always be evaluated together. If the \code{formula} argument is recognized to be such an object (i.e.\ a data frame), then buildmer will use the string specified in the \code{dep} argument as the dependent variable.
-#' \item \code{REML}: In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
-#' }
-#' These arguments are not passed on to the fitting function via the \code{...} mechanism.
 #' @export
 
 buildmerControl <- function (
@@ -58,6 +53,7 @@ buildmerControl <- function (
 	ddf='Wald',
 	quickstart=0,
 	dep=NULL,
+	REML=NA,
 	can.use.reml=TRUE,
 	force.reml=FALSE,
 	singular.ok=FALSE,
