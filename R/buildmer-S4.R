@@ -61,8 +61,12 @@ anova.buildmer <- function (object,...) try({
 	if (!inherits(object@model,'merMod')) return(stats::anova(object@model))
 
 	ddf <- check.ddf(ddf)
-	if (!inherits(object@model,'lmerMod') && !ddf %in% c('Wald','lme4')) {
-		warning('Requested denominator degrees of freedom only available for *linear* mixed models; returning Wald ddf instead')
+	if (!inherits(object@model,'lmerMod') && !ddf %in% c('Wald','lme4') && object@p$family$family %in% c('binomial','poisson')) {
+		warning('Denominator degrees of freedom do not apply to binomial or Poisson models, as those models have a known scale parameter; returning exact ddf instead')
+		ddf <- 'lme4'
+	}
+	if (ddf == 'Kenward-Roger' && !inherits(object@model,'lmerMod')) {
+		warning('Kenward-Roger denominator degrees of freedom are only available for *linear* mixed models; returning Wald ddf instead')
 		ddf <- 'Wald'
 	}
 
@@ -74,7 +78,9 @@ anova.buildmer <- function (object,...) try({
 			attr(table,'heading') <- paste('ANOVA based on type',utils::as.roman(type),'SS\n(p-values based on the Wald chi-square approximation)')
 		}
 	} else {
-		if (!inherits(object@model,'lmerModLmerTest')) object@model <- lmerTest::as_lmerModLmerTest(object@model)
+		if (!inherits(object@model,'lmerModLmerTest')) {
+			object@model <- lmerTest::as_lmerModLmerTest(object@model)
+		}
 		table <- stats::anova(object@model,ddf=ddf,type=type)
 	}
 	return(table)
