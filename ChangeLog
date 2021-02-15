@@ -4,15 +4,25 @@
 '.' denotes minor bug fixes
 
 Deprecated and liable to be removed in a future version:
- * conv() has been renamed to converged() (as of 2020-02-05)
- * 'Old-style' passing of buildmer control parameters in the build...(...)
-   function call is deprecated (as of 2020-06-05); please use the new-style
-   'buildmerControl' parameter. That is: change
-   	buildmer(y ~ x,crit='AIC',direction='backward')
-   to
-   	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
+* conv() has been renamed to converged() (as of 2020-02-05)
+* 'Old-style' passing of buildmer control parameters in the build...(...)
+  function call is deprecated (as of 2020-06-05); please use the new-style
+  'buildmerControl' parameter. That is: change
+  	buildmer(y ~ x,crit='AIC',direction='backward')
+  to
+  	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
 
-1.7.1
+1.8
+
+* 'REML' is now in buildmerControl()
+* Buildmer no longer exports its own internal functions to cluster nodes, as
+  the cluster nodes inherit the buildmer::: environment anyway.
+* Buildmer no longer incorrectly prohibits Satterthwaite ddf for non-Gaussian
+  models. For Gamma and inverse Gaussian errors, they could still be quite
+  useful. For binomial and Poisson, a more informative warning is now raised
+  explaining that ddf approximations make no sense for these distributions.
+
+1.7.1 (2020-08-26)
 
 *** Buildmer control parameters (e.g. crit, direction, cl, ...) are now passed
     via a new argument buildmerControl=list(...). The 'old-style' passing of
@@ -26,7 +36,7 @@ Deprecated and liable to be removed in a future version:
   in R-squared, and has the advantage of being a valid formal test even for
   models that were fitted using PQL.
 * If singular.ok=TRUE, converged() will now also test singular fits for
-  convergence, rather than discard them outright.
+  convergence, rather than accept them outright.
 * The optional 'quiet' argument has been added back.
 * The REML+no-random-effects path now uses mgcv::gam rather than nlme::gls,
   because the latter expects a non-compatible form for the 'weights' argument.

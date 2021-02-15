@@ -20,6 +20,7 @@ buildmerControl(
   ddf = "Wald",
   quickstart = 0,
   dep = NULL,
+  REML = NA,
   can.use.reml = TRUE,
   force.reml = FALSE,
   singular.ok = FALSE,
@@ -38,11 +39,11 @@ buildmerControl(
 
 \item{direction}{Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.}
 
-\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes. Note: the various buildmer functions will export a copy of the package namespace to any user-provided cluster; these objects will be cleaned up afterwards, but any pre-existing objects having the same names will be lost. Use `ls(getNamespace('buildmer'),all.names=TRUE)` to obtain a list of object names you should avoid (or rather, be willing to lose).}
+\item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes.}
 
 \item{crit}{Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
 
-\item{elim}{Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
+\item{elim}{Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance --- note that this is not a formal test).}
 
 \item{fit}{Internal parameter --- do not modify.}
 
@@ -60,9 +61,11 @@ buildmerControl(
 
 \item{dep}{A character string specifying the name of the dependent variable. Only used if \code{formula} is a buildmer terms list.}
 
-\item{can.use.reml}{Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.}
+\item{REML}{In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).}
 
-\item{force.reml}{Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself --- this is automatically modified appropriately if you pass a \code{REML} option, see Details.}
+\item{can.use.reml}{Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you via the \code{REML} option.}
+
+\item{force.reml}{Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you pass a \code{REML} option.}
 
 \item{singular.ok}{Logical indicating whether singular fits are acceptable. Only for lme4 models.}
 
@@ -86,12 +89,4 @@ With the default options, all \code{buildmer} functions will do two things:
 The final model is returned in the \code{model} slot of the returned \code{buildmer} object.
 All functions in the \code{buildmer} package are aware of the distinction between (f)REML and ML, and know to divide chi-square \emph{p}-values by 2 when comparing models differing only in random effects (see Pinheiro & Bates 2000).
 The steps executed above can be changed using the \code{direction} argument, allowing for arbitrary chains of, for instance, forward-backward-forward stepwise elimination (although using more than one elimination method on the same data is not recommended). The criterion for determining the importance of terms in the ordering stage and the elimination of terms in the elimination stage can also be changed, using the \code{crit} argument.
-
-
-There are two hidden arguments that \code{buildmer} can recognize. These are not part of the formal parameters of the various build* functions, but are recognized by all of them to benefit certain specialist applications:
-\enumerate{
-\item \code{dep}: It is possible to pass the maximal model formula as a buildmer terms object as obtained via \code{\link{tabulate.formula}}. This allows more control over, for instance, which model terms should always be evaluated together. If the \code{formula} argument is recognized to be such an object (i.e.\ a data frame), then buildmer will use the string specified in the \code{dep} argument as the dependent variable.
-\item \code{REML}: In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
-}
-These arguments are not passed on to the fitting function via the \code{...} mechanism.
 }
