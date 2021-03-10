@@ -95,7 +95,9 @@ backward <- function (p) {
 		progrep$index <- progrep$code <- progrep$ok <- NULL
 		if (p$crit.name %in% c('LRT','LRT2')) progrep[,p$crit.name] <- exp(results)
 		if (p$crit.name %in% c('deviance','devexp')) progrep[,p$crit.name] <- -progrep[,p$crit.name]
-		print(progrep)
+		if (!p$quiet) {
+			print(progrep)
+		}
 		remove <- p$elim(results)
 		remove <- which(!is.na(remove) & !is.nan(remove) & remove)
 		if (length(remove) == 0) {
@@ -157,7 +159,9 @@ forward <- function (p) {
 	progrep$index <- progrep$code <- progrep$ok <- NULL
 	if (p$crit.name %in% c('LRT','LRT2')) progrep$score <- exp(progrep$score)
 	if (p$crit.name %in% c('deviance','devexp')) progrep[,p$crit.name] <- -progrep[,p$crit.name]
-	print(progrep)
+	if (!p$quiet) {
+		print(progrep)
+	}
 	remove <- p$elim(p$tab$score)
 	# Retain all terms up to the last significant one, even if they were not significant themselves
 	# This happens if they hade a smallest crit in the order step, but would still be subject to elimination by the elimination function
