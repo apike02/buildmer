@@ -1,7 +1,7 @@
 backward <- function (p) {
 	fit.references.parallel <- function (p) {
 		progress(p,'Fitting ML and REML reference models')
-		plist <- list(within(p, REML <- TRUE),within(p, REML <- FALSE))
+		plist <- list(within(p, reml <- TRUE),within(p, reml <- FALSE))
 		repeat {
 			res <- p$parply(plist,p$fit,p$formula)
 			conv <- lapply(res,converged,p$singular.ok,p$grad.tol,p$hess.tol)
