@@ -40,7 +40,7 @@ crit.F <- function (p,ref,alt) {
 		return(log(1))
 	}
 	if (Fval <= 0 || ndf <= 0) {
-		return(log(1 + abs(Fval))) #gives the order step some idea of which model is the least unhelpful
+		return(log1p(abs(Fval))) #gives the order step some idea of which model is the least unhelpful
 	}
 	if (alt$scale.estimated) {
 		pf(Fval,ndf,ddf,lower.tail=FALSE,log.p=TRUE)
@@ -52,15 +52,24 @@ crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
 		chLL <- get2LL(alt)
 		chdf <- getdf(alt)
+		f1   <- ~0
 	} else {
 		chLL <- get2LL(ref) - get2LL(alt)
 		chdf <- getdf(alt)  - getdf(ref)
+		f1   <- formula(ref)
 	}
 	if (chdf <= 0) {
 		return(0)
 	}
 
-	if (p$reml) {
+	# If the two models differ in lme4-style random effects, we need to correct the p-value
+	# We cannot use the formula stored in p here because that may still go through re2mgcv
+	f2 <- formula(alt)
+	tab1 <- tabulate.formula(f1)
+	tab2 <- tabulate.formula(f2)
+	fe.same <- isTRUE(all.equal(tab1[ is.na(tab1$grouping),], tab2[is.na(tab2$grouping),]))
+	re.same <- isTRUE(all.equal(tab1[!is.na(tab1$grouping),],!tab2[is.na(tab2$grouping),]))
+	if (fe.same && !re.same) {
 		# Stram & Lee (1994): mixture of chisq(chdf) and chisq(chdf-1)
 		p1 <- stats::pchisq(chLL,chdf  ,lower.tail=FALSE,log.p=TRUE) - log(2)
 		p2 <- stats::pchisq(chLL,chdf-1,lower.tail=FALSE,log.p=TRUE) - log(2)
