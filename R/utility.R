@@ -407,6 +407,9 @@ tabulate.formula <- function (formula,group=NULL) {
 	offset    <- attr(terms,'offset')
 	vars      <- attr(terms,'variables')
 	terms     <- attr(terms,'term.labels')
+	if (!length(terms)) {
+		return(data.frame(index=character(),grouping=character(),term=character(),code=character(),block=character(),stringsAsFactors=FALSE))
+	}
 	if (intercept) {
 		terms <- c('1',terms)
 	}
