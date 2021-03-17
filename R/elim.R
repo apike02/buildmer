@@ -1,5 +1,5 @@
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
-getdf  <- function (m) attr(stats::logLik(m),'df')
+getdf  <- function (m) attr(stats::logLik(m),'df') #note: for GAMs this automatically uses the sum of edf2
 getdev <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	if (!is.null(summary(m)$r.squared)) return(1-summary(m)$r.squared)
@@ -16,8 +16,8 @@ crit.F <- function (p,ref,alt) {
 		stop('crit.F currently only works with gam/bam models')
 	}
 	r2_alt  <- summary(alt,re.test=FALSE)$r.sq
-	ddf_alt <- df.residual(alt)
-	ndf_alt <- nobs(alt) - ddf_alt
+	ddf_alt <- alt$df.residual
+	ndf_alt <- sum(alt$edf2)
 	if (is.null(ref)) {
 		r2_ref  <- 0
 		ddf_ref <- nobs(alt)
@@ -27,8 +27,8 @@ crit.F <- function (p,ref,alt) {
 			stop('crit.F currently only works with gam/bam models')
 		}
 		r2_ref  <- summary(ref,re.test=FALSE)$r.sq
-		ddf_ref <- df.residual(ref)
-		ndf_ref <- nobs(ref) - ddf_ref
+		ddf_ref <- ref$df.residual
+		ndf_ref <- sum(ref$edf2)
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
@@ -67,8 +67,8 @@ crit.LRT <- function (p,ref,alt) {
 	f2 <- formula(alt)
 	tab1 <- tabulate.formula(f1)
 	tab2 <- tabulate.formula(f2)
-	fe.same <- isTRUE(all.equal(tab1[ is.na(tab1$grouping),], tab2[is.na(tab2$grouping),]))
-	re.same <- isTRUE(all.equal(tab1[!is.na(tab1$grouping),],!tab2[is.na(tab2$grouping),]))
+	fe.same <- isTRUE(all.equal(tab1[ is.na(tab1$grouping),],tab2[ is.na(tab2$grouping),]))
+	re.same <- isTRUE(all.equal(tab1[!is.na(tab1$grouping),],tab2[!is.na(tab2$grouping),]))
 	if (fe.same && !re.same) {
 		# Stram & Lee (1994): mixture of chisq(chdf) and chisq(chdf-1)
 		p1 <- stats::pchisq(chLL,chdf  ,lower.tail=FALSE,log.p=TRUE) - log(2)
