@@ -54,6 +54,10 @@ crit.LRT <- function (p,ref,alt) {
 		chdf <- getdf(alt)
 		f1   <- ~0
 	} else {
+		# If both models are GAMs, then return the GAM model comparison. GH issue #9
+		if (inherits(ref,'gam') && inherits(alt,'gam')) {
+			return(log(anova(ref,alt,test='Chisq')$'Pr(>Chi)'[2]))
+		}
 		chLL <- get2LL(ref) - get2LL(alt)
 		chdf <- getdf(alt)  - getdf(ref)
 		f1   <- formula(ref)
