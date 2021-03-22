@@ -138,6 +138,10 @@ buildmer.prep <- function (mc,add,banned) {
 	if (is.function(p$crit)) {
 		p$crit.name <- 'custom'
 	} else {
+		# Was a custom elim provided? If not, then overwrite the default LRT with the matching option (e.g. AIC)
+		if (!'elim' %in% names(mc)) {
+			p$elim <- p$crit
+		}
 		p$crit.name <- p$crit
 		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace
 	}
