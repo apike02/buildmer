@@ -14,7 +14,7 @@ fit.bam <- function (p,formula) {
 	p$data <- re$data
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# bam is unable to fit intercept-only models
-		formula <- add.terms(formula,c('intercept'))
+		formula <- add.terms(formula,'intercept')
 		p$data$intercept <- 1
 	}
 	if (p$reml) {

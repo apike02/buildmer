@@ -407,15 +407,15 @@ tabulate.formula <- function (formula,group=NULL) {
 	offset    <- attr(terms,'offset')
 	vars      <- attr(terms,'variables')
 	terms     <- attr(terms,'term.labels')
-	if (!length(terms)) {
-		return(data.frame(index=character(),grouping=character(),term=character(),code=character(),block=character(),stringsAsFactors=FALSE))
-	}
 	if (intercept) {
 		terms <- c('1',terms)
 	}
 	if (!is.null(offset)) {
 		offset.term <- as.character(list(vars[[1+offset]]))
 		terms <- c(offset.term,terms)
+	}
+	if (!length(terms)) {
+		return(data.frame(index=character(),grouping=character(),term=character(),code=character(),block=character(),stringsAsFactors=FALSE))
 	}
 
 	# Build lists to check which terms are currently present.
