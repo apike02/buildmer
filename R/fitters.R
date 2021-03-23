@@ -17,7 +17,12 @@ fit.bam <- function (p,formula) {
 		formula <- add.terms(formula,c('intercept'))
 		p$data$intercept <- 1
 	}
-	method <- if (p$reml) 'fREML' else 'ML'
+	if (p$reml) {
+		method <- 'fREML'
+	} else {
+		method <- 'ML'
+		p$dots$discrete <- FALSE
+	}
 	progress(p,'Fitting via bam, with ',method,': ',formula)
 	patch.lm(p,mgcv::bam,c(list(formula=formula,family=p$family,data=p$data,method=method),p$dots))
 }
