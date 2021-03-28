@@ -18,3 +18,20 @@ NULL
 #' @usage data(vowels)
 #' @format A standard data frame.
 'vowels'
+
+testthat.compare.df <- function (a,fn_b) {
+	sanitize <- function (x) {
+		if (any(factors <- which(apply(x,2,is.factor)))) {
+			for (i in factors) {
+				x[[i]] <- as.character(x[[i]])
+			}
+		}
+		if ('term' %in% names(x)) {
+			x$term <- as.character(x$term)
+		}
+		attributes(x) <- attributes(x)[c('names','class')]
+		x
+	}
+	b <- utils::read.csv(paste0('data/',fn_b,'.csv'),stringsAsFactors=FALSE)
+	testthat::expect_equal(sanitize(a),sanitize(b))
+}

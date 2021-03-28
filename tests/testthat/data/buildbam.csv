@@ -1,0 +1,8 @@
+"index","grouping","term","code","block","ok","score","Iteration","LRT"
+NA,NA,"1","1","NA NA 1",TRUE,NA,1,NA
+NA,NA,"s(participant, by = following, bs = ""re"")","s(participant, by = following, bs = ""re"")","NA NA s(participant, by = following, bs = ""re"")",TRUE,0,1,1
+NA,NA,"s(timepoint, by = following)","s(timepoint, by = following)","NA NA s(timepoint, by = following)",TRUE,0,1,1
+NA,NA,"s(participant, timepoint, by = following, bs = ""fs"")","s(participant, timepoint, by = following, bs = ""fs"")","NA NA s(participant, timepoint, by = following, bs = ""fs"")",TRUE,-365.513279001335,1,1.48947242022121e-26
+NA,NA,"1","1","NA NA 1",TRUE,NA,2,NA
+NA,NA,"s(participant, timepoint, by = following, bs = ""fs"")","s(participant, timepoint, by = following, bs = ""fs"")","NA NA s(participant, timepoint, by = following, bs = ""fs"")",TRUE,-365.513279001335,2,1
+NA,NA,"1","1","NA NA 1",TRUE,NA,3,NA

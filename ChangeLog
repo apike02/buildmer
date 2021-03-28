@@ -12,7 +12,23 @@ Deprecated and liable to be removed in a future version:
   to
   	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
 
-1.8
+1.9 (2021-03-27)
+
+* If 'crit' is specified but 'elim' is not, all buildmer functions will now
+  automatically choose the matching 'elim' function, rather than use the
+  default likelihood-ratio test. GH issue #10
+* Only p-values for lme4-style random-effect terms are now corrected using
+  the Stram & Lee approach. Importantly, this means that degrees of freedom
+  from GAM(M)s are now trusted as they are. See GH issue #9 for the
+  justification.
+* Fix a subtle bug whereby the first model during backward elimination was
+  always fit with REML even when it shouldn't be. GH issue #7
+. Now using testthat for unit testing
+. bam's 'discrete' option is now automatically set to FALSE on ML fits
+. tabulate.formula() can now also tabulate empty models
+. 'forward' and 'backward' now both respect the 'quiet' option
+
+1.8 (2021-02-14)
 
 * 'REML' is now in buildmerControl()
 * Buildmer no longer exports its own internal functions to cluster nodes, as

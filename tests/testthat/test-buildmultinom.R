@@ -1,0 +1,10 @@
+library(buildmer)
+library(testthat)
+test_that('buildmultinom',{
+	skip_on_cran()
+	library(MASS)
+	options(contrasts = c("contr.treatment", "contr.poly"))
+	example(birthwt)
+	bwt.mu <- buildmultinom(low ~ age*lwt*race*smoke,bwt)
+	buildmer:::testthat.compare.df(bwt.mu@p$results,'buildmultinom')
+})

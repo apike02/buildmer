@@ -132,9 +132,9 @@ setGeneric('diag')
 #' 	     (timepoint | word))
 #' # 3. Convert formula to buildmer terms list, grouping terms starting with 'vowel'
 #' terms <- tabulate.formula(form,group='vowel[^:]')
-#' # 4. Directly pass the terms object to buildmer(), using the hidden 'dep' argument to specify
-#' # the dependent variable
-#' \donttest{m <- buildmer(terms,data=vowels,dep='f1')}
+#' # 4. Directly pass the terms object to buildmer(), using the 'dep' argument to specify the
+#' # dependent variable
+#' \donttest{model <- buildmer(terms,data=vowels,buildmerControl=list(dep='f1'))}
 #' @export
 setMethod('diag','formula',function (x) {
 	dep <- if (length(x) < 3) '' else as.character(x[2])

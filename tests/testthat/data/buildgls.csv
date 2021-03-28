@@ -1,0 +1,5 @@
+"index","grouping","term","code","block","ok","score","Iteration","LRT"
+NA,NA,"1","1","NA NA 1",TRUE,NA,1,NA
+NA,NA,"timepoint","timepoint","NA NA timepoint",TRUE,-23.6908054106896,1,NA
+NA,NA,"following","following","NA NA following",TRUE,-7.57402375235446,1,NA
+NA,NA,"timepoint:following","timepoint:following","NA NA timepoint:following",TRUE,-39.0651248589721,1,1.08201140596567e-17

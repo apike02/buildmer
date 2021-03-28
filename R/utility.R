@@ -251,11 +251,13 @@ re2mgcv <- function (formula,data) {
 #' library(buildmer)
 #' remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
 #' # illustration of the marginality checking mechanism:
-#' remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)') #refuses to remove the term
-#' remove.terms(Reaction ~ Days + (Days|Subject),c('(Days|Subject)','(1|Subject)')) #also
-#'            #refuses to remove the term, because marginality is checked before removal!
+#' # this refuses to remove the term:
+#' remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)')
+#' # so does this, because marginality is checked before removal:
+#' remove.terms(Reaction ~ Days + (Days|Subject),c('(Days|Subject)','(1|Subject)'))
+#' # this is how you do it instead:
 #' step1 <- remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
-#' step2 <- remove.terms(step1,'(1|Subject)') #works
+#' step2 <- remove.terms(step1,'(1|Subject)')
 #' @export
 remove.terms <- function (formula,remove) {
 	decompose.random.terms <- function (terms) {

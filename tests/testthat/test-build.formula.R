@@ -1,0 +1,10 @@
+library(buildmer)
+library(testthat)
+test_that('build.formula',{
+	form1 <- Reaction ~ Days + (Days|Subject)
+	terms <- tabulate.formula(form1)
+	form2 <- build.formula(dep='Reaction',terms)
+	library(lme4)
+	check <- function (f) resid(lmer(f,sleepstudy))
+	expect_equal(check(form1),check(form2))
+})
