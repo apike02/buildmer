@@ -133,6 +133,8 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 	}
 	failure <- function (msg,err=NULL) setattr(FALSE,msg,err)
 	success <- function (msg,err=NULL) setattr(TRUE,msg,err)
+	#eigen sometimes returns complex vectors; https://lists.r-forge.r-project.org/pipermail/adegenet-forum/2013-November/000719.html
+	eigval  <- function (...) suppressWarnings(as.numeric(eigen(...)$values))
 	if (inherits(model,'try-error')) return(failure(model))
 	if (inherits(model,'gam')) {
 		if (is.null(model$outer.info)) {
@@ -145,7 +147,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv reports nonconvergence',err))
 			if (!is.null(model$outer.info$grad) && (err <- max(abs(model$outer.info$grad))) > grad.tol)  return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
 			if (!is.null(model$outer.info$hess)) {
-				err <- try(min(eigen(model$outer.info$hess)$values),silent=TRUE)
+				err <- try(min(eigval(model$outer.info$hess)),silent=TRUE)
 				if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
 				if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 			}
@@ -163,7 +165,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 		scaled.grad <- try(solve(hess,grad),silent=TRUE)
 		if (inherits(scaled.grad,'try-error')) return(failure('Manual gradient checks were unable to compute scaled gradient',ev))
 		if ((err <- max(pmin(abs(scaled.grad),abs(grad)))) > grad.tol) return(failure(paste0('Gradient contains found values >',grad.tol),err))
-		err <- try(min(eigen(hess)$values),silent=TRUE)
+		err <- try(min(eigval(hess)),silent=TRUE)
 		if (inherits(err,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',err))
 		if (err < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 		return(success('All buildmer checks passed (merMod)'))
@@ -174,7 +176,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 			if (!model$sdr$pdHess) return(failure('glmmTMB reports non-positive-definite Hessian'))
 			if (sum(dim(model$sdr$cov.fixed))) {
 				if ((err <- max(abs(model$sdr$gradient.fixed))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
-				ev <- try(1/eigen(model$sdr$cov.fixed)$values,silent=TRUE)
+				ev <- try(1/eigval(model$sdr$cov.fixed),silent=TRUE)
 				if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 				if ((err <- min(ev)) < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 			}
@@ -192,7 +194,7 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
 			if (model$optRes$convergence != 0) return(failure('clmm reports nonconvergence',model$optRes$message))
 			if ((err <- max(abs(model$gradient))) > grad.tol) return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
 		}
-		ev <- try(eigen(model$Hessian)$values,silent=TRUE)
+		ev <- try(eigval(model$Hessian),silent=TRUE)
 		if (inherits(ev,'try-error')) return(failure('Eigenvalue decomposition of Hessian failed',ev))
 		if ((err <- min(ev)) < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 		return(success('All buildmer checks passed (clm/clmm)'))
