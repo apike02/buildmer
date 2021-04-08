@@ -125,7 +125,7 @@ build.formula <- function (dep,terms,env=parent.frame()) {
 #'             optimizer='bobyqa',optCtrl=list(maxfun=1)))
 #' sapply(list(good1,good2,bad),converged)
 #' @export
-converged <- function (model,singular.ok=FALSE,grad.tol=.04,hess.tol=.002) {
+converged <- function (model,singular.ok=FALSE,grad.tol=.1,hess.tol=.01) {
 	setattr <- function (x,msg,err=NULL) {
 		if (!is.null(err)) msg <- paste0(msg,' (',err,')')
 		attr(x,'reason') <- msg
