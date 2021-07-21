@@ -1,5 +1,4 @@
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
-getdf  <- function (m) attr(stats::logLik(m),'df') #note: for GAMs this automatically uses the sum of edf2
 getdev <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	if (!is.null(summary(m)$r.squared)) return(1-summary(m)$r.squared)
@@ -51,11 +50,11 @@ crit.F <- function (p,ref,alt) {
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
 		chLL <- get2LL(alt)
-		chdf <- getdf(alt)
+		chdf <- nobs(alt) - df.residual(alt)
 		f1   <- ~0
 	} else {
 		chLL <- get2LL(ref) - get2LL(alt)
-		chdf <- getdf(alt)  - getdf(ref)
+		chdf <- df.residual(ref) - df.residual(alt)
 		f1   <- formula(ref)
 	}
 	if (chdf <= 0) {
