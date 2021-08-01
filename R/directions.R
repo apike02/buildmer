@@ -320,7 +320,7 @@ reduce.model <- function (p,conv) {
 	if (length(conv) == 1) {
 		progress(p,'Convergence failure. Reducing terms and retrying...\nThe failure was: ',attr(conv,'reason'))
 	} else {
-		statuses <- sapply(conv,function (x) attr(x,'reason'))
+		statuses <- sapply(conv[!unlist(conv)],function (x) attr(x,'reason'))
 		progress(p,'Convergence failure. Reducing terms and retrying...\nThe failures were: ',paste(unique(statuses),collapse='\n    '))
 	}
 	cands <- p$tab$block[!is.na(p$tab$block)]
