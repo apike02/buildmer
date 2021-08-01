@@ -1,38 +1,28 @@
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
 getdev <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
-	if (!is.null(summary(m)$r.squared)) return(1-summary(m)$r.squared)
 	ff <- fitted(m)
-	if (attr(terms(formula(m)),'intercept')) ff <- ff - mean(ff)
 	rr <- resid(m)
-	1 - sum(ff^2)/(sum(ff^2)+sum(rr^2))
+	cor(ff,ff+rr)^2
 }
 
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
 crit.F <- function (p,ref,alt) {
-	if (!inherits(alt,'gam')) {
-		stop('crit.F currently only works with gam/bam models')
-	}
-	r2_alt  <- summary(alt,re.test=FALSE)$r.sq
-	ddf_alt <- alt$df.residual
-	ndf_alt <- sum(alt$edf2)
+	getdf <- function (m) if (inherits(m,'gam')) sum(m$edf2) else nobs(m) - df.residual(m)
+	r2_alt  <- getdev(alt)
+	ddf_alt <- df.residual(alt)
+	ndf_alt <- getdf(alt)
 	if (is.null(ref)) {
-		r2_ref  <- 0
-		ddf_ref <- nobs(alt)
-		ndf_ref <- 0
+		r2_ref <- ndf_ref <- 0
 	} else {
-		if (!inherits(ref,'gam')) {
-			stop('crit.F currently only works with gam/bam models')
-		}
-		r2_ref  <- summary(ref,re.test=FALSE)$r.sq
-		ddf_ref <- ref$df.residual
-		ndf_ref <- sum(ref$edf2)
+		r2_ref  <- getdev(ref)
+		ndf_ref <- getdf(ref)
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
 	}
-	Fval <- (r2_alt - r2_ref) / ((1 - r2_alt) / (ddf_alt))
+	Fval <- ddf_alt * (r2_alt - r2_ref) / (1 - r2_alt)
 	ndf  <- ndf_alt - ndf_ref
 	ddf  <- ddf_alt
 	if (is.na(Fval)) {
