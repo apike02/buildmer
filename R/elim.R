@@ -1,5 +1,5 @@
 get2LL <- function (m) as.numeric(-2*stats::logLik(m))
-getdev <- function (m) {
+getdevexp <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	ff <- fitted(m)
 	rr <- resid(m)
@@ -9,15 +9,14 @@ getdev <- function (m) {
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
 crit.F <- function (p,ref,alt) {
-	getdf <- function (m) if (inherits(m,'gam')) sum(m$edf2) else nobs(m) - df.residual(m)
-	r2_alt  <- getdev(alt)
+	r2_alt  <- getdevexp(alt)
 	ddf_alt <- df.residual(alt)
-	ndf_alt <- getdf(alt)
+	ndf_alt <- nobs(alt) - df.residual(alt)
 	if (is.null(ref)) {
 		r2_ref <- ndf_ref <- 0
 	} else {
-		r2_ref  <- getdev(ref)
-		ndf_ref <- getdf(ref)
+		r2_ref  <- getdevexp(ref)
+		ndf_ref <- nobs(ref) - df.residual(ref)
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
