@@ -296,18 +296,34 @@ order <- function (p) {
 	progress(p,'Determining predictor order')
 	p$tab$ok <- p$tab$score <- NULL
 	tab <- p$tab
-	fxd <- is.na(tab$grouping)
-	if ('1' %in% tab[fxd,'term']) {
-		where <- tab$block == tab[fxd & tab$term == '1',]$block
-		p$tab <- cbind(tab[where,],ok=TRUE,score=NA)
-		tab <- tab[!where,]
-		fxd <- is.na(tab$grouping)
+	if (!is.null(p$include)) {
+		p$tab <- transform(p$include,block=NA,ok=TRUE,score=NA)
+		# Remove possible duplicate terms (predictors specified both in 'formula' and in 'include') from consideration in reordering
+		fxd.tab <- is.na(tab$grouping)
+		fxd.inc <- is.na(p$include$grouping)
+		if (any(fxd.tab) && any(fxd.inc)) {
+			overlap <- which(fxd.tab & tab$term %in% p$include$term[fxd.inc])
+		}
+		if (any(!fxd.tab) && any(!fxd.inc)) {
+			for (g in unique(tab$grouping[!fxd.tab])) {
+				overlap <- c(overlap,which(tab$grouping == g & tab$term %in% p$include$term[p$include$grouping == g]))
+			}
+		}
+		tab <- tab[-overlap,]
+	} else {
+		p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
 	}
-	else p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
-	if (!is.null(p$include)) p$tab <- rbind(p$tab,transform(p$include,block=NA,ok=TRUE,score=NA))
+	fxd <- is.na(tab$grouping)
+	if ('1' %in% tab[fxd,'term']) { #always keep the intercept
+		where <- tab$block == tab[fxd & tab$term == '1',]$block
+		p$tab <- transform(tab[where,],ok=TRUE,score=NA)
+		tab <- tab[!where,]
+	}
 
 	p$reml <- p$force.reml
-	if (any( fxd)) p <- reorder(p,tab[fxd,])
+	if (any(fxd)) {
+		p <- reorder(p,tab[fxd,])
+	}
 	if (any(!fxd)) {
 		p$reml <- p$can.use.reml
 		p <- reorder(p,tab[!fxd,])
