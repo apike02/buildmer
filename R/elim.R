@@ -68,7 +68,7 @@ crit.LRT <- function (p,ref,alt) {
 }
 crit.2LL <- function (p,ref,alt) if (is.null(ref)) get2LL(alt) else get2LL(alt) - get2LL(ref)
 crit.LL <- crit.2LL
-crit.devexp <- function (p,ref,alt) if (is.null(ref)) getdev(alt) else getdev(alt) - getdev(ref)
+crit.devexp <- function (p,ref,alt) if (is.null(ref)) getdevexp(alt) else getdevexp(alt) - getdevexp(ref)
 crit.deviance <- crit.devexp
 
 elim.AIC <- function (diff) diff > -.001
