@@ -301,6 +301,7 @@ order <- function (p) {
 		# Remove possible duplicate terms (predictors specified both in 'formula' and in 'include') from consideration in reordering
 		fxd.tab <- is.na(tab$grouping)
 		fxd.inc <- is.na(p$include$grouping)
+		overlap <- NULL
 		if (any(fxd.tab) && any(fxd.inc)) {
 			overlap <- which(fxd.tab & tab$term %in% p$include$term[fxd.inc])
 		}
@@ -309,7 +310,9 @@ order <- function (p) {
 				overlap <- c(overlap,which(tab$grouping == g & tab$term %in% p$include$term[p$include$grouping == g]))
 			}
 		}
-		tab <- tab[-overlap,]
+		if (length(overlap)) {
+			tab <- tab[-overlap,]
+		}
 	} else {
 		p$tab <- cbind(tab[0,],ok=logical(),score=numeric())
 	}
