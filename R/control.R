@@ -123,6 +123,13 @@ buildmer.prep <- function (mc,add,banned) {
 	defs <- formals(caller)
 	defs <- defs[!names(defs) %in% c(names(mc),banned,'...','buildmerControl')]
 	p <- c(p,lapply(defs,eval))
+	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
+
+	# Likely user error if 'formula' and/or 'data' were to be set in the caller, but were actually set in buildmerControl
+	# (but we only need to check for 'data' because 'formula' has no default)
+	if ('data' %in% defs && is.null(mc$data) && !is.null(p$data) && !p$I_KNOW_WHAT_I_AM_DOING) {
+		stop("'data' was specified in buildmerControl(), but should have been specified in '",mc[1],"'. If you are sure this is not an error on your part, set I_KNOW_WHAT_I_AM_DOING in buildmerControl()\n")
+	}
 
 	# Further processing necessary for buildmer
 	if (!is.null(p$family)) {
@@ -134,7 +141,6 @@ buildmer.prep <- function (mc,add,banned) {
 		}
 		p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	}
-	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
 	if (is.function(p$crit)) {
 		p$crit.name <- 'custom'
 	} else {
