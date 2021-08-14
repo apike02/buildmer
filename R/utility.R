@@ -137,15 +137,21 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.1,hess.tol=.01) {
 	eigval  <- function (...) suppressWarnings(as.numeric(eigen(...)$values))
 	if (inherits(model,'try-error')) return(failure(model))
 	if (inherits(model,'gam')) {
+		if (!is.null(model$mgcv.conv)) {
+			if (is.logical(model$mgcv.conv)) {
+				if (!model$mgcv.conv) return(failure('mgcv reports nonconvergence (mgcv.conv)',model$mgcv.conv))
+			} else {
+				if (!is.null(model$mgcv.conv$fully.converged) && !model$mgcv.conv$fully.converged) return(failure('mgcv reports nonconvergence (mgcv.conv$fully.converged)',model$mgcv.conv$fully.converged))
+				if (model$mgcv.conv$message != 'full convergence') return(failure('mgcv reports nonconvergence (mgcv.conv$message)',model$mgcv.conv$fully.converged))
+			}
+		}
+		if (!is.null(model$converged) && !model$converged) return(failure('mgcv reports nonconvergence (converged)',model$converged))
 		if (is.null(model$outer.info)) {
-			if (!model$mgcv.conv$fully.converged) return(failure('mgcv reports nonconvergence'))
 			if ((err <- model$mgcv.conv$rms.grad) > grad.tol) return(failure(paste0('mgcv reports absolute gradient containing values >',grad.tol),err))
 			if (!model$mgcv.conv$hess.pos.def) return(failure('mgcv reports non-positive-definite Hessian'))
 			return(success('All buildmer checks passed (gam with outer iteration)'))
 		} else {
-			if (!is.null(model$mgcv.conv) && !model$mgcv.conv) return(failure('mgcv reports nonconvergence (mgcv.conv)',model$mgcv.conv))
-			if (!is.null(model$converged) && !model$converged) return(failure('mgcv reports nonconvergence (converged)',model$converged))
-			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv reports nonconvergence (outer.info)',err))
+			if (!is.null(model$outer.info$conv) && (err <- model$outer.info$conv) != 'full convergence') return(failure('mgcv reports nonconvergence (outer.info$conv)',err))
 			if (!is.null(model$outer.info$grad) && (err <- max(abs(model$outer.info$grad))) > grad.tol)  return(failure(paste0('Absolute gradient contains values >',grad.tol),err))
 			if (!is.null(model$outer.info$hess)) {
 				err <- try(min(eigval(model$outer.info$hess)),silent=TRUE)
