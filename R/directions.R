@@ -321,6 +321,7 @@ order <- function (p) {
 		where <- tab$block == tab[fxd & tab$term == '1',]$block
 		p$tab <- transform(tab[where,],ok=TRUE,score=NA)
 		tab <- tab[!where,]
+		fxd <- is.na(tab$grouping)
 	}
 
 	p$reml <- p$force.reml
