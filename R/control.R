@@ -34,7 +34,7 @@
 #' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param I_KNOW_WHAT_I_AM_DOING An internal option that you should not modify unless you know what you are doing.
-#' @param ... Other arguments intended for the fitting function.
+#' @param ... Other arguments intended for the fitting function. This is deprecated and provided for backward-compatibility reasons; please use \code{args} instead.
 #' @details
 #' @export
 
@@ -106,6 +106,9 @@ buildmer.prep <- function (mc,add,banned) {
 		p$dots <- mc$dots
 	}
 	# Add the new 'args' argument onto the 'dots' argument; at some point in the future, this will need to undergo rule inversion
+	if (!is.null(p$dots)) {
+		warning("Passing extra argument in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
+	}
 	p$dots <- c(p$dots,p$args)
 	# Now evaluate the dots, except for those arguments that are evaluated NSEly...
 	nse <- names(p$dots) %in% c('weights','offset','AR.start')
