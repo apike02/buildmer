@@ -3,10 +3,10 @@ getdevexp <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	ff <- fitted(m)
 	rr <- resid(m)
-	cor(ff,ff+rr)^2
+	stats::cor(ff,ff+rr)^2
 }
 rdf <- function (m) {
-	if (inherits(m,'MixMod')) nobs(m) - attr(logLik(m),'df') else df.residual(m)
+	if (inherits(m,'MixMod') || inherits(m,'clm') || inherits(m,'clmm')) nobs(m) - attr(logLik(m),'df') else df.residual(m)
 }
 
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
