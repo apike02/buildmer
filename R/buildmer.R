@@ -3,7 +3,7 @@
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{mixed_model}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{mixed_model} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' \dontshow{
 #' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,nAGQ=1)
@@ -31,7 +31,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,buildmerControl=buildmer
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{bam}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{bam} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @details
 #' To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
 #' 
@@ -74,7 +74,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 #' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax
 #' @template data
 #' @template control
-#' @param ... Additional options to be passed to \code{clmm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{clmm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' if (requireNamespace('ordinal')) {
 #' model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,link='probit',
@@ -116,7 +116,7 @@ buildclmm <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) 
 #' @param elim A function taking one argument and returning a single value. The argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})
 #' @param REML A logical indicating if the fitting function wishes to distinguish between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE). Note that this ignores the usual semantics of buildmer's optional \code{REML} argument, because they are redundant: if you wish to force REML on or off, simply code it so in your custom fitting function.
 #' @template control
-#' @param ... Additional options to be passed to the fitting function, such as perhaps a \code{data} argument; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to the fitting function, such as perhaps a \code{data} argument or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' ## Use \code{buildmer} to do stepwise linear discriminant analysis
 #' library(buildmer)
@@ -165,7 +165,7 @@ buildcustom <- function (formula,data=NULL,fit=function (p,formula) stop("'fit' 
 #' @template family
 #' @param quickstart A numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @template control
-#' @param ... Additional options to be passed to \code{gam}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{gam} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @details
 #' To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
 #' 
@@ -226,7 +226,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,buildmerC
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{gamm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{gamm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' \donttest{
 #' library(buildmer)
@@ -261,7 +261,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{gamm4}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{gamm4} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' \dontshow{
 #' library(buildmer)
@@ -297,7 +297,7 @@ buildgamm4 <- function (formula,data=NULL,family=gaussian(),buildmerControl=buil
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{glmmTMB}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{glmmTMB} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' library(buildmer)
 #' if (requireNamespace('glmmTMB')) {
@@ -319,7 +319,7 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 #' @template formula
 #' @template data
 #' @template control
-#' @param ... Additional options to be passed to \code{gls}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{gls} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @details
 #' A workaround is included to prevent an error when the model matrix is of less than full rank. The summary output of such a model will look a bit strange!
 #' @examples
@@ -339,7 +339,7 @@ buildgls <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) {
 #' @param formula A formula specifying both fixed and random effects using \code{lme4} syntax. (Unlike \code{lme}, \code{buildlme} does not use a separate \code{random} argument!)
 #' @template data
 #' @template control
-#' @param ... Additional options to be passed to \code{lme}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{lme} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' library(buildmer)
 #' model <- buildlme(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
@@ -360,7 +360,7 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) {
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.
+#' @param ... Additional options to be passed to \code{lmer}, \code{glmer}, \code{gamm4}, \code{lm}, \code{glm}, or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' library(buildmer)
 #' model <- buildmer(Reaction ~ Days + (Days|Subject),lme4::sleepstudy)
@@ -401,7 +401,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 #' @template data
 #' @template family
 #' @template control
-#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.
+#' @param ... Additional options to be passed to \code{lmertree} or \code{glmertree} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' if (requireNamespace('glmertree')) {
 #' 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
@@ -459,7 +459,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 #' @template formula
 #' @template data
 #' @template control
-#' @param ... Additional options to be passed to \code{multinom}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence
+#' @param ... Additional options to be passed to \code{multinom} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' if (requireNamespace('nnet') && require('MASS')) {
 #' 	options(contrasts = c("contr.treatment", "contr.poly"))
