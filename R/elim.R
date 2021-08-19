@@ -5,18 +5,21 @@ getdevexp <- function (m) {
 	rr <- resid(m)
 	cor(ff,ff+rr)^2
 }
+rdf <- function (m) {
+	if (inherits(m,'MixMod')) nobs(m) - attr(logLik(m),'df') else df.residual(m)
+}
 
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
 crit.F <- function (p,ref,alt) {
 	r2_alt  <- getdevexp(alt)
-	ddf_alt <- df.residual(alt)
-	ndf_alt <- nobs(alt) - df.residual(alt)
+	ddf_alt <- rdf(alt)
+	ndf_alt <- nobs(alt) - rdf(alt)
 	if (is.null(ref)) {
 		r2_ref <- ndf_ref <- 0
 	} else {
 		r2_ref  <- getdevexp(ref)
-		ndf_ref <- nobs(ref) - df.residual(ref)
+		ndf_ref <- nobs(ref) - rdf(ref)
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
@@ -39,11 +42,11 @@ crit.F <- function (p,ref,alt) {
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
 		chLL <- get2LL(alt)
-		chdf <- nobs(alt) - df.residual(alt)
+		chdf <- nobs(alt) - rdf(alt)
 		f1   <- ~0
 	} else {
 		chLL <- get2LL(ref) - get2LL(alt)
-		chdf <- df.residual(ref) - df.residual(alt)
+		chdf <- rdf(ref) - rdf(alt)
 		f1   <- formula(ref)
 	}
 	if (chdf <= 0) {
