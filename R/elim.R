@@ -5,21 +5,38 @@ getdevexp <- function (m) {
 	rr <- resid(m)
 	stats::cor(ff,ff+rr)^2
 }
-rdf <- function (m) {
-	if (inherits(m,'MixMod') || inherits(m,'clm') || inherits(m,'clmm')) nobs(m) - attr(logLik(m),'df') else df.residual(m)
+safeNdf <- function (m) {
+	if (inherits(m,c('nnet','multinom'))) {
+		# no nobs method
+		attr(logLik(m),'df')
+	} else {
+		# for some models, e.g. GAMs, this is safer than attr(logLik(m),'df')
+		nobs(m) - safeRdf(m)
+	}
+}
+safeRdf <- function (m) {
+	if (inherits(m,c('nnet','multinom'))) {
+		# no df.residual method nor nobs method
+		nrow(fitted(m)) - attr(logLik(m),'df')
+	} else if (any(sapply(c('MixMod','clm','clmm','gls','lme'),function (x) inherits(m,x)))) {
+		# no df.residual method, but has a nobs method
+		nobs(m) - attr(logLik(m),'df')
+	} else {
+		df.residual(m)
+	}
 }
 
 crit.AIC <- function (p,ref,alt) if (is.null(ref)) stats::AIC(alt) else stats::AIC(alt) - stats::AIC(ref)
 crit.BIC <- function (p,ref,alt) if (is.null(ref)) stats::BIC(alt) else stats::BIC(alt) - stats::BIC(ref)
 crit.F <- function (p,ref,alt) {
 	r2_alt  <- getdevexp(alt)
-	ddf_alt <- rdf(alt)
-	ndf_alt <- nobs(alt) - rdf(alt)
+	ddf_alt <- safeRdf(alt)
+	ndf_alt <- safeNdf(alt)
 	if (is.null(ref)) {
 		r2_ref <- ndf_ref <- 0
 	} else {
 		r2_ref  <- getdevexp(ref)
-		ndf_ref <- nobs(ref) - rdf(ref)
+		ndf_ref <- safeNdf(ref)
 	}
 	if (is.null(r2_alt) || is.null(r2_ref)) {
 		stop('r^2 not available for this family, cannot compute the F criterion!')
@@ -42,11 +59,11 @@ crit.F <- function (p,ref,alt) {
 crit.LRT <- function (p,ref,alt) {
 	if (is.null(ref)) {
 		chLL <- get2LL(alt)
-		chdf <- nobs(alt) - rdf(alt)
+		chdf <- safeNdf(alt)
 		f1   <- ~0
 	} else {
 		chLL <- get2LL(ref) - get2LL(alt)
-		chdf <- rdf(ref) - rdf(alt)
+		chdf <- safeRdf(ref) - safeRdf(alt)
 		f1   <- formula(ref)
 	}
 	if (chdf <= 0) {

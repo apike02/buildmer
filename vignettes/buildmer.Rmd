@@ -1,7 +1,7 @@
 ---
 title: "Using 'buildmer' to automatically find & compare maximal (mixed) models"
 author: "Cesko C. Voeten"
-date: "22 August 2020"
+date: "19 August 2021"
 bibliography: bibliography.bib
 csl: apa.csl
 output:
@@ -57,11 +57,12 @@ This model is still somewhat on the large side, so we will now use `buildmer` to
 
 # Finding the maximal _feasible_ model & doing stepwise elimination from it
 
-To illustrate `buildmer`'s modular capabilities, we'll fit this model in two steps. We start by identifying the maximal model that is still capable of converging. We do this by running `buildmer`, including an optional `buildmerControl` argument in which we set the `direction` parameter to `'order'`. We also set `lme4`s optimizer to `bobyqa`, as this manages to get much further than the default `nloptwrap`. Note how control parameters passed to buildmer itself are encased within `buildmerControl`, whereas control parameters intended for `lmer` are directly passed as arguments to `buildmer` itself.
+To illustrate `buildmer`'s modular capabilities, we'll fit this model in two steps. We start by identifying the maximal model that is still capable of converging. We do this by running `buildmer`, including an optional `buildmerControl` argument in which we set the `direction` parameter to `'order'`. We also set `lme4`s optimizer to `bobyqa`, as this manages to get much further than the default `nloptwrap`. Note how control parameters intended for `lmer` are specified in the `args` list inside `buildmerControl`. For backward-compatibility reasons, they can also be passed to `buildmer` itself, but this is deprecated now.
 
 ```{r,eval=FALSE}
 library(lme4)
-m <- buildmer(f,data=vowels,control=lmerControl(optimizer='bobyqa'),buildmerControl=buildmerControl(direction='order'))
+m <- buildmer(f,data=vowels,buildmerControl=buildmerControl(direction='order',
+	      args=list(control=lmerControl(optimizer='bobyqa'))))
 ```
 ```{r,echo=FALSE}
 cat('Determining predictor order
@@ -202,7 +203,8 @@ The maximal _feasible_ model, i.e.\ the maximal model that is actually capable o
 We now proceed to the next step: stepwise elimination. This could also be done using e.g.\ `lmerTest`, but since the machinery was needed for `direction='order'` anyway it came at very little cost to also implement stepwise elimination in `buildmer` (both forward and backward are supported). This uses the same elimination criterion as could be specified previously; if left unspecified, it defaults to `crit='LRT'`, for the likelihood-ratio test. This is the preferred test for mixed models in @stepwise.
 
 ```{r,eval=FALSE}
-m <- buildmer(f,data=vowels,direction='backward',control=lmerControl(optimizer='bobyqa'))
+m <- buildmer(f,data=vowels,buildmerControl=list(direction='backward',
+	      args=list(control=lmerControl(optimizer='bobyqa'))))
 ```
 ```{r,echo=FALSE}
 cat('Fitting ML and REML reference models
@@ -243,7 +245,7 @@ Finalizing by converting the model to lmerTest')
 ```
 ```{r,echo=FALSE,message=FALSE}
 f2 <- as.formula('f1 ~ following + vowel + timepoint + vowel:timepoint + following:timepoint + (1 + timepoint | word) + (1 + timepoint + following + timepoint:following | participant)',.GlobalEnv)
-m <- buildmer(f2,vowels,direction=NULL,control=lmerControl(optimizer='bobyqa'))
+m <- buildmer(f2,vowels,buildmerControl=list(direction=NULL,args=list(control=lmerControl(optimizer='bobyqa'))))
 ```
 
 It appears that in this example, all terms were significant in backward-stepwise elimination.
@@ -281,7 +283,8 @@ terms <- tabulate.formula(form,group='vowel[^:]')
 Finally, we can instruct `buildmer` to use this specially-crafted `terms` object by simply passing it along instead of a regular formula. `buildmer` will recognize what is going on, and use the variable name specified in the `dep` control argument as the dependent variable in the data frame; this variable name should be provided as a character string.
 
 ```{r,eval=FALSE}
-m <- buildmer(terms,data=vowels,control=lmerControl(optimizer='bobyqa'),buildmerControl=buildmerControl(dep='f1'))
+m <- buildmer(terms,data=vowels,buildmerControl=buildmerControl(dep='f1',
+	      args=list(control=lmerControl(optimizer='bobyqa'))))
 ## (output not shown)
 ```
 

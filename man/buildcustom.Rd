@@ -30,7 +30,7 @@ buildcustom(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination using a custom fitting function
@@ -64,11 +64,13 @@ crit.Wilks <- function (p,a,b) {
 
 # First, order the terms based on Wilks' Lambda
 model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
-       attention+sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,
-       crit=crit.Wilks)
+       attention+sleep+gender+handedness+diglossic+age+years,fit=flipfit,crit=crit.Wilks,
+       buildmerControl=list(direction='order'))
 # Now, use the six most important terms (arbitrary choice) in the LDA
-if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
+if (require('MASS')) {
+model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
        multilingual,data=migrant)
+}
 }
 \seealso{
 \code{\link{buildmer-package}}

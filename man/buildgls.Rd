@@ -13,7 +13,7 @@ buildgls(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{gls}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{gls} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}
@@ -25,7 +25,8 @@ A workaround is included to prevent an error when the model matrix is of less th
 library(buildmer)
 library(nlme)
 vowels$event <- with(vowels,interaction(participant,word))
-model <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
+model <- buildgls(f1 ~ timepoint*following,data=vowels,
+	buildmerControl=list(args=list(correlation=corAR1(form=~1|event))))
 }
 \seealso{
 \code{\link{buildmer-package}}

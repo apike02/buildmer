@@ -21,7 +21,7 @@ buildgamm4(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{gamm4}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{gamm4} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit generalized additive models using package \code{gamm4}
@@ -32,7 +32,9 @@ The fixed and random effects are to be passed as a single formula in \emph{\code
 \examples{
 \dontshow{
 library(buildmer)
-if (requireNamespace('gamm4')) model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+if (requireNamespace('gamm4')) {
+model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+}
 }
 \donttest{
 library(buildmer)

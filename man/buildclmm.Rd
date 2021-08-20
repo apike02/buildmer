@@ -13,7 +13,7 @@ buildclmm(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{clmm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{clmm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}
@@ -23,8 +23,8 @@ Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from p
 }
 \examples{
 if (requireNamespace('ordinal')) {
-model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,link='probit',
-	threshold='equidistant')
+model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,
+buildmerControl=list(args=list(link='probit',threshold='equidistant')))
 }
 }
 \seealso{

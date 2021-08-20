@@ -21,7 +21,7 @@ buildbam(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{bam}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{bam} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit big generalized additive models using \code{bam} from package \code{mgcv}
@@ -36,7 +36,7 @@ As \code{bam} uses PQL, only \code{crit='deviance'} is supported for non-Gaussia
 \examples{
 \dontshow{
 library(buildmer)
-model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels,buildmerControl=list(discrete=TRUE))
+model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels,buildmerControl=list(args=list(discrete=TRUE)))
 }
 \donttest{
 library(buildmer)

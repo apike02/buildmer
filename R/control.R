@@ -37,7 +37,6 @@
 #' @param ... Other arguments intended for the fitting function. This is deprecated and provided for backward-compatibility reasons; please use \code{args} instead.
 #' @details
 #' @export
-
 buildmerControl <- function (
 	formula=quote(stop('No formula specified')),
 	data=NULL,
@@ -107,7 +106,7 @@ buildmer.prep <- function (mc,add,banned) {
 	}
 	# Add the new 'args' argument onto the 'dots' argument; at some point in the future, this will need to undergo rule inversion
 	if (!is.null(p$dots)) {
-		warning("Passing extra argument in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
+		warning("Passing extra arguments in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
 	}
 	p$dots <- c(p$dots,p$args)
 	# Now evaluate the dots, except for those arguments that are evaluated NSEly...

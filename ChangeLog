@@ -4,13 +4,36 @@
 '.' denotes minor bug fixes
 
 Deprecated and liable to be removed in a future version:
-* conv() has been renamed to converged() (as of 2020-02-05)
 * 'Old-style' passing of buildmer control parameters in the build...(...)
   function call is deprecated (as of 2020-06-05); please use the new-style
   'buildmerControl' parameter. That is: change
   	buildmer(y ~ x,crit='AIC',direction='backward')
   to
   	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
+* Passing extra arguments to the fitting function in ... is now deprecated;
+  please use buildmerControl=list(args=list(...)) instead
+
+2.0 (2021-08-19)
+
+*** Passing extra arguments to the fitting function in ... is now deprecated;
+    please use buildmerControl=list(args=list(...)) instead. Using ... at all,
+    and moreover using it both for buildmer arguments and for arguments to be
+    passed to the fitting function, was a design flaw; this deprecation is the
+    first step towards fixing it.
+** Use actual R-squared instead of adjusted R-squared in the R-squared
+   criterion. Also ensure that the model and residual df sum to N
+* Remove deprecated function conv(); use converged() instead
+* Refits due to convergence failure now only indicate failures, not also
+  successes, during term ordering and backward elimination
+* More extensive convergence checks for GAMs, with less special-casing
+* Further convergence tweaks for bam() models
+* The R-squared criterion now also works for nnet::multinom() models
+. An error is now raised if 'data' is specified where it shouldn't have been
+. Allow terms to be specified both in the model formula as well as in
+  'include'. Bug reported by Nick Pandža
+. Fix bug preventing numeric 'cl' arguments from working
+. Convergence checks will no longer fail for very big matrices (for which
+eigen() can sometimes return complex vectors)
 
 1.9 (2021-03-27)
 
