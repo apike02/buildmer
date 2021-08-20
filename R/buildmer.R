@@ -6,12 +6,14 @@
 #' @param ... Additional options to be passed to \code{mixed_model} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' \dontshow{
-#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,nAGQ=1)
+#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,buildmerControl=list(args=list(nAGQ=1)))
 #' }
 #' \donttest{
 #' # nonsensical model given these data
-#' if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
-#'        family=binomial,data=vowels,nAGQ=1)
+#' if (requireNamespace('GLMMadaptive')) {
+#' model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
+#'        family=binomial,data=vowels,buildmerControl=list(args=list(nAGQ=1)))
+#' }
 #' }
 #' @details
 #' The fixed and random effects are to be passed as a single formula in \emph{\code{lme4} format}. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
@@ -41,7 +43,7 @@ buildGLMMadaptive <- function (formula,data=NULL,family,buildmerControl=buildmer
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels,buildmerControl=list(discrete=TRUE))
+#' model <- buildbam(f1 ~ s(timepoint,bs='cr'),data=vowels,buildmerControl=list(args=list(discrete=TRUE)))
 #' }
 #' \donttest{
 #' library(buildmer)
@@ -77,8 +79,8 @@ buildbam <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 #' @param ... Additional options to be passed to \code{clmm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.
 #' @examples
 #' if (requireNamespace('ordinal')) {
-#' model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,link='probit',
-#' 	threshold='equidistant')
+#' model <- buildclmm(SURENESS ~ PROD + (1|RESP),data=ordinal::soup,
+#' buildmerControl=list(args=list(link='probit',threshold='equidistant')))
 #' }
 #' @template seealso
 #' @details
@@ -146,11 +148,13 @@ buildclmm <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) 
 #' 
 #' # First, order the terms based on Wilks' Lambda
 #' model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
-#'        attention+sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,
-#'        crit=crit.Wilks)
+#'        attention+sleep+gender+handedness+diglossic+age+years,fit=flipfit,crit=crit.Wilks,
+#'        buildmerControl=list(direction='order'))
 #' # Now, use the six most important terms (arbitrary choice) in the LDA
-#' if (require('MASS')) model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
+#' if (require('MASS')) {
+#' model <- lda(changed ~ diglossic + age + reading + friends.be + years + 
 #'        multilingual,data=migrant)
+#' }
 #' @template seealso
 #' @export
 buildcustom <- function (formula,data=NULL,fit=function (p,formula) stop("'fit' not specified"),crit=function (p,ref,alt) stop("'crit' not specified"),elim=function (x) stop("'elim' not specified"),REML=FALSE,buildmerControl=buildmerControl(),...) {
@@ -265,7 +269,9 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 #' @examples
 #' \dontshow{
 #' library(buildmer)
-#' if (requireNamespace('gamm4')) model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' if (requireNamespace('gamm4')) {
+#' model <- buildgamm4(Reaction ~ Days + (Days|Subject),data=lme4::sleepstudy)
+#' }
 #' }
 #' \donttest{
 #' library(buildmer)
@@ -326,7 +332,8 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 #' library(buildmer)
 #' library(nlme)
 #' vowels$event <- with(vowels,interaction(participant,word))
-#' model <- buildgls(f1 ~ timepoint*following,correlation=corAR1(form=~1|event),data=vowels)
+#' model <- buildgls(f1 ~ timepoint*following,data=vowels,
+#' 	buildmerControl=list(args=list(correlation=corAR1(form=~1|event))))
 #' @template seealso
 #' @export
 buildgls <- function (formula,data=NULL,buildmerControl=buildmerControl(),...) {
@@ -405,12 +412,12 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 #' @examples
 #' if (requireNamespace('glmertree')) {
 #' 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-#' 		buildmerControl=buildmerControl(crit='LL',direction='order'),
+#' 		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
 #'	        data=lme4::sleepstudy)
 #' \donttest{
 #' 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-#' 		buildmerControl=buildmerControl(crit='LL',direction='order'),
-#' 	        data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+#' 		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
+#' 	        data=lme4::sleepstudy,family=Gamma(link=identity))
 #' }
 #' }
 #' @template seealso

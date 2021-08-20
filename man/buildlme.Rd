@@ -13,7 +13,7 @@ buildlme(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{lme}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{lme} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination of mixed-effects models fit via \code{lme} from \code{nlme}

@@ -21,7 +21,7 @@ buildmer(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, or \code{gamm4}. (They will also be passed to \code{(g)lm} in so far as they're applicable, so you can use arguments like \code{subset=...} and expect things to work. The single exception is the \code{control} argument, which is assumed to be meant only for \code{lme4} and not for \code{(g)lm}, and will \emph{not} be passed on to \code{(g)lm}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.}
+\item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, \code{gamm4}, \code{lm}, \code{glm}, or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit mixed-effects models using \code{lmer}/\code{glmer} from \code{lme4}

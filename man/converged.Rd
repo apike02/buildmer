@@ -4,7 +4,7 @@
 \alias{converged}
 \title{Test a model for convergence}
 \usage{
-converged(model, singular.ok = FALSE, grad.tol = 0.04, hess.tol = 0.002)
+converged(model, singular.ok = FALSE, grad.tol = 0.1, hess.tol = 0.01)
 }
 \arguments{
 \item{model}{The model object to test.}

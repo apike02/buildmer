@@ -21,7 +21,7 @@ buildGLMMadaptive(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{mixed_model}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{mixed_model} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit generalized linear mixed models using \code{mixed_model} from package \code{GLMMadaptive}
@@ -31,12 +31,14 @@ The fixed and random effects are to be passed as a single formula in \emph{\code
 }
 \examples{
 \dontshow{
-if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,nAGQ=1)
+if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ (1|word),family=binomial,data=vowels,buildmerControl=list(args=list(nAGQ=1)))
 }
 \donttest{
 # nonsensical model given these data
-if (requireNamespace('GLMMadaptive')) model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
-       family=binomial,data=vowels,nAGQ=1)
+if (requireNamespace('GLMMadaptive')) {
+model <- buildGLMMadaptive(stress ~ vowel + (vowel|word),
+       family=binomial,data=vowels,buildmerControl=list(args=list(nAGQ=1)))
+}
 }
 }
 \seealso{

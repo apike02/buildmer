@@ -21,7 +21,7 @@ buildgamm(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{gamm}; for backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence}
+\item{...}{Additional options to be passed to \code{gamm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}

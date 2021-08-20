@@ -21,7 +21,7 @@ buildmertree(
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
 
-\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree}. (They will also be passed to \code{(g)lmtree} in so far as they're applicable. The single exception is the \code{control} argument, which is assumed to be meant only for \code{(g)lmertree} and not for \code{(g)lmtree}, and will \emph{not} be passed on to \code{(g)lmtree}). For backward-compatibility reasons, will also accept buildmer control parameters, although those specified in \code{buildmerControl} will take precedence.}
+\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \code{lmertree()} and \code{glmertree()} models from package \code{glmertree}
@@ -33,12 +33,12 @@ In the generalized case or when testing many partitioning variables, it is recom
 \examples{
 if (requireNamespace('glmertree')) {
 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-		buildmerControl=buildmerControl(crit='LL',direction='order'),
+		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
         data=lme4::sleepstudy)
 \donttest{
 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-		buildmerControl=buildmerControl(crit='LL',direction='order'),
-	        data=lme4::sleepstudy,family=Gamma(link=identity),joint=FALSE)
+		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
+	        data=lme4::sleepstudy,family=Gamma(link=identity))
 }
 }
 }
