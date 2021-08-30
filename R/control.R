@@ -89,7 +89,17 @@ buildmer.prep <- function (mc,add,banned) {
 
 	# Add any terms provided by any new buildmerControl argument
 	# Any legacy arguments must override these, as all buildX functions now include a buildmerControl=buildmerControl() default
+	# We need to handle NSE arguments in a special way. First of all, they may be in buildmerControl=list(args=list(HERE))
+	NSENAMES <- c('weights','offset','AR.start')
+	saved.nse <- NULL
 	if ('buildmerControl' %in% names(mc)) {
+		if ('args' %in% names(mc$buildmerControl)) {
+			if (any(nse <- names(mc$buildmerControl$args) %in% NSENAMES)) {
+				saved.nse <- mc$buildmerControl$args[nse]
+				mc$buildmerControl$args <- mc$buildmerControl$args[!nse]
+			}
+		}
+		# Now that NSE args have been saved, we can savely eval everything
 		p <- eval(mc$buildmerControl,e)
 		p <- p[!names(p) %in% names(mc)]
 		mc[names(p)] <- p
@@ -110,8 +120,11 @@ buildmer.prep <- function (mc,add,banned) {
 	}
 	p$dots <- c(p$dots,p$args)
 	# Now evaluate the dots, except for those arguments that are evaluated NSEly...
-	nse <- names(p$dots) %in% c('weights','offset','AR.start')
-	p$dots <- c(lapply(p$dots[!nse],eval,e),p$dots[nse])
+	if (!is.null(saved.nse)) {
+		saved.nse <- c(saved.nse,p$dots[nse])
+		p$dots <- p$dots[!nse]
+	}
+	p$dots <- c(lapply(p$dots,eval,e),saved.nse) #and copy the unevaluated NSE arguments back in
 	p$call <- mc[-1]
 	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
 	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
