@@ -18,11 +18,13 @@ safeRdf <- function (m) {
 	if (inherits(m,c('nnet','multinom'))) {
 		# no df.residual method nor nobs method
 		nrow(fitted(m)) - attr(logLik(m),'df')
-	} else if (any(sapply(c('MixMod','clm','clmm','gls','lme'),function (x) inherits(m,x)))) {
-		# no df.residual method, but has a nobs method
-		nobs(m) - attr(logLik(m),'df')
 	} else {
-		df.residual(m)
+		if (is.null(rdf <- df.residual(m))) {
+			# apparently, no df.residual implementation; if there is a nobs method, we can work around this
+			# (this is the case for at least MixMod, clm, clmm, gls, and lme)
+			rdf <- nobs(m) - attr(logLik(m),'df')
+		}
+		rdf
 	}
 }
 
