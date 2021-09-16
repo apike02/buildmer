@@ -295,7 +295,7 @@ remove.terms <- function (formula,remove) {
 	marginality.ok <- function (remove,have) {
 		forbidden <- if (!all(have == '1')) '1' else NULL
 		for (x in have) {
-			x.star <- if (has.smooth.terms(stats::as.formula(paste0('~',x)))) paste(unpack.smooth.terms(x),collapse='*') else gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula() to pull in all lower-order terms necessary without any more work from us!
+			x.star <- if (has.smooth.terms(stats::as.formula(paste0('~',x)))) paste(unpack.smooth.terms(x),collapse='*') else gsub(':','*',x) #replace any interaction by the star operator, which will cause as.formula to pull in all lower-order terms necessary without any more work from us!
 			partterms <- attr(terms(stats::as.formula(paste0('~',x.star))),'term.labels')
 			forbidden <- c(forbidden,partterms[partterms != x])
 		}

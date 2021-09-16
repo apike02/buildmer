@@ -81,7 +81,7 @@ buildmerControl(
 \item{...}{Other arguments intended for the fitting function. This is deprecated and provided for backward-compatibility reasons; please use \code{args} instead.}
 }
 \description{
-\code{buildmerControl()} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary()}/\code{anova()} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam()}/\code{buildgam()}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
+\code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
 }
 \details{
 With the default options, all \code{buildmer} functions will do two things:

@@ -32,7 +32,7 @@ fit.buildmer <- function (p,formula) {
 	if (is.null(lme4::findbars(formula))) {
 		p$dots$control <- NULL
 		if (reml) {
-			# gls() has issues with weights
+			# gls has issues with weights
 			p$dots <- p$dots[names(p$dots) %in% c('weights','subset','na.action','offset')]
 			return(fit.gam(p,formula))
 		}

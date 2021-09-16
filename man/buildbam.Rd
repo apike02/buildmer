@@ -27,7 +27,7 @@ buildbam(
 Use \code{buildmer} to fit big generalized additive models using \code{bam} from package \code{mgcv}
 }
 \details{
-To work around an issue in \code{bam()}, you must make sure that your data do not contain a variable named 'intercept'.
+To work around an issue in \code{bam}, you must make sure that your data do not contain a variable named 'intercept'.
 
 \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 

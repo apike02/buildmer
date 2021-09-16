@@ -30,7 +30,7 @@ buildgam(
 Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}
 }
 \details{
-To work around an issue in \code{gam()}, you must make sure that your data do not contain a variable named 'intercept'.
+To work around an issue in \code{gam}, you must make sure that your data do not contain a variable named 'intercept'.
 
 \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 

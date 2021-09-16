@@ -1,11 +1,11 @@
 #' The buildmer class
 #' 
-#' This is a simple convenience class that allows `anova()' and `summary()' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
+#' This is a simple convenience class that allows `anova' and `summary' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
 #' @slot model The final model containing only the terms that survived elimination
 #' @slot p Parameters used during the fitting process
 #' @slot anova The model's ANOVA, if the model was built with `anova=TRUE'
 #' @slot summary The model's summary, if the model was built with `summary=TRUE'
-#' @seealso [buildmer()]
+#' @seealso \code{\link{buildmer}}
 #' @importFrom methods new
 #' @examples
 #' # Manually create a bare-bones buildmer object:
@@ -132,7 +132,7 @@ setGeneric('diag')
 #' 	     (timepoint | word))
 #' # 3. Convert formula to buildmer terms list, grouping terms starting with 'vowel'
 #' terms <- tabulate.formula(form,group='vowel[^:]')
-#' # 4. Directly pass the terms object to buildmer(), using the 'dep' argument to specify the
+#' # 4. Directly pass the terms object to buildmer, using the 'dep' argument to specify the
 #' # dependent variable
 #' \donttest{model <- buildmer(terms,data=vowels,buildmerControl=list(dep='f1'))}
 #' @export

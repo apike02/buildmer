@@ -6,7 +6,7 @@
 \alias{mkBuildmer}
 \title{The buildmer class}
 \description{
-This is a simple convenience class that allows `anova()' and `summary()' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
+This is a simple convenience class that allows `anova' and `summary' calls to fall through to the underlying model object, while retaining buildmer's iteration history. If you need to use the final model for other things, such as prediction, access it through the `model' slot of the buildmer class object.
 }
 \section{Slots}{
 
@@ -29,5 +29,5 @@ bm <- mkBuildmer(model=model,p=p,anova=NULL,summary=NULL)
 summary(bm)
 }
 \seealso{
-[buildmer()]
+\code{\link{buildmer}}
 }
