@@ -10,8 +10,21 @@ Deprecated and liable to be removed in a future version:
   	buildmer(y ~ x,crit='AIC',direction='backward')
   to
   	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
-* Passing extra arguments to the fitting function in ... is now deprecated;
-  please use buildmerControl=list(args=list(...)) instead
+* Passing extra arguments to the fitting function in ... is deprecated (as of
+  2021-08-13); please use buildmerControl=list(args=list(...)) instead
+
+2.1 (2021-09-16)
+
+* buildmerControl() now also supports NSE arguments (weights, offset,
+  AR.start)
+* New function LRTalpha() has been added, which generates an LRT elimination
+  function with a custom alpha level. GH issue #5
+. Some minor cosmetic documentation changes
+. Fix cosmetic bug swapping outer iteration and PQL in the message reporting
+  successful convergence of gam models in converged()
+. Add support for outer-iteration models without smooth terms in converged()
+. Also support convergence checking for glmertree models --- this was already
+  supported inside buildmertree, but is now user-facing as well
 
 2.0 (2021-08-19)
 
@@ -33,7 +46,7 @@ Deprecated and liable to be removed in a future version:
   'include'. Bug reported by Nick Pandža
 . Fix bug preventing numeric 'cl' arguments from working
 . Convergence checks will no longer fail for very big matrices (for which
-eigen() can sometimes return complex vectors)
+  eigen() can sometimes return complex vectors)
 
 1.9 (2021-03-27)
 
