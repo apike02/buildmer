@@ -347,7 +347,7 @@ reduce.model <- function (p,conv) {
 	if (length(unique(cands)) < 2) {
 		stop('No terms left for reduction, giving up')
 	}
-	p$tab <- p$tab[!is.na(p$tab$block) & p$tab$block != cands[length(cands)],]
+	p$tab <- p$tab[is.na(p$tab$block) | p$tab$block != cands[length(cands)],]
 	p$formula <- build.formula(p$dep,p$tab,p$env)
 	p
 }
