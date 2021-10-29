@@ -464,3 +464,17 @@ tabulate.formula <- function (formula,group=NULL) {
 	environment(tab) <- environment(formula)
 	tab
 }
+
+#' Generate an LRT elimination function with custom alpha level
+#' 
+#' The \code{elim} argument in \code{buildmerControl} can take any user-specified elimination function. \code{LRTalpha} generates such a function that uses the likelihood-ratio test, based on a user-specified alpha level. (For the default alpha of .05, one can also simply specify the string \code{'LRT'} or the function \code{buildmer:::elim.LRT}).
+#' 
+#' @param alpha The alpha level for the likelihood-ratio test.
+#' @seealso \code{\link{buildmerControl}}
+#' @export
+LRTalpha <- function (alpha) {
+	if (alpha <= 0 || alpha >= 1) {
+		stop("'alpha' should be in (0,1)")
+	}
+	function (logp) exp(logp) >= alpha
+}
