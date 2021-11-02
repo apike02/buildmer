@@ -13,6 +13,13 @@ Deprecated and liable to be removed in a future version:
 * Passing extra arguments to the fitting function in ... is deprecated (as of
   2021-08-13); please use buildmerControl=list(args=list(...)) instead
 
+2.2 (2021-11-02)
+
+. Keep respecting 'include' when a model is reduced due to nonconvergence
+  during backward elimination. Bug reported by Adam Parker
+. Make crit.LRT safe for use even for custom model functions that do not use
+  standard formulae
+
 2.1 (2021-09-16)
 
 * buildmerControl() now also supports NSE arguments (weights, offset,
