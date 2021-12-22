@@ -118,12 +118,8 @@ buildmer.prep <- function (mc,add,banned) {
 		warning("Passing extra arguments in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
 	}
 	p$dots <- c(p$dots,p$args)
-	# Now evaluate the dots, except for those arguments that are evaluated NSEly...
-	if (!is.null(saved.nse)) {
-		saved.nse <- c(saved.nse,p$dots[nse])
-		p$dots <- p$dots[!nse]
-	}
-	p$dots <- c(lapply(p$dots,eval,e),saved.nse) #and copy the unevaluated NSE arguments back in
+	# Now evaluate the dots, and copy any unevaluated NSE arguments back in
+	p$dots <- c(lapply(p$dots,eval,e),as.list(saved.nse))
 	p$call <- mc[-1]
 	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
 	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
@@ -133,6 +129,10 @@ buildmer.prep <- function (mc,add,banned) {
 	} else {
 		# The call is only used to look up names for data, control, etc, so this is not only fine but in fact needed
 		p$call$dots <- p$call
+	}
+	# NSE arguments need to be added back in now
+	for (x in names(saved.nse)) {
+		p$call$dots[[x]] <- saved.nse[[x]]
 	}
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list
