@@ -1,9 +1,13 @@
 buildmer.fit <- function (p) {
 	# Formula
-	if (is.data.frame(p$formula)) {
-		p$tab <- p$formula
-		if (is.null(p$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
-		p$formula <- build.formula(p$dep,p$tab,p$env)
+	if (is.list(p$formula)) {
+		if (is.data.frame(p$formula)) {
+			p$tab <- p$formula
+			if (is.null(p$dep)) stop("The 'formula' argument was specified using a buildmer terms list, but no dependent variable was specified using the 'dep' argument; please add a 'dep' argument to your buildmer() or related function call")
+			p$formula <- build.formula(p$dep,p$tab,p$env)
+		} else {
+			stop("The 'formula' argument appears to be a list, but it does not seem to be a buildmer terms list (because those should be dataframes, which your formula isn't). The buildmer functions only work with regular formulas or with buildmer terms lists obtained from tabulate.formula(). If you got here trying to fit a multi-formula GAM, use buildcustom() to provide your own wrapper function around it - buildmer doesn't know how to manipulate mgcv's list formulas natively.")
+		}
 	} else {
 		p$dep <- as.character(p$formula[2])
 		p$tab <- tabulate.formula(p$formula)
