@@ -13,6 +13,13 @@ Deprecated and liable to be removed in a future version:
 * Passing extra arguments to the fitting function in ... is deprecated (as of
   2021-08-13); please use buildmerControl=list(args=list(...)) instead
 
+2.3 (2022-01-04)
+
+* Fix an important bug swallowing NSE arguments passed in buildmerControl().
+  Thanks to Juris Breidaks for reporting it
+. Provide a slightly more informative error message when passing incorrect
+  formula objects (e.g. trying to fit a multi-formula GAM using buildgam())
+
 2.2 (2021-11-02)
 
 . Keep respecting 'include' when a model is reduced due to nonconvergence
