@@ -17,7 +17,7 @@ test_that('buildmer-package',{
 
 	buildmer:::testthat.compare.df(model@p$results   ,'buildmer-package-model')
 	buildmer:::testthat.compare.df(bm.test1@p$results,'buildmer-package-bm.test1')
-	buildmer:::testthat.compare.df(bm.test1@p$results,'buildmer-package-bm.test2')
-	buildmer:::testthat.compare.df(bm.test1@p$results,'buildmer-package-bm.test3')
-	buildmer:::testthat.compare.df(bm.test1@p$results,'buildmer-package-bm.test4')
+	buildmer:::testthat.compare.df(bm.test2@p$results,'buildmer-package-bm.test2')
+	buildmer:::testthat.compare.df(bm.test3@p$results,'buildmer-package-bm.test3')
+	buildmer:::testthat.compare.df(bm.test4@p$results,'buildmer-package-bm.test4')
 })

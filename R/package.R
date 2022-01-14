@@ -29,6 +29,12 @@ testthat.compare.df <- function (a,fn_b) {
 		if ('term' %in% names(x)) {
 			x$term <- as.character(x$term)
 		}
+		if ('score' %in% names(x)) {
+			x$score <- NA #not important, and subject to numerical changes depending on package versions, BLAS, etc.
+		}
+		if ('p' %in% names(x)) {
+			x$p <- round(x$p,3) #further precision unimportant and subject to platform dependencies etc.
+		}
 		attributes(x) <- attributes(x)[c('names','class')]
 		x
 	}

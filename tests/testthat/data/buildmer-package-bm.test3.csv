@@ -1,4 +1,4 @@
-"index","grouping","term","code","block","ok","score","Iteration","LRT"
+"index","grouping","term","code","block","ok","score","Iteration","AIC"
 NA,NA,"1","1","NA NA 1",TRUE,NA,1,NA
-NA,NA,"period","period","NA NA period",TRUE,-18.7066563586302,1,1.15100648909655e-05
-"3 1","herd","1","3 1 herd 1","NA herd 1",TRUE,-8.60986049477021,1,0.000182299340350365
+NA,NA,"period","period","NA NA period",TRUE,-34.7157728597937,1,-19.6099375959153
+"3 1","herd","1","3 1 herd 1","NA herd 1",TRUE,-12.0052661996662,1,-12.0052661996662

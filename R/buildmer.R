@@ -285,7 +285,7 @@ buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=build
 #' @export
 buildgamm4 <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl(),...) {
 	if (!requireNamespace('gamm4',quietly=TRUE)) stop('Please install package gamm4')
-	p <- buildmer.prep(match.call(),add=list(fit=fit.gamm4,finalize=FALSE),banned='ddf')
+	p <- buildmer.prep(match.call(),add=list(fit=fit.gamm4),banned='ddf')
 	p$finalize <- FALSE
 	p <- buildmer.fit(p)
 	if (has.smooth.terms(p$formula)) {

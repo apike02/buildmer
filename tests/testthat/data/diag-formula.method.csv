@@ -19,8 +19,8 @@ NA,NA,"vowel1:timepoint:following","vowel1:timepoint:following","NA NA vowel[^:]
 NA,NA,"vowel2:timepoint:following","vowel2:timepoint:following","NA NA vowel[^:]:timepoint:following",TRUE,-8.99532813767767,1,1.07830974212576e-05
 NA,NA,"vowel3:timepoint:following","vowel3:timepoint:following","NA NA vowel[^:]:timepoint:following",TRUE,-8.99532813767767,1,1.07830974212576e-05
 NA,NA,"vowel4:timepoint:following","vowel4:timepoint:following","NA NA vowel[^:]:timepoint:following",TRUE,-8.99532813767767,1,1.07830974212576e-05
-"21 1","participant","1","21 1 participant 1","NA participant 1",TRUE,-985.958343229178,1,NA
-"22 1","participant","vowel1","22 1 participant vowel1","NA participant vowel[^:]",TRUE,-131.753567939451,1,6.02771170838632e-58
-"23 1","participant","vowel2","23 1 participant vowel2","NA participant vowel[^:]",TRUE,-131.753567939451,1,6.02771170838632e-58
-"24 1","participant","vowel3","24 1 participant vowel3","NA participant vowel[^:]",TRUE,-131.753567939451,1,6.02771170838632e-58
-"25 1","participant","vowel4","25 1 participant vowel4","NA participant vowel[^:]",TRUE,-131.753567939451,1,6.02771170838632e-58
+"21 1","participant","1","21 1 participant 1","NA participant 1",TRUE,-Inf,1,NA
+"22 1","participant","vowel1","22 1 participant vowel1","NA participant vowel[^:]",TRUE,-131.845579636792,1,5.49784257867713e-58
+"23 1","participant","vowel2","23 1 participant vowel2","NA participant vowel[^:]",TRUE,-131.845579636792,1,5.49784257867713e-58
+"24 1","participant","vowel3","24 1 participant vowel3","NA participant vowel[^:]",TRUE,-131.845579636792,1,5.49784257867713e-58
+"25 1","participant","vowel4","25 1 participant vowel4","NA participant vowel[^:]",TRUE,-131.845579636792,1,5.49784257867713e-58

@@ -1,3 +1,3 @@
 "index","grouping","term","code","block","ok","score","Iteration","LRT"
 NA,NA,"1","1","NA NA 1",TRUE,NA,1,NA
-NA,NA,"s(timepoint, by = following)","s(timepoint, by = following)","NA NA s(timepoint, by = following)",TRUE,-283.721783361269,1,6.04219991513129e-124
+NA,NA,"s(timepoint, by = following)","s(timepoint, by = following)","NA NA s(timepoint, by = following)",TRUE,-285.141552883037,1,1.46082106103975e-124

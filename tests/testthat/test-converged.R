@@ -5,7 +5,6 @@ test_that('converged',{
 	library(lme4)
 	good1 <- lm(Reaction ~ Days,sleepstudy)
 	good2 <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy)
-	bad <- lmer(Reaction ~ Days + (Days|Subject),sleepstudy,control=lmerControl(
-	            optimizer='bobyqa',optCtrl=list(maxfun=1)))
+	bad <- suppressWarnings(lmer(Reaction ~ Days + (Days|Subject),sleepstudy,control=lmerControl(optimizer='bobyqa',optCtrl=list(maxfun=1))))
 	expect_equal(sapply(list(good1,good2,bad),converged),c(TRUE,TRUE,FALSE))
 })
