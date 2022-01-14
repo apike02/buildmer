@@ -15,7 +15,8 @@ fit.bam <- function (p,formula) {
 	if (length(attr(stats::terms(formula),'term.labels')) == 0) {
 		# bam is unable to fit intercept-only models
 		formula <- add.terms(formula,'intercept')
-		p$data$intercept <- 1
+		nr <- NROW(p$data)
+		p$data$intercept <- cbind(rep(1,nr),rep(0,nr))
 	}
 	if (p$reml) {
 		method <- 'fREML'
@@ -90,7 +91,7 @@ fit.gam <- function (p,formula) {
 		if (p$quickstart > 3) {
 			samfrac <- p$quickstart - floor(p$quickstart)
 			if (samfrac == 0) samfrac <- .1
-			n <- nrow(data)
+			n <- NROW(data)
 			data <- data[sample.int(n,n*samfrac),]
 		}
 		if (p$quickstart > 4) {
