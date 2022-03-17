@@ -1,9 +1,30 @@
 fit.GLMMadaptive <- function (p,formula) {
 	fixed <- lme4::nobars(formula)
 	bars <- lme4::findbars(formula)
-	if (is.null(bars)) return(fit.buildmer(p,formula))
-	if (length(bars) != 1) stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
-	random <- mkForm(as.character(bars))
+	if (is.null(bars)) {
+		return(fit.buildmer(p,formula))
+	}
+	if (length(bars) > 1) {
+		# could be a ZCP term
+		groups <- sapply(bars,function (x) as.character(list(x[[3]])))
+		if (length(unique(groups)) > 1) {
+			stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
+		}
+		terms <- sapply(bars,function (x) as.character(list(x[[2]])))
+		# findbars always adds in '0 +'
+		if ('1' %in% terms) {
+			terms <- sapply(terms,function (x) {
+				tab <- tabulate.formula(mkForm(x))
+				if (!nrow(tab)) {
+					return(x)
+				}
+				tab$term
+			})
+		}
+		random <- mkForm(paste0(paste0(terms,collapse='+'),'||',groups[[1]]))
+	} else {
+		random <- mkForm(as.character(bars))
+	}
 	progress(p,'Fitting via mixed_model: ',fixed,', random=',random)
 	patch.GLMMadaptive(p,GLMMadaptive::mixed_model,c(list(fixed=fixed,random=random,data=p$data,family=p$family),p$dots))
 }
