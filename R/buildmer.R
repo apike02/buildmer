@@ -66,7 +66,7 @@ buildbam <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 	if (!p$I_KNOW_WHAT_I_AM_DOING && !p$is.gaussian && any(p$crit.name %in% c('AIC','BIC','LRT','LL'))) {
 		stop(progress(p,"bam uses PQL, which means that likelihood-based model comparisons are not valid in the generalized case. Try using buildgam instead, use crit='F', or use crit='deviance' (note that this is not a formal test). (If you really know what you are doing, you can sidestep this error by passing I_KNOW_WHAT_I_AM_DOING=TRUE.)"))
 	}
-	f <- formals(match.fun('buildmerControl'))
+	f <- formals(converged)
 	if (p$grad.tol == f$grad.tol) {
 		p$grad.tol <- 100*p$grad.tol
 	}
