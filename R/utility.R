@@ -82,6 +82,12 @@ add.terms <- function (formula,add) {
 #' library(lme4)
 #' check <- function (f) resid(lmer(f,sleepstudy))
 #' all.equal(check(form1),check(form2))
+#' 
+#' # can also do double bars now
+#' form1 <- Reaction ~ Days + (Days||Subject)
+#' terms <- tabulate.formula(form1)
+#' form2 <- build.formula(dep='Reaction',terms)
+#' all.equal(check(form1),check(form2))
 #' @export
 build.formula <- function (dep,terms,env=parent.frame()) {
 	fixed.intercept <- is.na(terms$grouping) & terms$term == '1'
@@ -391,9 +397,11 @@ tabulate.formula <- function (formula,group=NULL) {
 		terms <- lapply(terms,function (x) {
 			x <- unwrap.terms(x,inner=TRUE)
 			g <- unwrap.terms(x[3])
+			indep <- x[[1]] == '||'
 			terms <- as.character(x[2])
 			terms <- unwrap.terms(terms,intercept=TRUE)
-			sapply(g,function (g) terms,simplify=FALSE)
+			ret <- if (indep) lapply(terms,identity) else list(terms)
+			setNames(ret,rep(g,length(ret)))
 		})
 		unlist(terms,recursive=FALSE)
 	}

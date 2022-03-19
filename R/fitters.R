@@ -7,8 +7,8 @@ fit.GLMMadaptive <- function (p,formula) {
 	if (length(bars) > 1) {
 		# could be a ZCP term
 		groups <- sapply(bars,function (x) as.character(list(x[[3]])))
-		if (length(unique(groups)) > 1) {
-			stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',length(bars)))
+		if ((lug <- length(unique(groups))) > 1) {
+			stop(paste0('mixed_model can only handle a single random-effect grouping factor, yet you seem to have specified ',lug))
 		}
 		terms <- sapply(bars,function (x) as.character(list(x[[2]])))
 		# findbars always adds in '0 +'

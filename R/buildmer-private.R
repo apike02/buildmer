@@ -133,10 +133,11 @@ check.ddf <- function (ddf) {
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {
+	is.bar <- function (x) x == '|' || x == '||'
 	term <- mkTerm(term)
 	if (is.name(term)) return(FALSE)
-	if (term[[1]] == '|') return(TRUE)
-	if (term[[1]] == '(' && term[[2]][[1]] == '|') return(TRUE)
+	if (is.bar(term[[1]])) return(TRUE)
+	if (term[[1]] == '(' && is.bar(term[[2]][[1]])) return(TRUE)
 	FALSE
 }
 mkForm <- function (term) stats::as.formula(paste0('~',term))
