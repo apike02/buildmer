@@ -1,3 +1,5 @@
+NSENAMES <- c('weights','offset','AR.start')
+
 #' Set control options for buildmer
 #' 
 #' \code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
@@ -64,7 +66,15 @@ buildmerControl <- function (
 ) {
 	mc <- match.call(expand.dots=FALSE)
 	mc <- mc[-1]
-	mc <- lapply(mc,eval,parent.frame())
+	# Save/restore NSE arguments before/after argument evaluation
+	if (any(nse <- names(mc) %in% NSENAMES)) {
+		saved.nse <- mc[nse]
+		mc[nse] <- NA
+		mc <- lapply(mc,eval,parent.frame())
+		mc[nse] <- saved.nse
+	} else {
+		mc <- lapply(mc,eval,parent.frame())
+	}
 	fm <- formals(buildmerControl)
 	fm <- fm[-length(fm)]
 	fm <- fm[!names(fm) %in% names(mc)]
@@ -88,14 +98,13 @@ buildmer.prep <- function (mc,add,banned) {
 
 	# Add any terms provided by any new buildmerControl argument
 	# Any legacy arguments must override these, as all buildX functions now include a buildmerControl=buildmerControl() default
-	# We need to handle NSE arguments in a special way. First of all, they may be in buildmerControl=list(args=list(HERE))
-	NSENAMES <- c('weights','offset','AR.start')
+	# We need to handle NSE arguments in a special way. They may be in buildmerControl=list(args=list(HERE))
 	saved.nse <- NULL
 	if ('buildmerControl' %in% names(mc)) {
 		if ('args' %in% names(mc$buildmerControl)) {
 			if (any(nse <- names(mc$buildmerControl$args) %in% NSENAMES)) {
 				saved.nse <- mc$buildmerControl$args[nse]
-				mc$buildmerControl$args <- mc$buildmerControl$args[!nse]
+				mc$buildmerControl$args[nse] <- NA
 			}
 		}
 		# Now that NSE args have been saved, we can savely eval everything
@@ -118,8 +127,8 @@ buildmer.prep <- function (mc,add,banned) {
 		warning("Passing extra arguments in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
 	}
 	p$dots <- c(p$dots,p$args)
-	# Now evaluate the dots, and copy any unevaluated NSE arguments back in
-	p$dots <- c(lapply(p$dots,eval,e),as.list(saved.nse))
+	# Now evaluate the dots, without the NSE arguments
+	p$dots <- lapply(p$dots,eval,e)
 	p$call <- mc[-1]
 	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
 	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
@@ -130,9 +139,11 @@ buildmer.prep <- function (mc,add,banned) {
 		# The call is only used to look up names for data, control, etc, so this is not only fine but in fact needed
 		p$call$dots <- p$call
 	}
-	# NSE arguments need to be added back in now
-	for (x in names(saved.nse)) {
-		p$call$dots[[x]] <- saved.nse[[x]]
+	# Lastly, copy any unevaluated NSE arguments back in
+	if (!is.null(saved.nse)) {
+		nm <- names(saved.nse)
+		p$call$dots[nm] <- saved.nse[nm]
+		p$dots[nm]      <- saved.nse[nm]
 	}
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list
