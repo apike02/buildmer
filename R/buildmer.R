@@ -462,7 +462,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 		p$dots$partitioning <- NULL
 	}
 
-	if (any(p$crit.name == 'LRT')) {
+	if (any(p$crit.name == 'LRT') && !p$I_KNOW_WHAT_I_AM_DOING) {
 		stop('The likelihood-ratio test is not suitable for glmertree models, as there is no way to guarantee that two models being compared are nested. It is suggested to use information criteria such as AIC instead.')
 	}
 	p <- buildmer.fit(p)

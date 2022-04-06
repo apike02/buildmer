@@ -13,6 +13,16 @@ Deprecated and liable to be removed in a future version:
 * Passing extra arguments to the fitting function in ... is deprecated (as of
   2021-08-13); please use buildmerControl=list(args=list(...)) instead
 
+2.4 (2022-04-06)
+
+* Full support for double-bar syntax for random effects, including in
+  GLMMadaptive for diagonal r.e. covariance (GH issue #14)
+* Fix incorrect tolerances (i.e. not actually multiplied by 100) in buildbam()
+. Further improvements to the handling of NSE terms, which are important
+  technically but for end users should only result in cosmetic improvements
+. Change the intercept-hackery in buildbam to work with latest mgcv versions
+. Update tests
+
 2.3 (2022-01-04)
 
 * Fix an important bug swallowing NSE arguments passed in buildmerControl().

@@ -107,7 +107,7 @@ buildmer.prep <- function (mc,add,banned) {
 				mc$buildmerControl$args[nse] <- NA
 			}
 		}
-		# Now that NSE args have been saved, we can savely eval everything
+		# Now that NSE args have been saved, we can safely eval everything
 		p <- eval(mc$buildmerControl,e)
 		p <- p[!names(p) %in% names(mc)]
 		mc[names(p)] <- p
@@ -142,8 +142,7 @@ buildmer.prep <- function (mc,add,banned) {
 	# Lastly, copy any unevaluated NSE arguments back in
 	if (!is.null(saved.nse)) {
 		nm <- names(saved.nse)
-		p$call$dots[nm] <- saved.nse[nm]
-		p$dots[nm]      <- saved.nse[nm]
+		p$call$dots[nm] <- p$dots[nm] <- saved.nse[nm]
 	}
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list

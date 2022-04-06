@@ -401,7 +401,8 @@ tabulate.formula <- function (formula,group=NULL) {
 			terms <- as.character(x[2])
 			terms <- unwrap.terms(terms,intercept=TRUE)
 			ret <- if (indep) lapply(terms,identity) else list(terms)
-			setNames(ret,rep(g,length(ret)))
+			names(ret) <- rep(g,length(ret))
+			ret
 		})
 		unlist(terms,recursive=FALSE)
 	}
