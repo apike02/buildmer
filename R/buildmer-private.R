@@ -130,6 +130,36 @@ check.ddf <- function (ddf) {
 	return(ddf)
 }
 
+decompose.random.terms <- function (terms) {
+	terms <- lapply(terms,function (x) {
+		x <- unwrap.terms(x,inner=TRUE)
+		g <- unwrap.terms(x[3])
+		indep <- x[[1]] == '||'
+		terms <- as.character(x[2])
+		terms <- unwrap.terms(terms,intercept=TRUE)
+		termlist <- if (indep) lapply(terms,identity) else list(terms)
+		# We may have multiple grouping factors, e.g. in (x|a/b) constructions. We need to duplicate the termlist for each.
+		ret <- rep(termlist,length(g))
+		names(ret) <- rep(g,each=length(termlist))
+		ret
+	})
+	unlist(terms,recursive=FALSE)
+}
+
+get.random.list <- function (formula) {
+	bars <- lme4::findbars(formula)
+	groups <- unique(sapply(bars,function (x) x[[3]]))
+	randoms <- lapply(groups,function (g) {
+		terms <- bars[sapply(bars,function (x) x[[3]] == g)]
+		terms <- lapply(terms,function (x) x[[2]])
+		terms <- lapply(terms,function (x) unravel(x,'+'))
+		terms <- unique(sapply(terms,as.character))
+		unique(unlist(terms))
+	})
+	names(randoms) <- groups
+	randoms
+}
+
 has.smooth.terms <- function (formula) length(mgcv::interpret.gam(formula)$smooth.spec) > 0
 is.smooth.term <- function (term) has.smooth.terms(mkForm(list(term)))
 is.random.term <- function (term) {

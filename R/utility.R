@@ -278,29 +278,6 @@ re2mgcv <- function (formula,data) {
 #' step2 <- remove.terms(step1,'(1|Subject)')
 #' @export
 remove.terms <- function (formula,remove) {
-	decompose.random.terms <- function (terms) {
-		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=TRUE)
-			g <- unwrap.terms(x[3])
-			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=TRUE)
-			sapply(g,function (g) terms,simplify=FALSE)
-		})
-		unlist(terms,recursive=FALSE)
-	}
-	get.random.list <- function (formula) {
-		bars <- lme4::findbars(formula)
-		groups <- unique(sapply(bars,function (x) x[[3]]))
-		randoms <- lapply(groups,function (g) {
-			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
-			terms <- lapply(terms,function (x) x[[2]])
-			terms <- lapply(terms,function (x) unravel(x,'+'))
-			terms <- unique(sapply(terms,as.character))
-			unique(unlist(terms))
-		})
-		names(randoms) <- groups
-		randoms
-	}
 	marginality.ok <- function (remove,have) {
 		forbidden <- if (!all(have == '1')) '1' else NULL
 		for (x in have) {
@@ -393,34 +370,10 @@ remove.terms <- function (formula,remove) {
 #' @seealso buildmer-package
 #' @export
 tabulate.formula <- function (formula,group=NULL) {
-	decompose.random.terms <- function (terms) {
-		terms <- lapply(terms,function (x) {
-			x <- unwrap.terms(x,inner=TRUE)
-			g <- unwrap.terms(x[3])
-			indep <- x[[1]] == '||'
-			terms <- as.character(x[2])
-			terms <- unwrap.terms(terms,intercept=TRUE)
-			ret <- if (indep) lapply(terms,identity) else list(terms)
-			names(ret) <- rep(g,length(ret))
-			ret
-		})
-		unlist(terms,recursive=FALSE)
-	}
-	get.random.list <- function (formula) {
-		bars <- lme4::findbars(formula)
-		groups <- unique(sapply(bars,function (x) x[[3]]))
-		randoms <- lapply(groups,function (g) {
-			terms <- bars[sapply(bars,function (x) x[[3]] == g)]
-			terms <- lapply(terms,function (x) x[[2]])
-			terms <- lapply(terms,function (x) unravel(x,'+'))
-			terms <- unique(sapply(terms,as.character))
-			unique(unlist(terms))
-		})
-		names(randoms) <- groups
-		randoms
-	}
 	mkGroups <- function (t) {
-		for (x in group) t <- gsub(x,x,t,perl=TRUE)
+		for (x in group) {
+			t <- gsub(x,x,t,perl=TRUE)
+		}
 		t
 	}
 
