@@ -28,7 +28,7 @@ test_that('buildcustom',{
 	}
 	# First, order the terms based on Wilks' Lambda
 	model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
-	       attention+sleep+gender+handedness+diglossic+age+years,direction='order',fit=flipfit,
-	       crit=crit.Wilks)
+	       attention+sleep+gender+handedness+diglossic+age+years,buildmerControl=list(
+	       direction='order',fit=flipfit,crit=crit.Wilks))
 	buildmer:::testthat.compare.df(model@p$tab,'buildcustom')
 })

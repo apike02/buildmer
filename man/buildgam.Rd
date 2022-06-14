@@ -9,8 +9,7 @@ buildgam(
   data = NULL,
   family = gaussian(),
   quickstart = 0,
-  buildmerControl = buildmerControl(),
-  ...
+  buildmerControl = buildmerControl()
 )
 }
 \arguments{
@@ -23,8 +22,6 @@ buildgam(
 \item{quickstart}{A numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{gam} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit generalized additive models using \code{gam} from package \code{mgcv}

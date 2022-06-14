@@ -8,8 +8,7 @@ buildglmmTMB(
   formula,
   data = NULL,
   family = gaussian(),
-  buildmerControl = buildmerControl(),
-  ...
+  buildmerControl = buildmerControl()
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ buildglmmTMB(
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{glmmTMB} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination on \code{glmmTMB} models

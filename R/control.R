@@ -1,4 +1,4 @@
-NSENAMES <- c('weights','offset','AR.start')
+NSENAMES <- c('weights','offset','AR.start','control')
 
 #' Set control options for buildmer
 #' 
@@ -36,7 +36,6 @@ NSENAMES <- c('weights','offset','AR.start')
 #' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param I_KNOW_WHAT_I_AM_DOING An internal option that you should not modify unless you know what you are doing.
-#' @param ... Other arguments intended for the fitting function. This is deprecated and provided for backward-compatibility reasons; please use \code{args} instead.
 #' @export
 buildmerControl <- function (
 	formula=quote(stop('No formula specified')),
@@ -61,8 +60,7 @@ buildmerControl <- function (
 	singular.ok=FALSE,
 	grad.tol=formals(buildmer::converged)$grad.tol,
 	hess.tol=formals(buildmer::converged)$hess.tol,
-	I_KNOW_WHAT_I_AM_DOING=FALSE,
-	...
+	I_KNOW_WHAT_I_AM_DOING=FALSE
 ) {
 	mc <- match.call(expand.dots=FALSE)
 	mc <- mc[-1]
@@ -80,7 +78,6 @@ buildmerControl <- function (
 	fm <- fm[!names(fm) %in% names(mc)]
 	fm <- lapply(fm,eval) #these are all defaults, so no need for env
 	p <- c(mc,fm)
-	names(p)[which(names(p) == '...')] <- 'dots' #to avoid warning
 	p
 }
 
@@ -118,38 +115,20 @@ buildmer.prep <- function (mc,add,banned) {
 	mc[[1]] <- buildmerControl
 	mc[names(add)] <- add
 	p <- eval(mc,e)
-	if ('dots' %in% names(mc)) {
-		# dots had already been provided, i.e. user used buildmerControl=buildmerControl(...,some_dots_argument)
-		p$dots <- mc$dots
-	}
-	# Add the new 'args' argument onto the 'dots' argument; at some point in the future, this will need to undergo rule inversion
-	if (!is.null(p$dots)) {
-		warning("Passing extra arguments in '...' is deprecated, please use buildmerControl=list(args=list(...)) instead.")
-	}
-	p$dots <- c(p$dots,p$args)
-	# Now evaluate the dots, without the NSE arguments
-	p$dots <- lapply(p$dots,eval,e)
+	# Now evaluate the args, without the NSE arguments
+	p$args <- lapply(p$args,eval,e)
 	p$call <- mc[-1]
-	# Legacy arguments must be copied into the dots list, as only the latter is where the patchers look for control/weights/offset
-	# Note how this neatly separates the buildmer call (p$call, with argument 'dots' preserved) and the actual fitter call
-	if (length(p$call$dots)) {
-		# As above, legacy arguments override dots arguments
-		p$call$dots <- c(p$call,p$call$dots[!names(p$call$dots) %in% names(p$call)])
-	} else {
-		# The call is only used to look up names for data, control, etc, so this is not only fine but in fact needed
-		p$call$dots <- p$call
-	}
-	# Lastly, copy any unevaluated NSE arguments back in
+	# The call is used to look up names for data, control, etc, so we need to copy over any unevaluated NSE arguments into it
 	if (!is.null(saved.nse)) {
 		nm <- names(saved.nse)
-		p$call$dots[nm] <- p$dots[nm] <- saved.nse[nm]
+		p$call$args[nm] <- p$args[nm] <- saved.nse[nm]
 	}
 
 	# Get defaults for formula/data/family/etc options, and add them to the parameter list
 	# Note: names(mc) only provides the explicit arguments, not the defaults, hence why the below works
 	caller <- sys.function(-1)
 	defs <- formals(caller)
-	defs <- defs[!names(defs) %in% c(names(mc),banned,'...','buildmerControl')]
+	defs <- defs[!names(defs) %in% c(names(mc),banned,'buildmerControl')]
 	p <- c(p,lapply(defs,eval))
 	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
 

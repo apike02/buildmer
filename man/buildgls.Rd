@@ -4,7 +4,7 @@
 \alias{buildgls}
 \title{Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}}
 \usage{
-buildgls(formula, data = NULL, buildmerControl = buildmerControl(), ...)
+buildgls(formula, data = NULL, buildmerControl = buildmerControl())
 }
 \arguments{
 \item{formula}{See the general documentation under \code{\link{buildmer-package}}}
@@ -12,8 +12,6 @@ buildgls(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{gls} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}

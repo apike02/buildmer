@@ -4,7 +4,7 @@
 \alias{buildclmm}
 \title{Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}}
 \usage{
-buildclmm(formula, data = NULL, buildmerControl = buildmerControl(), ...)
+buildclmm(formula, data = NULL, buildmerControl = buildmerControl())
 }
 \arguments{
 \item{formula}{A formula specifying both fixed and random effects using \code{lme4} syntax}
@@ -12,14 +12,9 @@ buildclmm(formula, data = NULL, buildmerControl = buildmerControl(), ...)
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{clmm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit cumulative link mixed models using \code{clmm} from package \code{ordinal}
-}
-\details{
-\code{buildclmm} tries to guess which of \code{...} are intended for \code{clm} and which are for \code{clmm}. If this goes wrong, this behavior can be suppressed by passing explicit \code{clm.control} and \code{clmm.control} arguments. If one of these is specified, any \code{control} argument is interpreted to be intended for the other one; if both are specified in conjunction with a third \code{control} argument, an error is raised.
 }
 \examples{
 if (requireNamespace('ordinal')) {

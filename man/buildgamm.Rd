@@ -8,8 +8,7 @@ buildgamm(
   formula,
   data = NULL,
   family = gaussian(),
-  buildmerControl = buildmerControl(),
-  ...
+  buildmerControl = buildmerControl()
 )
 }
 \arguments{
@@ -20,15 +19,13 @@ buildgamm(
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{gamm} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit big generalized additive models using \code{gamm} from package \code{mgcv}
 }
 \details{
 The fixed and random effects are to be passed as a single formula in \code{lme4} format. This is internally split up into the appropriate \code{fixed} and \code{random} parts.
-Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument as part of the \code{...} argument. Note that \code{buildgamm} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
+Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument in the \code{args} list in \code{buildmerControl}. Note that \code{buildgamm} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 }
 \examples{
 \donttest{

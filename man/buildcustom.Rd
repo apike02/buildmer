@@ -11,8 +11,7 @@ buildcustom(
   crit = function(p, ref, alt) stop("'crit' not specified"),
   elim = function(x) stop("'elim' not specified"),
   REML = FALSE,
-  buildmerControl = buildmerControl(),
-  ...
+  buildmerControl = buildmerControl()
 )
 }
 \arguments{
@@ -29,8 +28,6 @@ buildcustom(
 \item{REML}{A logical indicating if the fitting function wishes to distinguish between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE). Note that this ignores the usual semantics of buildmer's optional \code{REML} argument, because they are redundant: if you wish to force REML on or off, simply code it so in your custom fitting function.}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to the fitting function, such as perhaps a \code{data} argument or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination using a custom fitting function
@@ -64,8 +61,8 @@ crit.Wilks <- function (p,a,b) {
 
 # First, order the terms based on Wilks' Lambda
 model <- buildcustom(changed ~ friends.nl+friends.be+multilingual+standard+hearing+reading+
-       attention+sleep+gender+handedness+diglossic+age+years,fit=flipfit,crit=crit.Wilks,
-       buildmerControl=list(direction='order'))
+       attention+sleep+gender+handedness+diglossic+age+years,buildmerControl=list(
+       fit=flipfit,crit=crit.Wilks,direction='order'))
 # Now, use the six most important terms (arbitrary choice) in the LDA
 if (require('MASS')) {
 model <- lda(changed ~ diglossic + age + reading + friends.be + years + 

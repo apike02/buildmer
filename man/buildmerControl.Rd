@@ -27,8 +27,7 @@ buildmerControl(
   singular.ok = FALSE,
   grad.tol = formals(buildmer::converged)$grad.tol,
   hess.tol = formals(buildmer::converged)$hess.tol,
-  I_KNOW_WHAT_I_AM_DOING = FALSE,
-  ...
+  I_KNOW_WHAT_I_AM_DOING = FALSE
 )
 }
 \arguments{
@@ -77,8 +76,6 @@ buildmerControl(
 \item{hess.tol}{Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.}
 
 \item{I_KNOW_WHAT_I_AM_DOING}{An internal option that you should not modify unless you know what you are doing.}
-
-\item{...}{Other arguments intended for the fitting function. This is deprecated and provided for backward-compatibility reasons; please use \code{args} instead.}
 }
 \description{
 \code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.

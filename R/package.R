@@ -33,5 +33,5 @@ testthat.compare.df <- function (a,fn_b) {
 		x
 	}
 	b <- utils::read.csv(paste0('data/',fn_b,'.csv'),stringsAsFactors=FALSE)
-	testthat::expect_equal(sanitize(a),sanitize(b),tolerance=.001)
+	testthat::expect_equal(sanitize(a),sanitize(b),tolerance=.002)
 }

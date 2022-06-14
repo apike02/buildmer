@@ -8,8 +8,7 @@ buildmer(
   formula,
   data = NULL,
   family = gaussian(),
-  buildmerControl = buildmerControl(),
-  ...
+  buildmerControl = buildmerControl()
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ buildmer(
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{lmer}, \code{glmer}, \code{gamm4}, \code{lm}, \code{glm}, or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to fit mixed-effects models using \code{lmer}/\code{glmer} from \code{lme4}

@@ -8,8 +8,7 @@ buildmertree(
   formula,
   data = NULL,
   family = gaussian(),
-  buildmerControl = buildmerControl(crit = "AIC"),
-  ...
+  buildmerControl = buildmerControl(crit = "AIC")
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ buildmertree(
 \item{family}{See the general documentation under \code{\link{buildmer-package}}}
 
 \item{buildmerControl}{Control arguments for buildmer --- see the general documentation under \code{\link{buildmerControl}}}
-
-\item{...}{Additional options to be passed to \code{lmertree} or \code{glmertree} or \code{buildmerControl} (we try to guess which). Deprecated, please use \code{args} in \code{buildmerControl} instead.}
 }
 \description{
 Use \code{buildmer} to perform stepwise elimination for \code{lmertree} and \code{glmertree} models from package \code{glmertree}
@@ -33,11 +30,11 @@ In the generalized case or when testing many partitioning variables, it is recom
 \examples{
 if (requireNamespace('glmertree')) {
 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
+		buildmerControl=buildmerControl(crit='LL',direction='order',args=list(joint=FALSE)),
         data=lme4::sleepstudy)
 \donttest{
 	model <- buildmertree(Reaction ~ 1 | (Days|Subject) | Days,
-		buildmerControl=buildmerControl(crit='LL',direction='order',joint=FALSE),
+		buildmerControl=buildmerControl(crit='LL',direction='order',args=list(joint=FALSE)),
 	        data=lme4::sleepstudy,family=Gamma(link=identity))
 }
 }
