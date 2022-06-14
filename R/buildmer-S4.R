@@ -54,7 +54,6 @@ anova.buildmer <- function (object,...) try({
 		}
 		else warning("Ignoring 'type' argument as this is not a linear mixed model")
 	}
-	if (inherits(object@model,'JuliaObject')) stop('ANOVA is not available for Julia fits')
 	if (inherits(object@model,'glmmTMB')) stop('ANOVA is not available for glmmTMB fits')
 	if (inherits(object@model,'MixMod')) stop('buildmer ANOVA is not available for GLMMadaptive fits; please set up an L matrix and use anova(x@model) by hand')
 	if (any(names(object@model) == 'gam')) return(stats::anova(object@model$gam))

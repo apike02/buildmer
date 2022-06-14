@@ -3,15 +3,17 @@
 '*' denotes minor changes visible to the user
 '.' denotes minor bug fixes
 
-Deprecated and liable to be removed in a future version:
-* 'Old-style' passing of buildmer control parameters in the build...(...)
-  function call is deprecated (as of 2020-06-05); please use the new-style
-  'buildmerControl' parameter. That is: change
-  	buildmer(y ~ x,crit='AIC',direction='backward')
-  to
-  	buildmer(y ~ x,buildmerControl=list(crit='AIC',direction='backward'))
-* Passing extra arguments to the fitting function in ... is deprecated (as of
-  2021-08-13); please use buildmerControl=list(args=list(...)) instead
+2.5 (2022-06-14)
+
+*** 'Old-style' passing of buildmer control parameters in the build...(...)
+    function call has been removed (deprecated since 2020-06-05). In addition,
+    passing extra arguments to the fitting function in ... has been removed
+    (deprecated since 2021-08-13). For both, 'buildmerControl' is the
+    replacement (use its 'args' argument for the former; use it itself for the
+    latter).
+. Fix a bug preventing random-effect terms from expanding properly, thereby
+  breaking e.g. the common nesting syntax for random effects. Thanks to
+  Jonathan Richir
 
 2.4 (2022-04-06)
 
