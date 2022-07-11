@@ -11,8 +11,8 @@ buildmerControl(
   args = list(),
   direction = c("order", "backward"),
   cl = NULL,
-  crit = "LRT",
-  elim = "LRT",
+  crit = NULL,
+  elim = NULL,
   fit = function(...) stop("No fitting function specified"),
   include = NULL,
   quiet = FALSE,
@@ -43,9 +43,9 @@ buildmerControl(
 
 \item{cl}{Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes.}
 
-\item{crit}{Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).}
+\item{crit}{Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test). If left at its default value of \code{NULL}, the same value is used as in the \code{elim} argument; if that is also \code{NULL}, both are set to \code{'LRT'}.}
 
-\item{elim}{Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance --- note that this is not a formal test).}
+\item{elim}{Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance --- note that this is not a formal test). If left at its default value of \code{NULL}, the same value is used as in the \code{crit} argument; if that is also \code{NULL}, both are set to \code{'LRT'}.}
 
 \item{fit}{Internal parameter --- do not modify.}
 

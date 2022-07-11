@@ -19,8 +19,8 @@ NSENAMES <- c('weights','offset','AR.start','control')
 #' @param args Extra arguments passed to the fitting function.
 #' @param cl Specifies a cluster to use for parallelizing the evaluation of terms. This can be an object as returned by function \code{makeCluster} from package \code{parallel}, or a whole number to let buildmer create, manage, and destroy a cluster for you with the specified number of parallel processes.
 #' @param direction Character string or vector indicating the direction for stepwise elimination; possible options are \code{'order'} (order terms by their contribution to the model), \code{'backward'} (backward elimination), \code{'forward'} (forward elimination, implies \code{order}). The default is the combination \code{c('order','backward')}, to first make sure that the model converges and to then perform backward elimination; other such combinations are perfectly allowed.
-#' @param crit Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test).
-#' @param elim Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance --- note that this is not a formal test).
+#' @param crit Character string or vector determining the criterion used to test terms for their contribution to the model fit in the ordering step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance -- note that this is not a formal test). If left at its default value of \code{NULL}, the same value is used as in the \code{elim} argument; if that is also \code{NULL}, both are set to \code{'LRT'}.
+#' @param elim Character string or vector determining the criterion used to test terms for elimination in the elimination step. Possible options are \code{'LRT'} (likelihood-ratio test based on chi-square mixtures per Stram & Lee 1994 for random effects; this is the default), \code{'LL'} (use the raw -2 log likelihood), \code{'AIC'} (Akaike Information Criterion), \code{'BIC'} (Bayesian Information Criterion), and \code{'deviance'} (explained deviance --- note that this is not a formal test). If left at its default value of \code{NULL}, the same value is used as in the \code{crit} argument; if that is also \code{NULL}, both are set to \code{'LRT'}.
 #' @param fit Internal parameter --- do not modify.
 #' @param include A one-sided formula or character vector of terms that will be included in the model at all times and are not subject to testing for elimination. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models.
 #' @param quiet A logical indicating whether to suppress progress messages.
@@ -44,8 +44,8 @@ buildmerControl <- function (
 	args=list(),
 	direction=c('order','backward'),
 	cl=NULL,
-	crit='LRT',
-	elim='LRT',
+	crit=NULL,
+	elim=NULL,
 	fit=function (...) stop('No fitting function specified'),
 	include=NULL,
 	quiet=FALSE,
@@ -148,13 +148,28 @@ buildmer.prep <- function (mc,add,banned) {
 		}
 		p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
 	}
+	if (is.null(p$crit)) {
+		if (is.null(p$elim)) {
+			# Both are empty: set them to the LRT default
+			p$crit <- p$elim <- 'LRT'
+		} else {
+			# Copy elim to crit if possible
+			if (is.character(p$elim)) {
+				p$crit <- p$elim
+			}
+			# If not possible: nothing we can do about it!
+		}
+	}
+	if (is.null(p$elim)) {
+		# Copy crit to elim if possible
+		if (is.character(p$crit)) {
+			p$elim <- p$crit
+		}
+		# If not possible: nothing we can do about it!
+	}
 	if (is.function(p$crit)) {
 		p$crit.name <- 'custom'
 	} else {
-		# Was a custom elim provided? If not, then overwrite the default LRT with the matching option (e.g. AIC)
-		if (!'elim' %in% names(mc)) {
-			p$elim <- p$crit
-		}
 		p$crit.name <- p$crit
 		p$crit <- get(paste0('crit.',p$crit)) #no env, because we want it from buildmer's namespace
 	}
@@ -163,6 +178,9 @@ buildmer.prep <- function (mc,add,banned) {
 	} else {
 		p$elim.name <- p$elim
 		p$elim <- get(paste0('elim.',p$elim))
+	}
+	if (p$crit.name != p$elim.name) {
+		warning("Mismatched 'crit'erion (",p$crit.name,") and 'elim'ination function (",p$elim.name,") - are you sure this is correct?")
 	}
 	p$env <- environment(p$formula)
 
