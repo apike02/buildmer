@@ -45,5 +45,5 @@ m2 <- buildmer(Reaction ~ Days,data=lme4::sleepstudy,buildmerControl=list(includ
 m3 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
 	include=~(1|Subject)))
 m4 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
-	include='(1|Subject))')
+	include='(1|Subject)'))
 }

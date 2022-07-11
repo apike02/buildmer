@@ -369,7 +369,7 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 #' m3 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
 #' 	include=~(1|Subject)))
 #' m4 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
-#' 	include='(1|Subject))')
+#' 	include='(1|Subject)'))
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl()) {
