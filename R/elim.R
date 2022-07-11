@@ -2,7 +2,7 @@ get2LL <- function (m) as.numeric(-2*stats::logLik(m))
 getdevexp <- function (m) {
 	if (all(c('deviance','null.deviance') %in% names(m))) return(1-m$deviance/m$null.deviance)
 	ff <- fitted(m)
-	rr <- resid(m)
+	rr <- stats::resid(m)
 	stats::cor(ff,ff+rr)^2
 }
 safeNdf <- function (m) {
@@ -53,9 +53,9 @@ crit.F <- function (p,ref,alt) {
 		return(log1p(abs(Fval))) #gives the order step some idea of which model is the least unhelpful
 	}
 	if (alt$scale.estimated) {
-		pf(Fval,ndf,ddf,lower.tail=FALSE,log.p=TRUE)
+		stats::pf(Fval,ndf,ddf,lower.tail=FALSE,log.p=TRUE)
 	} else {
-		pchisq(ndf*Fval,ndf,lower.tail=FALSE,log.p=TRUE)
+		stats::pchisq(ndf*Fval,ndf,lower.tail=FALSE,log.p=TRUE)
 	}
 }
 crit.LRT <- function (p,ref,alt) {

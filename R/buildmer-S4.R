@@ -362,7 +362,7 @@ getVarCov.buildmer <- function (obj,...) getVarCov(obj=obj@model,...)
 intervals.buildmer <- function (object,...) intervals(object=object@model,...)
 #' @method update buildmer
 #' @export
-update.buildmer <- function (object,...) update(object=object@model,...)
+update.buildmer <- function (object,...) stats::update(object=object@model,...)
 #' @method Variogram buildmer
 #' @importFrom nlme Variogram
 #' @export

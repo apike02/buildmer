@@ -210,7 +210,7 @@ fit.gls <- function (p,formula) {
 	X <- model.matrix(formula,p$data)
 	newform <- y ~ 0+X
 	newdata <- list(y=y,X=X)
-	na <- is.na(coef(lm(newform,newdata)))
+	na <- is.na(coef(stats::lm(newform,newdata)))
 	if (ndrop <- sum(na)) {
 		progress(p,'gls model is rank-deficient, so dropping ',ndrop,if (ndrop > 1) ' columns/coefficients' else ' column/coefficient','. If this is the final model, the resulting summary may look a bit strange.')
 		newdata$X <- newdata$X[,!na]
