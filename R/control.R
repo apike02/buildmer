@@ -74,7 +74,6 @@ buildmerControl <- function (
 		mc <- lapply(mc,eval,parent.frame())
 	}
 	fm <- formals(buildmerControl)
-	fm <- fm[-length(fm)]
 	fm <- fm[!names(fm) %in% names(mc)]
 	fm <- lapply(fm,eval) #these are all defaults, so no need for env
 	p <- c(mc,fm)
