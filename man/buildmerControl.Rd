@@ -49,7 +49,7 @@ buildmerControl(
 
 \item{fit}{Internal parameter --- do not modify.}
 
-\item{include}{A one-sided formula or character vector of terms that will be kept in the model at all times. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models.}
+\item{include}{A one-sided formula or character vector of terms that will be included in the model at all times and are not subject to testing for elimination. These do not need to be specified separately in the \code{formula} argument. Useful for e.g. passing correlation structures in \code{glmmTMB} models.}
 
 \item{quiet}{A logical indicating whether to suppress progress messages.}
 

@@ -14,8 +14,22 @@ buildmer.fit <- function (p) {
 	}
 
 	# Include
-	if (!is.null(p$include) && 'formula' %in% class(p$include)) {
-		p$include <- tabulate.formula(p$include)
+	if (!is.null(p$include)) {
+		if (inherits(p$include,'character')) {
+			if ('1' %in% p$include) {
+				intercept <- TRUE
+				if (length(p$include) > 1) {
+					# reformulate needs at least one term; it will do the right thing if this is only the intercept, but not if it's the intercept plus something else
+					p$include <- p$include[p$include != '1']
+				}
+			} else {
+				intercept <- FALSE
+			}
+			p$include <- stats::reformulate(p$include,intercept=intercept)
+		}
+		if (inherits(p$include,'formula')) {
+			p$include <- tabulate.formula(p$include)
+		}
 	}
 
 	# REML

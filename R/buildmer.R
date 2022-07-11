@@ -361,6 +361,15 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 #' bm.test <- buildmer(cbind(incidence,size - incidence) ~ period + (1 | herd),
 #' 	family=binomial,data=lme4::cbpp,
 #' 	buildmerControl=buildmerControl(direction='forward',crit='AIC'))
+#' 
+#' # Example showing use of the 'include' parameter to force a particular term into the model
+#' m1 <- buildmer(Reaction ~ Days,data=lme4::sleepstudy,buildmerControl=list(include=~(1|Subject)))
+#' # the below are equivalent
+#' m2 <- buildmer(Reaction ~ Days,data=lme4::sleepstudy,buildmerControl=list(include='(1|Subject)'))
+#' m3 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
+#' 	include=~(1|Subject)))
+#' m4 <- buildmer(Reaction ~ Days + (1|Subject),data=lme4::sleepstudy,buildmerControl=list(
+#' 	include='(1|Subject))')
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl()) {
