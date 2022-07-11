@@ -381,9 +381,11 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 			progress(p,'Finalizing by converting the model to lmerTest')
 		}
 		p$model@call$data <- p$data
-		if ('subset'  %in% names(p$args)) p$model@call$subset  <- p$args$subset
-		if ('control' %in% names(p$args)) p$model@call$control <- p$args$control
-		if ('weights' %in% names(p$args)) p$model@call$weights <- p$args$weights
+		for (x in NSENAMES) {
+			if (x %in% names(p$args)) {
+				p$model@call[[x]] <- p$args[[x]]
+			}
+		}
 		fun <- p$model@call[[1]]
 		p$model <- patch.lmer(p,lmerTest::as_lmerModLmerTest,list(p$model))
 		p$model@call[[1]] <- fun
