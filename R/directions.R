@@ -319,7 +319,7 @@ order <- function (p) {
 	fxd <- is.na(tab$grouping)
 	if ('1' %in% tab[fxd,'term']) { #always keep the intercept
 		where <- tab$block == tab[fxd & tab$term == '1',]$block
-		p$tab <- transform(tab[where,],ok=TRUE,score=NA)
+		p$tab <- rbind(p$tab,transform(tab[where,],ok=TRUE,score=NA))
 		tab <- tab[!where,]
 		fxd <- is.na(tab$grouping)
 	}
