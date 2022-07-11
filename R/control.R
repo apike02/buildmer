@@ -155,16 +155,18 @@ buildmer.prep <- function (mc,add,banned) {
 			# Copy elim to crit if possible
 			if (is.character(p$elim)) {
 				p$crit <- p$elim
+			} else {
+				p$crit <- 'LRT'
 			}
-			# If not possible: nothing we can do about it!
 		}
 	}
 	if (is.null(p$elim)) {
 		# Copy crit to elim if possible
 		if (is.character(p$crit)) {
 			p$elim <- p$crit
+		} else {
+			p$elim <- 'LRT'
 		}
-		# If not possible: nothing we can do about it!
 	}
 	if (is.function(p$crit)) {
 		p$crit.name <- 'custom'
