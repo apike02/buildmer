@@ -275,3 +275,22 @@ fit.multinom <- function (p,formula) {
 	progress(p,'Fitting via multinom: ',formula)
 	patch.lm(p,nnet::multinom,c(list(formula=formula,data=p$data),p$args))
 }
+
+fit.nb <- function (p,formula) {
+	# We can't rely on matching formals between glm.nb and glmer.nb, because glmer.nb accepts dots arguments
+	in.glm   <- names(p$args %in% names(formals(MASS::glm.nb)))
+	in.glmer <- names(p$args %in% names(formals(lme4::glmer.nb)))
+	if (is.null(lme4::findbars(formula))) {
+		if (length(p$args)) {
+			p$args <- p$args[!(in.glmer & !in.glm)]
+		}
+		progress(p,'Fitting via glm.nb: ',formula)
+		patch.lm(p,MASS::glm.nb,c(list(formula=formula,data=p$data),p$args))
+	} else {
+		if (length(p$args)) {
+			p$args <- p$args[!(in.glm & !in.glmer)]
+		}
+		progress(p,'Fitting via glmer.nb: ',formula)
+		patch.lmer(p,lme4::glmer.nb,c(list(formula=formula,data=p$data),p$args))
+	}
+}

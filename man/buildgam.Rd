@@ -31,7 +31,7 @@ To work around an issue in \code{gam}, you must make sure that your data do not 
 
 \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 
-If \code{gam}'s \code{optimizer} argument is not set to use outer iteration, \code{gam} fits using PQL. In this scenario, only \code{crit='deviance'} is supported.
+If \code{gam}'s \code{optimizer} argument is not set to use outer iteration, \code{gam} fits using PQL. In this scenario, only \code{crit='deviance'} is legitimate in the generalized case.
 
 General families implemented in \code{mgcv} are supported, provided that they use normal formulas. Currently, this is only true of the \code{cox.ph} family. Because this family can only be fitted using REML, \code{buildgam} automatically sets \code{gam}'s \code{select} argument to \code{TRUE} and prevents removal of parametric terms.
 

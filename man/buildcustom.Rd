@@ -19,11 +19,11 @@ buildcustom(
 
 \item{data}{See the general documentation under \code{\link{buildmer-package}}}
 
-\item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge}
+\item{fit}{A function taking two arguments, of which the first is the \code{buildmer} parameter list \code{p} and the second one is a formula. The function must return a single object, which is treated as a model object fitted via the provided formula. The function must return an error (`\code{stop()}') if the model does not converge.}
 
 \item{crit}{A function taking one argument and returning a single value. The argument is the return value of the function passed in \code{fit}, and the returned value must be a numeric indicating the goodness of fit, where smaller is better (like AIC or BIC).}
 
-\item{elim}{A function taking one argument and returning a single value. The argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE})}
+\item{elim}{A function taking one argument and returning a single value. The argument is the return value of the function passed in \code{crit}, and the returned value must be a logical indicating if the small model must be selected (return \code{TRUE}) or the large model (return \code{FALSE}).}
 
 \item{REML}{A logical indicating if the fitting function wishes to distinguish between fits differing in fixed effects (for which \code{p$reml} will be set to FALSE) and fits differing only in the random part (for which \code{p$reml} will be TRUE). Note that this ignores the usual semantics of buildmer's optional \code{REML} argument, because they are redundant: if you wish to force REML on or off, simply code it so in your custom fitting function.}
 

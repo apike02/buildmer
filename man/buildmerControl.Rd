@@ -65,9 +65,9 @@ buildmerControl(
 
 \item{REML}{In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).}
 
-\item{can.use.reml}{Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you via the \code{REML} option.}
+\item{can.use.reml}{Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}.}
 
-\item{force.reml}{Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you pass a \code{REML} option.}
+\item{force.reml}{Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}. Enabling this option only makes sense for criteria that do not compare likelihoods, in which case this is an optimization; it is applied automatically for the 'deviance-explained' criterion.}
 
 \item{singular.ok}{Logical indicating whether singular fits are acceptable. Only for lme4 models.}
 
@@ -78,7 +78,7 @@ buildmerControl(
 \item{I_KNOW_WHAT_I_AM_DOING}{An internal option that you should not modify unless you know what you are doing.}
 }
 \description{
-\code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
+\code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g. \code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
 }
 \details{
 With the default options, all \code{buildmer} functions will do two things:

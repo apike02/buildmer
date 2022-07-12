@@ -303,6 +303,26 @@ buildglmmTMB <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 	buildmer.finalize(p)
 }
 
+#' Use \code{buildmer} to fit negative-binomial models using \code{glm.nb} and \code{glmer.nb}
+#' @template formula
+#' @template data
+#' @template control
+#' @examples
+#' library(buildmer)
+#' if (requireNamespace('MASS')) {
+#' model <- buildmer.nb(Days ~ Sex*Age*Eth*Lrn,MASS::quine)
+#' }
+#' @template seealso
+#' @export
+buildmer.nb <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
+	if (!requireNamespace('MASS',quietly=TRUE)) {
+		stop('Please install package MASS')
+	}
+	p <- buildmer.prep(match.call(),add=list(fit=fit.nb,can.use.reml=FALSE),banned='ddf')
+	p <- buildmer.fit(p)
+	buildmer.finalize(p)
+}
+
 #' Use \code{buildmer} to fit generalized-least-squares models using \code{gls} from \code{nlme}
 #' @template formula
 #' @template data
