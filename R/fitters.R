@@ -83,13 +83,17 @@ fit.clmm <- function (p,formula) {
 	clmm.control <- p$args$clmm.control
 	p$args$clm.control <- p$args$clmm.control <- NULL
 	if (is.null(lme4::findbars(formula))) {
-		p$args <- p$args[names(p$args) %in% names(formals(ordinal::clm))]
-		p$args$control <- clm.control
+		if (length(p$args)) {
+			p$args <- p$args[names(p$args) %in% names(formals(ordinal::clm))]
+			p$args$control <- clm.control
+		}
 		p$control.name <- p$control.names$clm
 		patch.lm(p,ordinal::clm,c(list(formula=formula,data=p$data),p$args))
 	} else {
-		p$args <- p$args[names(p$args) %in% names(formals(ordinal::clmm))]
-		p$args$control <- clmm.control
+		if (length(p$args)) {
+			p$args <- p$args[names(p$args) %in% names(formals(ordinal::clmm))]
+			p$args$control <- clmm.control
+		}
 		p$control.name <- p$control.names$clmm
 		patch.lm(p,ordinal::clmm,c(list(formula=formula,data=p$data),p$args))
 	}
