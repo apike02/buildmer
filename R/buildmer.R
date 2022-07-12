@@ -92,7 +92,7 @@ buildclmm <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 	if (!requireNamespace('ordinal',quietly=TRUE)) {
 		stop('Please install package ordinal')
 	}
-	p <- buildmer.prep(match.call(),add=list(fit=fit.clmm),banned=c('family','ddf'))
+	p <- buildmer.prep(match.call(),add=list(fit=fit.clmm,can.use.reml=FALSE),banned=c('family','ddf'))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
