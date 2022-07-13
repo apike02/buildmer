@@ -17,6 +17,7 @@ The package supports the fitting of a wide variety of models, if the relevant pa
  * *buildmertree*: `lmertree`, `glmertree` (package `glmertree`)
  * *buildlme*: `lme` (package `nlme`)
  * *buildclmm*: `clmm` (package `ordinal`)
+ * *buildmer.nb*: `glm.nb` (package `MASS`) and `glmer.nb` (package `lme4`)
  * *buildcustom*: enables you to write your own wrapper function to use the buildmer term-reordering and elimination features with any type of model you want.
 
 Automatic elimination of fixed, random, and/or smooth terms, is possible and enabled by default using the backward (default) or forward stepwise method. Bi-directional elimination is also possible, by passing e.g. `direction=c('forward','backward','forward')`, although I would not want to recommend doing this.

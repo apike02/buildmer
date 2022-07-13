@@ -2,7 +2,7 @@ NSENAMES <- c('weights','offset','AR.start','control','subset')
 
 #' Set control options for buildmer
 #' 
-#' \code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g.~\code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
+#' \code{buildmerControl} provides all the knobs and levers that can be manipulated during the buildmer fitting and \code{summary}/\code{anova} process. Some of these are part of buildmer's core functionality---for instance, \code{crit} allows to specify different elimination criteria, a core buildmer feature---whereas some are only meant for internal usage, e.g. \code{I_KNOW_WHAT_I_AM_DOING} is only used to turn off the PQL safeguards in \code{buildbam}/\code{buildgam}, which you really should only do if you have a very good reason to believe that the PQL check is being triggered erroneously for your problem.
 #' 
 #' With the default options, all \code{buildmer} functions will do two things:
 #' \enumerate{
@@ -30,8 +30,8 @@ NSENAMES <- c('weights','offset','AR.start','control','subset')
 #' @param quickstart For \code{gam} models only: a numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
 #' @param dep A character string specifying the name of the dependent variable. Only used if \code{formula} is a buildmer terms list.
 #' @param REML In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
-#' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you via the \code{REML} option.
-#' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom} --- this is automatically modified appropriately if you pass a \code{REML} option.
+#' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}.
+#' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}. Enabling this option only makes sense for criteria that do not compare likelihoods, in which case this is an optimization; it is applied automatically for the 'deviance-explained' criterion.
 #' @param singular.ok Logical indicating whether singular fits are acceptable. Only for lme4 models.
 #' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.
 #' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.
@@ -83,7 +83,7 @@ buildmerControl <- function (
 buildmer.prep <- function (mc,add,banned) {
 	e <- parent.frame(2)
 
-	# Check arguments. Only do the legacy explicit ones, as buildmerControl gives all possible defaults anyway
+	# Check arguments
 	notok <- intersect(names(mc),banned)
 	if (length(notok)) {
 		if (length(notok) > 1) {
@@ -92,8 +92,6 @@ buildmer.prep <- function (mc,add,banned) {
 		stop('Argument ',notok,' is not available for ',mc[[1]])
 	}
 
-	# Add any terms provided by any new buildmerControl argument
-	# Any legacy arguments must override these, as all buildX functions now include a buildmerControl=buildmerControl() default
 	# We need to handle NSE arguments in a special way. They may be in buildmerControl=list(args=list(HERE))
 	saved.nse <- NULL
 	if ('buildmerControl' %in% names(mc)) {

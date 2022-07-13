@@ -3,54 +3,71 @@
 '*' denotes minor changes visible to the user
 '.' denotes minor bug fixes
 
+2.6 (2022-07-13)
+
+** glmer.nb/glm.nb support.
+* The 'include' control argument can now also be a character vector, as had
+  been intended. There are now also examples on how to use it in the
+  'buildmer' function. GH issue #16.
+* 'include' random effects are now also included in the fixed-effects
+  ordering stage. This is necessary if, e.g., they are observation-level
+  random effects for zero-inflation purposes.
+* Guard even further against mismatched 'crit' and 'elim'. GH issue #15.
+. Fix passing of I_KNOW_WHAT_I_AM_DOING.
+. Recognize more NSE arguments.
+. Pass can.use.reml=FALSE to buildclmm, resulting in it no longer fitting a
+  pointless second model for each r.e. test.
+. Fix buildclmm when run without any supplementary arguments.
+
 2.5 (2022-06-14)
 
 *** 'Old-style' passing of buildmer control parameters in the build...(...)
     function call has been removed (deprecated since 2020-06-05). In addition,
-    passing extra arguments to the fitting function in ... has been removed
+    passing extra arguments to the fitting function in ... has been removed.
     (deprecated since 2021-08-13). For both, 'buildmerControl' is the
     replacement (use its 'args' argument for the former; use it itself for the
     latter).
 . Fix a bug preventing random-effect terms from expanding properly, thereby
   breaking e.g. the common nesting syntax for random effects. Thanks to
-  Jonathan Richir
+  Jonathan Richir.
 
 2.4 (2022-04-06)
 
 * Full support for double-bar syntax for random effects, including in
-  GLMMadaptive for diagonal r.e. covariance (GH issue #14)
-* Fix incorrect tolerances (i.e. not actually multiplied by 100) in buildbam()
+  GLMMadaptive for diagonal r.e. covariance (GH issue #14).
+* Fix incorrect tolerances (i.e. not actually multiplied by 100) in
+  buildbam().
 . Further improvements to the handling of NSE terms, which are important
-  technically but for end users should only result in cosmetic improvements
-. Change the intercept-hackery in buildbam to work with latest mgcv versions
-. Update tests
+  technically but for end users should only result in cosmetic improvements.
+. Change the intercept-hackery in buildbam to work with latest mgcv versions.
+. Update tests.
 
 2.3 (2022-01-04)
 
 * Fix an important bug swallowing NSE arguments passed in buildmerControl().
-  Thanks to Juris Breidaks for reporting it
+  Thanks to Juris Breidaks for reporting it.
 . Provide a slightly more informative error message when passing incorrect
-  formula objects (e.g. trying to fit a multi-formula GAM using buildgam())
+  formula objects (e.g. trying to fit a multi-formula GAM using buildgam()).
 
 2.2 (2021-11-02)
 
 . Keep respecting 'include' when a model is reduced due to nonconvergence
-  during backward elimination. Bug reported by Adam Parker
+  during backward elimination. Bug reported by Adam Parker.
 . Make crit.LRT safe for use even for custom model functions that do not use
-  standard formulae
+  standard formulae.
 
 2.1 (2021-09-16)
 
 * buildmerControl() now also supports NSE arguments (weights, offset,
-  AR.start)
+  AR.start).
 * New function LRTalpha() has been added, which generates an LRT elimination
-  function with a custom alpha level. GH issue #5
-. Some minor cosmetic documentation changes
+  function with a custom alpha level. GH issue #5.
+. Some minor cosmetic documentation changes.
 . Fix cosmetic bug swapping outer iteration and PQL in the message reporting
-  successful convergence of gam models in converged()
+  successful convergence of gam models in converged().
 . Add support for outer-iteration models without smooth terms in converged()
 . Also support convergence checking for glmertree models --- this was already
-  supported inside buildmertree, but is now user-facing as well
+  supported inside buildmertree, but is now user-facing as well.
 
 2.0 (2021-08-19)
 
@@ -60,39 +77,39 @@
     passed to the fitting function, was a design flaw; this deprecation is the
     first step towards fixing it.
 ** Use actual R-squared instead of adjusted R-squared in the R-squared
-   criterion. Also ensure that the model and residual df sum to N
-* Remove deprecated function conv(); use converged() instead
+   criterion. Also ensure that the model and residual df sum to N.
+* Remove deprecated function conv(); use converged() instead.
 * Refits due to convergence failure now only indicate failures, not also
-  successes, during term ordering and backward elimination
-* More extensive convergence checks for GAMs, with less special-casing
-* Further convergence tweaks for bam() models
-* The R-squared criterion now also works for nnet::multinom() models
-. An error is now raised if 'data' is specified where it shouldn't have been
+  successes, during term ordering and backward elimination.
+* More extensive convergence checks for GAMs, with less special-casing.
+* Further convergence tweaks for bam() models.
+* The R-squared criterion now also works for nnet::multinom() models.
+. An error is now raised if 'data' is specified where it shouldn't have been.
 . Allow terms to be specified both in the model formula as well as in
-  'include'. Bug reported by Nick Pandža
-. Fix bug preventing numeric 'cl' arguments from working
+  'include'. Bug reported by Nick Pandža.
+. Fix bug preventing numeric 'cl' arguments from working.
 . Convergence checks will no longer fail for very big matrices (for which
-  eigen() can sometimes return complex vectors)
+  eigen() can sometimes return complex vectors).
 
 1.9 (2021-03-27)
 
 * If 'crit' is specified but 'elim' is not, all buildmer functions will now
   automatically choose the matching 'elim' function, rather than use the
-  default likelihood-ratio test. GH issue #10
+  default likelihood-ratio test. GH issue #10.
 * Only p-values for lme4-style random-effect terms are now corrected using
   the Stram & Lee approach. Importantly, this means that degrees of freedom
   from GAM(M)s are now trusted as they are. See GH issue #9 for the
   justification.
 * Fix a subtle bug whereby the first model during backward elimination was
-  always fit with REML even when it shouldn't be. GH issue #7
-. Now using testthat for unit testing
-. bam's 'discrete' option is now automatically set to FALSE on ML fits
-. tabulate.formula() can now also tabulate empty models
-. 'forward' and 'backward' now both respect the 'quiet' option
+  always fit with REML even when it shouldn't be. GH issue #7.
+. Now using testthat for unit testing.
+. bam's 'discrete' option is now automatically set to FALSE on ML fits.
+. tabulate.formula() can now also tabulate empty models.
+. 'forward' and 'backward' now both respect the 'quiet' option.
 
 1.8 (2021-02-14)
 
-* 'REML' is now in buildmerControl()
+* 'REML' is now in buildmerControl().
 * Buildmer no longer exports its own internal functions to cluster nodes, as
   the cluster nodes inherit the buildmer::: environment anyway.
 * Buildmer no longer incorrectly prohibits Satterthwaite ddf for non-Gaussian
@@ -131,7 +148,7 @@
 
 *** Function conv() has been renamed to converged(). Of course, an alias
     remains, but it is now deprecated and will be removed in a future release.
-** clm and clmm support
+** clm and clmm support.
 * Argument 'cl' now accepts an integer argument, in which case buildmer will
   create and manage a cluster for you.
 * REML can now be forced on by passing REML=TRUE. As an optimization, REML is
@@ -147,14 +164,14 @@
   since 2019-11-27).
 * Print the failure details when convergence failures cause order() or
   backward() to exit early.
-. Fix a bug combining backward() with the 'include' argument (GH issue #3)
-. Fix a bug in calculating Wald p-values for ANOVA F scores affecting ndf >1
-. Allow ddf='KR' as an abbreviation for ddf='Kenward-Roger'
+. Fix a bug combining backward() with the 'include' argument (GH issue #3).
+. Fix a bug in calculating Wald p-values for ANOVA F scores affecting ndf >1.
+. Allow ddf='KR' as an abbreviation for ddf='Kenward-Roger'.
 
 1.5 (2020-03-01)
 
 *** API change to the 'crit' function, which now has a new function signature
-    (p,cur,alt)
+    (p,cur,alt).
 *** Deprecate buildjulia due to the maintenance cost of duplicating all the
     important likelihood functions. You can code these yourself using
     buildcustom().
@@ -165,60 +182,61 @@
    known to buildbam(), buildgam(), and buildgamm(). These now default to LRT,
    and give an error message with advice if errors are not Gaussian.
 * Relax convergence tolerances for negative eigenvalues to -0.002 (mgcv and
-  glmmTMB models only)
-* Relax convergence tolerance for gradients to 0.04 (mgcv models only)
+  glmmTMB models only).
+* Relax convergence tolerance for gradients to 0.04 (mgcv models only).
 * Convergence messages are now more informative due to an added human-readable
-  'reason' attribute
+  'reason' attribute.
 . re2mgcv no longer uses 'by', to possibly work around segmentation faults
-. Progress messages are now word-wrapped properly
-. Fix incorrect filtering of '...' for (g)lmtree models
+. Progress messages are now word-wrapped properly.
+. Fix incorrect filtering of '...' for (g)lmtree models.
 
 1.4 (2019-12-03)
 
 *** The 'reduce.fixed' and 'reduce.random' arguments have been deprecated; use
-    the 'include' argument instead
+    the 'include' argument instead.
 ** Add new criterion 'devexp' (alias: 'deviance') based on the explained
    deviance. Modify buildbam() so that, in the generalized case, it only
    accepts this criterion. bam() and gam() with non-outer optimization use PQL,
    which was incorrectly permitted by the previous version of the PQL guard
-** S3 and S4 method passthrough support
-** gamm support
+** S3 and S4 method passthrough support.
+** gamm support.
 ** buildgam() has gained an experimental 'quickstart' argument that prefits
    each gam model using bam() to obtain starting values. Specifically for the
    'scat' family, the optimized theta values indicating the degrees of freedom
    and the scale parameter will also be passed on to the gam() call, but only
-   if the mgcv version is at least 1.8-32
+   if the mgcv version is at least 1.8-32.
 ** Added new function 're2mgcv()' that makes it possible to use buildgam()
-   with lme4-style random effects (with correlations removed)
-* Smooth terms are now no longer forced to be evaluated after parametric terms
+   with lme4-style random effects (with correlations removed).
+* Smooth terms are now no longer forced to be evaluated after parametric
+  terms.
 * For general families that are fitted with REML only, buildgam() now makes
-  the appropriate modifications to the gam() call and include list
+  the appropriate modifications to the gam() call and include list.
 * buildcustom() has gained the ability to use buildmer's ML/REML
   differentiation facilities; turn this on by passing REML=TRUE to the call to
-  buildcustom()
-* Split up buildmer() and buildgamm4()
+  buildcustom().
+* Split up buildmer() and buildgamm4().
 . Filter ... argument more precisely in the various buildmer() fitting paths
-  for non-mixed models (lm/glm/gls)
+  for non-mixed models (lm/glm/gls).
 . Fix bugs in remove.terms() and in order() affecting certain models containing
-  smooths
-. buildgam() is now properly able to fit intercept-only models
+  smooths.
+. buildgam() is now properly able to fit intercept-only models.
 . Convergence for glmmTMB models is now checked correctly if there are/seem to
-  be (as with REML=TRUE) no fixed effects
-. Work around glmmTMB issue with REML for poisson and binomial models
+  be (as with REML=TRUE) no fixed effects.
+. Work around glmmTMB issue with REML for poisson and binomial models.
 . build.formula() now also handles formulas where fixed and random effects are
-  not strictly in that order (which fixes 'include' for random effects)
-. Implement workaround in buildgls() to work with rank-deficiency
-. Wrap examples in requireNamespace()
+  not strictly in that order (which fixes 'include' for random effects).
+. Implement workaround in buildgls() to work with rank-deficiency.
+. Wrap examples in requireNamespace().
 . Explicitly fit (fixed/random)-intercept models as well, which was skipped in
   earlier versions. Add dependency on nlme, as gls() is used when
   transitioning from fixed to random effects in lme4 models.
-. Fix diag() and add.terms() for one-sided formulas
+. Fix diag() and add.terms() for one-sided formulas.
 
 1.3 (2019-09-28)
 
-** GLMMadaptive support
-* lme models (package nlme) now have full support for the random part as well
-* glmertree models now have full support for stepwise elimination
+** GLMMadaptive support.
+* lme models (package nlme) now have full support for the random part as well.
+* glmertree models now have full support for stepwise elimination.
 * calc.anova is now FALSE by default. Most users will not use it anyway, and
   for some lmerTest-based models it can cause an error.
 * It is now (experimentally) possible to pass REML=FALSE to all buildmer
@@ -226,7 +244,7 @@
   you are fitting GLMMs using glmmTMB and do not want to use their REML
   approximation.
 . Nonconvergence of the fixed-effects part of the term-ordering step is now
-  handled properly
+  handled properly.
 . Fix bugs in order() and forward() breaking ML-only GLMM fits (GitHub issue #2)
 . The 'include' argument was not being processed correctly when a cluster was
   provided. This is now fixed.
@@ -234,44 +252,44 @@
 1.2.1 (2019-09-03)
 
 . Avoid the use of reformulate(), as its env= argument is only available on R
-  >= 3.6 (bug reported by Willemijn Heeren)
+  >= 3.6 (bug reported by Willemijn Heeren).
 . Relax the convergence checks for negative eigenvalues (affects mgcv and
-  glmmTMB models)
-. Improve detection of random effects
+  glmmTMB models).
+. Improve detection of random effects.
 . Remove terms by block when a reference model fails to converge and detect
-  empty models
+  empty models.
 
 1.2 (2019-08-27)
 
-** Proper environment support
-** glmertree support
+** Proper environment support.
+** glmertree support.
 * More formal support for diagonal covariance structures via a new 'groups'
-  argument to tabulate.formula
-* Retire the 'quiet' argument
-* Overhaul documentation
-* Significantly improve family handling
-* Allow 'include' to take a tabulated formula
+  argument to tabulate.formula.
+* Retire the 'quiet' argument.
+* Overhaul documentation.
+* Significantly improve family handling.
+* Allow 'include' to take a tabulated formula.
 * conv() now accepts a singular.ok argument, which is always FALSE inside
-  buildmer
-. Improve REML detection
-. Increase robustness with user-provided formula tab
-. Make convergence checks more consistent between model types
+  buildmer.
+. Improve REML detection.
+. Increase robustness with user-provided formula tab.
+. Make convergence checks more consistent between model types.
 . Rework add.terms and related random-effects detection to fix obscure bug
-  when tabulating non-r.e. terms that fool lme4::findbars (e.g. 'ar1(x|g)')
+  when tabulating non-r.e. terms that fool lme4::findbars (e.g. 'ar1(x|g)').
 
 1.1 (2019-05-18)
 
 ** Large rewrite of internal code organization. You can now specify arbitrary
    fitting functions, criteria, and elimination functions.
 * Add 'include' argument to force terms to always be in the formula (fixes
-  github bug #1)
-* New function 'buildcustom'
-* Added raw log-likelihood as a criterion: 'LL'
-. Fix bug in calculating anova table with lmerTest ddf options
-. Make calcWald respect numerator df in anova table
+  GH bug #1).
+* New function 'buildcustom'.
+* Added raw log-likelihood as a criterion: 'LL'.
+. Fix bug in calculating anova table with lmerTest ddf options.
+. Make calcWald respect numerator df in anova table.
 . Remove incorrect gradient check for mgcv models in conv(), instead check for
-  'full convergence' string
+  'full convergence' string.
 
 1.0 (2019-03-31)
 
-*** First public release
+*** First public release.
