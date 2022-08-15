@@ -83,6 +83,15 @@ buildmerControl <- function (
 buildmer.prep <- function (mc,add,banned) {
 	e <- parent.frame(2)
 
+	# Deprecate buildmerControl
+	if (wh <- 'buildmerControl' %in% names(mc)) {
+		warning("Deprecation warning: the 'buildmerControl' argument will be renamed to just 'control', please update your code to change from 'buildmerControl=...' to 'control=...' (but don't worry, your current model is still just fine: buildmer is currently renaming the variable for you internally).")
+		if ('control' %in% names(mc)) {
+			stop("Cannot continue with both 'control' and 'buildmerControl' given - please only use 'control'.")
+		}
+		names(mc)[wh] <- 'control'
+	}
+
 	# Check arguments
 	notok <- intersect(names(mc),banned)
 	if (length(notok)) {
@@ -92,20 +101,20 @@ buildmer.prep <- function (mc,add,banned) {
 		stop('Argument ',notok,' is not available for ',mc[[1]])
 	}
 
-	# We need to handle NSE arguments in a special way. They may be in buildmerControl=list(args=list(HERE))
+	# We need to handle NSE arguments in a special way. They may be in control=list(args=list(HERE))
 	saved.nse <- NULL
-	if ('buildmerControl' %in% names(mc)) {
-		if ('args' %in% names(mc$buildmerControl)) {
-			if (any(nse <- names(mc$buildmerControl$args) %in% NSENAMES)) {
-				saved.nse <- mc$buildmerControl$args[nse]
-				mc$buildmerControl$args[nse] <- NA
+	if ('control' %in% names(mc)) {
+		if ('args' %in% names(mc$control)) {
+			if (any(nse <- names(mc$control$args) %in% NSENAMES)) {
+				saved.nse <- mc$control$args[nse]
+				mc$control$args[nse] <- NA
 			}
 		}
 		# Now that NSE args have been saved, we can safely eval everything
-		p <- eval(mc$buildmerControl,e)
+		p <- eval(mc$control,e)
 		p <- p[!names(p) %in% names(mc)]
 		mc[names(p)] <- p
-		mc$buildmerControl <- NULL
+		mc$control <- NULL
 	}
 
 	# Create the parameter list
@@ -125,7 +134,7 @@ buildmer.prep <- function (mc,add,banned) {
 	# Note: names(mc) only provides the explicit arguments, not the defaults, hence why the below works
 	caller <- sys.function(-1)
 	defs <- formals(caller)
-	defs <- defs[!names(defs) %in% c(names(mc),banned,'buildmerControl')]
+	defs <- defs[!names(defs) %in% c(names(mc),banned,'control')]
 	p <- c(p,lapply(defs,eval))
 	p$I_KNOW_WHAT_I_AM_DOING <- isTRUE(p$I_KNOW_WHAT_I_AM_DOING)
 
