@@ -1,0 +1,3 @@
+"index","grouping","term","code","block","ok","score","Iteration","LRT"
+NA,NA,"1","1","NA NA 1",TRUE,NA,1,NA
+"2 1","Sex:Age:Eth:Lrn","1","2 1 Sex:Age:Eth:Lrn 1","NA Sex:Age:Eth:Lrn 1",TRUE,-8.8636201462239,1,0.000141442095145169
