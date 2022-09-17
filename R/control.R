@@ -111,7 +111,12 @@ buildmer.prep <- function (mc,add,banned) {
 	# Create the parameter list
 	mc[[1]] <- buildmerControl
 	mc[names(add)] <- add
-	p <- eval(mc,e)
+	# Eval, but catch it if the user thought this would be lmerControl or so
+	p <- try(eval(mc,e))
+	if (inherits(p,'try-error')) {
+		p[] <- paste0("Could not evaluate the 'control' argument - it is possible that you passed an option that is not recognized by buildmerControl(). If you meant to pass control arguments to the fitting function (e.g. lmer), use control=buildmerControl(args=list(control=lmerControl(...))) instead. The 'control' argument to the buildmer command should contain buildmer control arguments, not lmer control arguments; see ?buildmerControl. The reported error is:\n",p[])
+		stop(p)
+	}
 	# Now evaluate the args, without the NSE arguments
 	p$args <- lapply(p$args,eval,e)
 	p$call <- mc[-1]
