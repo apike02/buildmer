@@ -213,6 +213,15 @@ converged <- function (model,singular.ok=FALSE,grad.tol=.1,hess.tol=.01) {
 		if ((err <- min(ev)) < -hess.tol) return(failure(paste0('Hessian contains negative eigenvalues <',-hess.tol),err))
 		return(success('All buildmer checks passed (clm/clmm)'))
 	}
+	if (inherits(model,'lme')) {
+		if (!singular.ok && inherits(model$apVar,'character')) {
+			if (model$apVar == 'Approximate variance-covariance matrix not available') {
+				stop('model$apVar is not available; refit model with apVar control option set to TRUE to enable convergence checking')
+			}
+			return(failure('lme reports effectively singular convergence',model$apVar))
+		}
+		return(success('All buildmer checks passed (lme)'))
+	}
 	if (inherits(model,'glmertree')) return(converged(model$glmer))
 	if (inherits(model,'lmertree'))  return(converged(model$lmer))
 	success('No checks needed or known for this model type',class(model))
