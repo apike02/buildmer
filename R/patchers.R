@@ -12,7 +12,7 @@ patch.GLMMadaptive <- function (p,fun,args) {
 		return(model)
 	}
 	for (x in NSENAMES) {
-		model$call[[x]] <- p$call$args[[x]]
+		model$call[x] <- p$call$args[x]
 	}
 	model$call[[1]]   <- substitute(fun)
 	model$call$data   <- p$call$data
@@ -26,7 +26,7 @@ patch.gamm <- function (p,fun,args) {
 		return(model)
 	}
 	for (x in NSENAMES) {
-		model$lme$call[[x]] <- p$call$args[[x]]
+		model$lme$call[x] <- p$call$args[x]
 	}
 	model$lme$call$data   <- p$call$data
 	model$lme$call$family <- p$call$family
@@ -39,7 +39,7 @@ patch.gamm4 <- function (p,fun,args) {
 		return(model)
 	}
 	for (x in NSENAMES) {
-		model$mer$call[[x]] <- p$call$args[[x]]
+		model$mer$call[x] <- p$call$args[x]
 	}
 	model$mer@call$data   <- p$data
 	model$mer@call$family <- p$call$family
@@ -52,7 +52,7 @@ patch.lm <- function (p,fun,args) {
 		return(model)
 	}
 	for (x in NSENAMES) {
-		model$call[[x]] <- p$call$args[[x]]
+		model$call[x] <- p$call$args[x]
 	}
 	model$call[[1]] <- substitute(fun)
 	model$call$data <- p$call$data
@@ -68,7 +68,7 @@ patch.lmer <- function (p,fun,args) {
 		return(model)
 	}
 	for (x in NSENAMES) {
-		model@call[[x]] <- p$call$args[[x]]
+		model@call[x] <- p$call$args[x]
 	}
 	model@call[[1]] <- substitute(fun)
 	model@call$data <- p$call$data
@@ -88,7 +88,7 @@ patch.mertree <- function (p,fun,args) {
 		return(model[[eltname]])
 	}
 	for (x in NSENAMES) {
-		model@call[[x]] <- model[[eltname]]@call[[x]] <- p$call$args[[x]]
+		model@call[x] <- model[[eltname]]@call[x] <- p$call$args[x]
 	}
 	if (!p$is.gaussian) {
 		model$call$family <- model[[eltname]]@call$family <- p$call$family
