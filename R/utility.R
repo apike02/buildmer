@@ -271,9 +271,10 @@ re2mgcv <- function (formula,data) {
 	list(formula=formula,data=data)
 }
 
-#' Remove terms from an lme4 formula
-#' @param formula The lme4 formula.
+#' Remove terms from a formula
+#' @param formula The formula.
 #' @param remove A vector of terms to remove. To remove terms nested inside random-effect groups, use `(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.
+#' @param check A logical indicating whether effects should be checked for marginality. If \code{TRUE} (default), effects will not be removed if doing so would violate marginality. Setting \code{check} to \code{FALSE} will remove terms unconditionally.
 #' @examples
 #' library(buildmer)
 #' remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
@@ -286,7 +287,7 @@ re2mgcv <- function (formula,data) {
 #' step1 <- remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
 #' step2 <- remove.terms(step1,'(1|Subject)')
 #' @export
-remove.terms <- function (formula,remove) {
+remove.terms <- function (formula,remove,check=TRUE) {
 	marginality.ok <- function (remove,have) {
 		forbidden <- if (!all(have == '1')) '1' else NULL
 		for (x in have) {
@@ -319,25 +320,33 @@ remove.terms <- function (formula,remove) {
 
 	# Protect the intercept: do not remove the fixed intercept if we have a random intercept.
 	# This is handled here because the intercept is handled by a separate 'intercept' variable, rather than being in the 'remove' vector.
-	if ('1' %in% remove && !'1' %in% unlist(random.terms)) intercept <- 0
+	if ('1' %in% remove) {
+	        if (!check || !'1' %in% unlist(random.terms)) {
+			intercept <- 0
+		}
+	}
 	remove <- remove[remove != '1']
 
 	# Prepare the final list of terms for which removal was requested
-	if (!length(remove)) remove <- '0'
+	if (!length(remove)) {
+		remove <- '0'
+	}
 	remove <- stats::as.formula(paste0('~',paste(remove,collapse='+')))
 	remove.random <- get.random.list(remove)
 	remove.fixed <- attr(terms(remove),'term.labels')
 	remove.fixed <- Filter(Negate(is.random.term),remove.fixed)
 
-	# Do not remove fixed effects if they have corresponding random effects
-	remove.fixed <- remove.fixed[!remove.fixed %in% unlist(random.terms)]
+	if (check) {
+		# Do not remove fixed effects if they have corresponding random effects
+		remove.fixed <- remove.fixed[!remove.fixed %in% unlist(random.terms)]
 
-	# Do not remove effects participating in higher-order interactions
-	remove.fixed <- remove.fixed[marginality.ok(remove.fixed,fixed.terms)]
-	if (length(remove.random)) for (i in 1:length(remove.random)) {
-		nm <- names(remove.random)[i]
-		have <- unlist(random.terms[names(random.terms) == nm])
-		remove.random[[i]] <- remove.random[[i]][marginality.ok(remove.random[[i]],have)]
+		# Do not remove effects participating in higher-order interactions
+		remove.fixed <- remove.fixed[marginality.ok(remove.fixed,fixed.terms)]
+		if (length(remove.random)) for (i in 1:length(remove.random)) {
+			nm <- names(remove.random)[i]
+			have <- unlist(random.terms[names(random.terms) == nm])
+			remove.random[[i]] <- remove.random[[i]][marginality.ok(remove.random[[i]],have)]
+		}
 	}
 
 	# Perform actual removal
