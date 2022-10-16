@@ -185,12 +185,21 @@ order <- function (p) {
 	reorder <- function (p,tab) {
 		# Test for marginality
 		can.eval <- function (tab) {
+			my.ddply <- function (data,split,fun) {
+				vec <- data[[split]]
+				res <- lapply(unique(vec),function (x) {
+					take <- if (is.na(x)) is.na(vec) else !is.na(vec) && vec == x
+					fun(data[take,])
+				})
+				Reduce(rbind,res)
+			}
+
 			# 0. Initialize
 			tab$ok <- TRUE
 			# 1. If there are random effects, evaluate them as a group
 			mine <- is.na(tab$grouping)
 			my <- tab[mine,]
-			tab[!mine,] <- plyr::ddply(tab[!mine,],~grouping,function (my) {
+			tab[!mine,] <- my.ddply(tab[!mine,],'grouping',function (my) {
 				g <- my$grouping
 				my$grouping <- NA
 				my <- can.eval(my)
@@ -226,7 +235,7 @@ order <- function (p) {
 			}
 
 			# 4. If any term belonging to a single block could not be selected, disqualify the whole block
-			tab <- plyr::ddply(tab,~block,within,{ if (!all(ok)) ok <- FALSE })
+			tab <- my.ddply(tab,'block',function (x) within(x,{ if (!all(ok)) ok <- FALSE }))
 
 			tab
 		}

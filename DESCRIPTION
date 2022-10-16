@@ -11,7 +11,7 @@ Description: Finds the largest possible regression model that will still converg
 Depends:
     R (>= 3.2)
 Imports:
-    graphics, lme4, methods, mgcv, nlme, plyr, stats, utils
+    graphics, lme4, methods, mgcv, nlme, stats, utils
 Suggests:
     GLMMadaptive, MASS, gamm4, glmertree, glmmTMB, knitr, lmerTest, nnet, ordinal, parallel, partykit, pbkrtest, rmarkdown, testthat
 License: FreeBSD
