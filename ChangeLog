@@ -1,7 +1,24 @@
 '***' denotes important announcements
 '**' denotes big changes visible to the user
 '*' denotes minor changes visible to the user
-'.' denotes minor bug fixes
+'.' denotes minor fixes
+
+2.7 (2022-10-20)
+
+* An informative error is now thrown if the user attempts to use
+  buildmerControl incorrectly.
+* Singularity checks for lme models.
+* remove.terms now has an optional 'check' argument (default TRUE) through
+  which the user can disable marginality checks, causing it to unconditionally
+  remove terms from the formula.
+* buildmer now always converts lme4 models to lmerTest, if lmerTest is
+  available, unless Wald ddf had been requested.
+. Patcher functions will no longer set the calling function incorrectly for
+  'gamm' and 'gamm4' models.
+. Patcher functions now correctly propagate all NSE names.
+. Remove plyr dependency.
+. Fix setting the data name in patch.gamm4.
+. patch.mertree now respects singular.ok in buildmerControl().
 
 2.6 (2022-07-13)
 

@@ -132,8 +132,7 @@ fit.gam <- function (p,formula) {
 				} else {
 					# set up starting values for theta
 					th.notrans <- qs$family$getTheta(FALSE)
-					th.trans   <- qs$family$getTheta(TRUE)
-					# transformation undoes the logarithm and then adds min.df to the df, so:
+					th.trans <- qs$family$getTheta(TRUE)
 					min.df <- th.trans[1] - exp(th.notrans[1])
 					progress(p,paste0('Starting values: ',paste0(p$args$in.out$sp,collapse=' '),' with theta values ',paste0(th.trans,collapse=' '),' and min.df ',min.df))
 					p$family <- mgcv::scat(theta=-th.trans,link=qs$family$link,min.df=min.df)

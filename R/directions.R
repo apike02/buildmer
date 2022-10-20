@@ -188,7 +188,7 @@ order <- function (p) {
 			my.ddply <- function (data,split,fun) {
 				vec <- data[[split]]
 				res <- lapply(unique(vec),function (x) {
-					take <- if (is.na(x)) is.na(vec) else !is.na(vec) && vec == x
+					take <- if (is.na(x)) is.na(vec) else !is.na(vec) & vec == x
 					fun(data[take,])
 				})
 				Reduce(rbind,res)
