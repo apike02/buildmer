@@ -395,6 +395,7 @@ buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 #' @importFrom stats gaussian
 #' @export
 buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl()) {
+	e <- parent.frame()
 	p <- buildmer.prep(match.call(),add=list(fit=fit.buildmer),banned=NULL)
 	p <- buildmer.fit(p)
 	if (inherits(p$model,'lmerMod') && requireNamespace('lmerTest',quietly=TRUE) && p$ddf != 'lme4') {
@@ -405,7 +406,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 		p$model@call$data <- p$data
 		for (x in NSENAMES) {
 			if (x %in% names(p$args)) {
-				p$model@call[[x]] <- p$args[[x]]
+				p$model@call[[x]] <- eval(p$args[[x]],e)
 			}
 		}
 		fun <- p$model@call[[1]]
