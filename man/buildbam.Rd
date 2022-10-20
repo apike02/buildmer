@@ -28,7 +28,7 @@ To work around an issue in \code{bam}, you must make sure that your data do not 
 
 \code{lme4} random effects are supported: they will be automatically converted using \code{\link{re2mgcv}}.
 
-As \code{bam} uses PQL, only \code{crit='deviance'} is supported for non-Gaussian errors.
+As \code{bam} uses PQL, only \code{crit='F'} and \code{crit='deviance'} (note that the latter is not a formal test) are supported for non-Gaussian errors.
 }
 \examples{
 \dontshow{

@@ -2,17 +2,19 @@
 % Please edit documentation in R/utility.R
 \name{remove.terms}
 \alias{remove.terms}
-\title{Remove terms from an lme4 formula}
+\title{Remove terms from a formula}
 \usage{
-remove.terms(formula, remove)
+remove.terms(formula, remove, check = TRUE)
 }
 \arguments{
-\item{formula}{The lme4 formula.}
+\item{formula}{The formula.}
 
 \item{remove}{A vector of terms to remove. To remove terms nested inside random-effect groups, use `(term|group)' syntax. Note that marginality is respected, i.e. no effects will be removed if they participate in a higher-order interaction, and no fixed effects will be removed if a random slope is included over that fixed effect.}
+
+\item{check}{A logical indicating whether effects should be checked for marginality. If \code{TRUE} (default), effects will not be removed if doing so would violate marginality. Setting \code{check} to \code{FALSE} will remove terms unconditionally.}
 }
 \description{
-Remove terms from an lme4 formula
+Remove terms from a formula
 }
 \examples{
 library(buildmer)
@@ -22,7 +24,6 @@ remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
 remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)')
 # so does this, because marginality is checked before removal:
 remove.terms(Reaction ~ Days + (Days|Subject),c('(Days|Subject)','(1|Subject)'))
-# this is how you do it instead:
-step1 <- remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
-step2 <- remove.terms(step1,'(1|Subject)')
+# but it works with check=FALSE
+remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)',check=FALSE)
 }

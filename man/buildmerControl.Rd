@@ -71,9 +71,9 @@ buildmerControl(
 
 \item{singular.ok}{Logical indicating whether singular fits are acceptable. Only for lme4 models.}
 
-\item{grad.tol}{Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.}
+\item{grad.tol}{Tolerance for declaring gradient convergence. For \code{buildbam}, the default value is multiplied by 100.}
 
-\item{hess.tol}{Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.}
+\item{hess.tol}{Tolerance for declaring Hessian convergence. For \code{buildbam}, the default value is multiplied by 100.}
 
 \item{I_KNOW_WHAT_I_AM_DOING}{An internal option that you should not modify unless you know what you are doing.}
 }

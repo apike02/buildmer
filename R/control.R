@@ -33,8 +33,8 @@ NSENAMES <- c('weights','offset','AR.start','control','subset')
 #' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}.
 #' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}. Enabling this option only makes sense for criteria that do not compare likelihoods, in which case this is an optimization; it is applied automatically for the 'deviance-explained' criterion.
 #' @param singular.ok Logical indicating whether singular fits are acceptable. Only for lme4 models.
-#' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, this is multiplied by 100.
-#' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, this is multiplied by 100.
+#' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, the default value is multiplied by 100.
+#' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, the default value is multiplied by 100.
 #' @param I_KNOW_WHAT_I_AM_DOING An internal option that you should not modify unless you know what you are doing.
 #' @export
 buildmerControl <- function (

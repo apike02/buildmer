@@ -283,9 +283,8 @@ re2mgcv <- function (formula,data) {
 #' remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)')
 #' # so does this, because marginality is checked before removal:
 #' remove.terms(Reaction ~ Days + (Days|Subject),c('(Days|Subject)','(1|Subject)'))
-#' # this is how you do it instead:
-#' step1 <- remove.terms(Reaction ~ Days + (Days|Subject),'(Days|Subject)')
-#' step2 <- remove.terms(step1,'(1|Subject)')
+#' # but it works with check=FALSE
+#' remove.terms(Reaction ~ Days + (Days|Subject),'(1|Subject)',check=FALSE)
 #' @export
 remove.terms <- function (formula,remove,check=TRUE) {
 	marginality.ok <- function (remove,have) {
