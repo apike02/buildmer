@@ -28,13 +28,14 @@ NSENAMES <- c('weights','offset','AR.start','control','subset')
 #' @param calc.summary Logical indicating whether to also calculate the summary table for the final model after term elimination.
 #' @param ddf The method used for calculating \emph{p}-values for \code{lme4} models and \code{calc.anova=TRUE} or \code{calc.summary=TRUE}. Options are \code{'Wald'} (default), \code{'Satterthwaite'} (if package \code{lmerTest} is available), \code{'Kenward-Roger'} (if packages \code{lmerTest} and \code{pbkrtest} are available), and \code{'lme4'} (no \emph{p}-values).
 #' @param quickstart For \code{gam} models only: a numeric with values from 0 to 5. If set to 1, will use \code{bam} to obtain starting values for \code{gam}'s outer iteration, potentially resulting in a much faster fit for each model. If set to 2, will disregard ML/REML and always use \code{bam}'s \code{fREML} for the quickstart fit. 3 also sets \code{discrete=TRUE}. Values between 3 and 4 fit the quickstart model to a subset of that value (e.g.\ \code{quickstart=3.1} fits the quickstart model to 10\% of the data, which is also the default if \code{quickstart=3}. Values between 4 and 5 do the same, but also set a very sloppy convergence tolerance of 0.2.
+#' @param singular.ok Logical indicating whether singular fits are acceptable. Only for lme4 models.
+#' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, the default value is multiplied by 100.
+#' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, the default value is multiplied by 100.
 #' @param dep A character string specifying the name of the dependent variable. Only used if \code{formula} is a buildmer terms list.
 #' @param REML In some situations, the user may want to force REML on or off, rather than using buildmer's autodetection. If \code{REML=TRUE} (or more precisely, if \code{isTRUE(REML)} evaluates to true), then buildmer will always use REML. This results in invalid results if formal model-comparison criteria are used with models differing in fixed effects (and the user is not guarded against this), but is useful with the 'deviance-explained' criterion, where it is actually the default (you can disable this and use the 'normal' REML/ML-differentiating behavior by passing \code{REML=NA}).
 #' @param can.use.reml Internal option specifying whether the fitting engine should distinguish between fixed-effects and random-effects model comparisons. Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}.
 #' @param force.reml Internal option specifying whether, if not differentiating between fixed-effects and random-effects model comparisons, these comparisons should be based on ML or on REML (if possible). Do not set this option yourself unless you are programming a new fitting function for \code{buildcustom}. Enabling this option only makes sense for criteria that do not compare likelihoods, in which case this is an optimization; it is applied automatically for the 'deviance-explained' criterion.
-#' @param singular.ok Logical indicating whether singular fits are acceptable. Only for lme4 models.
-#' @param grad.tol Tolerance for declaring gradient convergence. For \code{buildbam}, the default value is multiplied by 100.
-#' @param hess.tol Tolerance for declaring Hessian convergence. For \code{buildbam}, the default value is multiplied by 100.
+#' @param scale.est Internal option specifying whether the model estimates an unknown scale parameter. Used only in \code{crit.F}. Possible values are \code{TRUE} (scale is estimated), \code{FALSE} (scale is known), and \code{NA} (unknown, needs to be inferred from the fitted model; this is the default). There is limited support for modifying this parameter.
 #' @param I_KNOW_WHAT_I_AM_DOING An internal option that you should not modify unless you know what you are doing.
 #' @export
 buildmerControl <- function (
@@ -53,13 +54,14 @@ buildmerControl <- function (
 	calc.summary=TRUE,
 	ddf='Wald',
 	quickstart=0,
+	singular.ok=FALSE,
+	grad.tol=formals(buildmer::converged)$grad.tol,
+	hess.tol=formals(buildmer::converged)$hess.tol,
 	dep=NULL,
 	REML=NA,
 	can.use.reml=TRUE,
 	force.reml=FALSE,
-	singular.ok=FALSE,
-	grad.tol=formals(buildmer::converged)$grad.tol,
-	hess.tol=formals(buildmer::converged)$hess.tol,
+	scale.est=NA,
 	I_KNOW_WHAT_I_AM_DOING=FALSE
 ) {
 	mc <- match.call(expand.dots=FALSE)
@@ -149,6 +151,15 @@ buildmer.prep <- function (mc,add,banned) {
 			p$family <- p$family()
 		}
 		p$is.gaussian <- p$family$family == 'gaussian' && p$family$link == 'identity'
+		if (!p$is.gaussian) {
+			mgcv.wrong <- p$family$family == 'Multivariate normal' ||
+				startsWith(p$family$family,'Negative Binomial') ||
+				startsWith(p$family$family,'Beta regression') ||
+				startsWith(p$family$family,'Scaled t')
+			if (mgcv.wrong) {
+				p$scale.est <- TRUE
+			}
+		}
 	}
 	if (is.null(p$crit)) {
 		if (is.null(p$elim)) {

@@ -92,7 +92,7 @@ buildclmm <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 	if (!requireNamespace('ordinal',quietly=TRUE)) {
 		stop('Please install package ordinal')
 	}
-	p <- buildmer.prep(match.call(),add=list(fit=fit.clmm,can.use.reml=FALSE),banned=c('family','ddf'))
+	p <- buildmer.prep(match.call(),add=list(fit=fit.clmm,can.use.reml=FALSE,scale.est=FALSE),banned=c('family','ddf'))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -228,7 +228,7 @@ buildgam <- function (formula,data=NULL,family=gaussian(),quickstart=0,buildmerC
 #' Only a single grouping factor is allowed. The random-effect covariance matrix is always unstructured. If you want to use \code{pdMat} covariance structures, you must (a) \emph{not} specify any \code{lme4} random-effects term in the formula, and (b) specify your own custom \code{random} argument in the \code{args} list in \code{buildmerControl}. Note that \code{buildgamm} will merely pass this through; no term reordering or stepwise elimination is done on a user-provided \code{random} argument.
 #' @export
 buildgamm <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildmerControl()) {
-	p <- buildmer.prep(match.call(),add=list(fit=fit.gamm),banned='ddf')
+	p <- buildmer.prep(match.call(),add=list(fit=fit.gamm,scale.est=TRUE),banned='ddf')
 	if (!p$is.gaussian && !p$I_KNOW_WHAT_I_AM_DOING) {
 		stop("You are trying to use buildgamm with a non-Gaussian error family. In this situation, gamm uses PQL, which means that likelihood-based model comparisons are invalid in the generalized case. Try using buildgam with outer iteration instead (e.g. buildgam(...,optimizer=c('outer','bfgs'))), or use crit='F' or crit='deviance' (note that the latter is not a formal test). (If you really know what you are doing, you can sidestep this error by passing an argument 'I_KNOW_WHAT_I_AM_DOING'.)")
 	}
@@ -320,7 +320,7 @@ buildmer.nb <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 	if (!requireNamespace('MASS',quietly=TRUE)) {
 		stop('Please install package MASS')
 	}
-	p <- buildmer.prep(match.call(),add=list(fit=fit.nb,can.use.reml=FALSE),banned='ddf')
+	p <- buildmer.prep(match.call(),add=list(fit=fit.nb,can.use.reml=FALSE,scale.est=TRUE),banned='ddf')
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -340,7 +340,7 @@ buildmer.nb <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 #' @template seealso
 #' @export
 buildgls <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
-	p <- buildmer.prep(match.call(),add=list(fit=fit.gls),banned=c('family','ddf'))
+	p <- buildmer.prep(match.call(),add=list(fit=fit.gls,scale.est=TRUE),banned=c('family','ddf'))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -359,7 +359,7 @@ buildgls <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 #' @export
 buildlme <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 	if (!requireNamespace('nlme',quietly=TRUE)) stop('Please install package nlme')
-	p <- buildmer.prep(match.call(),add=list(fit=fit.lme),banned=c('family','ddf'))
+	p <- buildmer.prep(match.call(),add=list(fit=fit.lme,scale.est=TRUE),banned=c('family','ddf'))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
@@ -490,7 +490,7 @@ buildmertree <- function (formula,data=NULL,family=gaussian(),buildmerControl=bu
 #' @export
 buildmultinom <- function (formula,data=NULL,buildmerControl=buildmerControl()) {
 	if (!requireNamespace('nnet',quietly=TRUE)) stop('Please install package nnet')
-	p <- buildmer.prep(match.call(),add=list(fit=fit.multinom),banned=c('family','calc.anova','ddf'))
+	p <- buildmer.prep(match.call(),add=list(fit=fit.multinom,scale.est=FALSE),banned=c('family','calc.anova','ddf'))
 	p <- buildmer.fit(p)
 	buildmer.finalize(p)
 }
