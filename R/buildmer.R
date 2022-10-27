@@ -406,7 +406,7 @@ buildmer <- function (formula,data=NULL,family=gaussian(),buildmerControl=buildm
 		p$model@call$data <- p$data
 		for (x in NSENAMES) {
 			if (x %in% names(p$args)) {
-				p$model@call[[x]] <- eval(p$args[[x]],e)
+				p$model@call[[x]] <- p$args[[x]]
 			}
 		}
 		fun <- p$model@call[[1]]
